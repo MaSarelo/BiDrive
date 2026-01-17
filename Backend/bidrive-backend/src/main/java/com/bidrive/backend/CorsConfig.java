@@ -1,0 +1,17 @@
+package com.bidrive.backend;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class CorsConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**") // Разрешаем доступ ко всем API методам
+                .allowedOrigins("http://localhost:5173", "http://localhost:3000") // Адреса фронтенда
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH") // Разрешенные методы
+                .allowCredentials(true);
+    }
+}

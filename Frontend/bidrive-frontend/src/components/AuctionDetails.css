@@ -1,0 +1,139 @@
+.loading {
+  text-align: center;
+  margin-top: 50px;
+}
+
+.details-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.back-btn {
+  display: inline-block;
+  text-decoration: none;
+  color: #2980b9;
+  font-weight: bold;
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+}
+
+.back-btn:hover {
+  text-decoration: underline;
+}
+
+.details-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* Левая часть шире правой */
+  gap: 30px;
+}
+
+.details-info h1 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.status-badge {
+  display: inline-block;
+  background-color: #e0f7fa;
+  color: #006064;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+  margin: 20px 0;
+}
+
+.data-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.description h3 {
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+/* Правая колонка с ценой */
+.price-card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  text-align: center;
+  position: sticky;
+  top: 20px; /* При скролле цена будет прилипать */
+  height: fit-content;
+}
+
+.price-card h2 {
+  font-size: 1rem;
+  color: #7f8c8d;
+  margin: 0 0 10px 0;
+}
+
+.big-price {
+  font-size: 2.5rem;
+  color: #27ae60;
+  font-weight: bold;
+  margin: 10px 0 5px 0;
+}
+
+.bid-form {
+  margin-top: 30px;
+  text-align: left;
+}
+
+.bid-form label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.bid-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.bid-submit-btn {
+  width: 100%;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.bid-submit-btn:hover {
+  background-color: #219150;
+}
+
+.message-text {
+  margin-top: 15px;
+  text-align: center;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+  .details-content {
+    grid-template-columns: 1fr;
+  }
+  .price-card {
+    position: static;
+  }
+}

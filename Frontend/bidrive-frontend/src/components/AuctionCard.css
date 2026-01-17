@@ -1,0 +1,85 @@
+/* Ссылка-обертка для карточки (для React Router) */
+.card-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Основной контейнер карточки */
+.card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 20px;
+  /* Легкая тень для нормального состояния */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  /* Плавная анимация всех свойств */
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  /* Прозрачная полоска по умолчанию */
+  border-left: 5px solid transparent;
+  cursor: pointer;
+}
+
+/* Эффект при наведении мыши (Hover) */
+.card:hover {
+  /* Карточка поднимается вверх */
+  transform: translateY(-8px);
+  /* Тень становится глубже */
+  box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+  /* Левая полоска становится зеленой */
+  border-left: 5px solid #27ae60;
+}
+
+/* Стили заголовка (Марка + Модель) */
+.card h2 {
+  color: #2c3e50;
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1.4rem;
+  transition: color 0.3s;
+}
+
+/* Цвет заголовка при наведении */
+.card:hover h2 {
+  color: #27ae60;
+}
+
+/* Блок с технической информацией */
+.info p {
+  margin: 5px 0;
+  color: #555;
+}
+
+/* Блок с ценой */
+.price-block {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.price {
+  font-size: 1.8rem;
+  color: #27ae60;
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+/* Статус аукциона */
+.status {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  text-align: right;
+  font-style: italic;
+}
+
+/* Подсказка кликабельности */
+.click-hint {
+  margin-top: 15px;
+  color: #2980b9;
+  font-size: 0.9rem;
+  text-align: center;
+  opacity: 0.7;
+  font-weight: bold;
+}
