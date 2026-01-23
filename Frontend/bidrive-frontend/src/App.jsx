@@ -1,16 +1,37 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'; // Импорт роутера
 import axios from 'axios';
+import Layout from './components/Layout';
 import AuctionCard from './components/AuctionCard';
-import AuctionDetails from './components/AuctionDetails'; // Импорт новой страницы
+import AuctionDetails from './components/AuctionDetails';
+import CreateAuction from './components/CreateAuction';
+import Profile from './components/Profile';
+import Login from './components/Login';
 import './App.css';
 
 function App() {
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Состояния для фильтрации
+  const [brands, setBrands] = useState([]);
+  const [selectedBrand, setSelectedBrand] = useState('');
+
   useEffect(() => {
-    axios.get('http://localhost:8080/api/auctions')
+    // Загрузка брендов
+    axios.get('http://localhost:8080/api/brands')
+      .then(response => {
+        setBrands(response.data);
+      })
+      .catch(error => console.error('Ошибка загрузки брендов:', error));
+
+    // Загрузка аукционов
+    let url = 'http://localhost:8080/api/auctions';
+    if (selectedBrand) {
+      url = `http://localhost:8080/api/auctions/search?brandId=${selectedBrand}`;
+    }
+
+    axios.get(url)
       .then(response => {
         setAuctions(response.data);
         setLoading(false);
@@ -19,30 +40,65 @@ function App() {
         console.error('Ошибка:', error);
         setLoading(false);
       });
-  }, []);
+  }, [selectedBrand]);
 
   return (
     <Router>
-      <div className="container">
-        {/* Заголовок показывается всегда */}
-        <h1>🚗 Аукционы BiDrive</h1>
+      <Layout>
+        {loading ? (
+          <div className="loading-spinner">Загрузка данных...</div>
+        ) : (
+          <Routes>
+            {/* Главная: Каталог */}
+            <Route path="/" element={
+              <>
+                <div className="filter-bar">
+                  <label>Фильтр по марке: </label>
+                  <select
+                    value={selectedBrand}
+                    onChange={(e) => setSelectedBrand(e.target.value)}
+                  >
+                    <option value="">Все марки</option>
+                    {brands.map(brand => (
+                      <option key={brand.id} value={brand.id}>
+                        {brand.name}
+                      </option>
+                    ))}
+                  </select>
 
-        <Routes>
-          {/* Роут для главной страницы (список) */}
-          <Route path="/" element={
-            loading ? <div className="loading">Загрузка данных из базы...</div> : (
-              <div className="auction-grid">
-                {auctions.map((auction) => (
-                  <AuctionCard key={auction.id} auction={auction} />
-                ))}
-              </div>
-            )
-          } />
+                  {selectedBrand && (
+                    <button
+                      className="btn-reset"
+                      onClick={() => setSelectedBrand('')}
+                    >
+                      Сбросить
+                    </button>
+                  )}
+                </div>
 
-          {/* Роут для страницы деталей (лот с ID) */}
-          <Route path="/auction/:id" element={<AuctionDetails />} />
-        </Routes>
-      </div>
+                <div className="auction-grid">
+                  {auctions.map((auction) => (
+                    <AuctionCard key={auction.id} auction={auction} />
+                  ))}
+                  {auctions.length === 0 && <p>Ничего не найдено.</p>}
+                </div>
+              </>
+            } />
+
+            {/* Вход */}
+            <Route path="/login" element={<Login />} />
+
+            {/* Профиль */}
+            <Route path="/profile" element={<Profile />} />
+
+            {/* Создание лота */}
+            <Route path="/create" element={<CreateAuction />} />
+
+            {/* Детали лота */}
+            <Route path="/auction/:id" element={<AuctionDetails />} />
+          </Routes>
+        )}
+      </Layout>
     </Router>
   );
 }

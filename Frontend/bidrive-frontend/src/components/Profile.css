@@ -1,0 +1,63 @@
+.profile-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.header-profile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 30px;
+}
+
+.user-info {
+  color: #555;
+}
+
+.logout-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.logout-msg {
+  color: #e74c3c;
+  text-align: right;
+  font-weight: bold;
+}
+
+.actions {
+  margin-bottom: 30px;
+}
+
+.action-btn {
+  display: inline-block;
+  text-decoration: none;
+  background-color: #27ae60;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.action-btn:hover {
+  background-color: #219150;
+}
+
+.auction-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.no-lots {
+  text-align: center;
+  color: #777;
+  font-style: italic;
+}

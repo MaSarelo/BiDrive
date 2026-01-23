@@ -10,9 +10,16 @@ import java.util.List;
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
     // Метод для поиска аукционов по ID бренда
-    // Spring сам поймет, что нужно SELECT * FROM auctions WHERE brand_id = ?
     List<Auction> findByBrandId(Long brandId);
 
     // Дополнительно: поиск только активных аукционов конкретного бренда
     List<Auction> findByBrandIdAndStatus(Long brandId, String status);
+
+    // Находит активные аукционы конкретного продавца
+    List<Auction> findBySellerIdAndStatus(Long sellerId, String status);
+
+    // Найти все лоты с определенным статусом
+    List<Auction> findByStatus(String status);
+
+    List<Auction> findBySellerId(Long sellerId);
 }

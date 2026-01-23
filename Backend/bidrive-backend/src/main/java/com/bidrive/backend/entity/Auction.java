@@ -3,6 +3,8 @@ package com.bidrive.backend.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List; // Обязательно для списка фото
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Table(name = "auctions")
@@ -33,11 +35,15 @@ public class Auction {
     @Column(name = "mileage", nullable = false)
     private Integer mileage;
 
-    @Column(name = "transmission", length = 20)
-    private String transmission;
+    // Нормализованная связь с таблицей КПП (объект, а не строка)
+    @ManyToOne
+    @JoinColumn(name = "transmission_id", nullable = false)
+    private Transmission transmission;
 
-    @Column(name = "fuel_type", length = 20)
-    private String fuelType;
+    // Нормализованная связь с таблицей Топлива
+    @ManyToOne
+    @JoinColumn(name = "fuel_type_id", nullable = false)
+    private FuelType fuelType;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
@@ -63,10 +69,21 @@ public class Auction {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
-    // Победитель (может быть пустым)
+    // Победитель
     @ManyToOne
     @JoinColumn(name = "winner_id")
     private User winner;
+
+    // Ссылка на главное фото (обложка)
+    @Column(name = "main_image_url")
+    private String mainImageUrl;
+
+    // ============================================
+    // ГАЛЕРЕЯ ФОТОГРАФИЙ (Связь OneToMany)
+    // ============================================
+    @OneToMany(mappedBy = "auction", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonBackReference
+    private List<CarImage> images;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -74,10 +91,13 @@ public class Auction {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Конструктор
+    // Пустой конструктор (обязателен JPA)
     public Auction() {}
 
-    // Геттеры и сеттеры
+    // ============================================
+    // Геттеры и Сеттеры
+    // ============================================
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -96,11 +116,11 @@ public class Auction {
     public Integer getMileage() { return mileage; }
     public void setMileage(Integer mileage) { this.mileage = mileage; }
 
-    public String getFuelType() { return fuelType; }
-    public void setFuelType(String fuelType) { this.fuelType = fuelType; }
+    public Transmission getTransmission() { return transmission; }
+    public void setTransmission(Transmission transmission) { this.transmission = transmission; }
 
-    public String getTransmission() { return transmission; }
-    public void setTransmission(String transmission) { this.transmission = transmission; }
+    public FuelType getFuelType() { return fuelType; }
+    public void setFuelType(FuelType fuelType) { this.fuelType = fuelType; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
@@ -128,6 +148,12 @@ public class Auction {
 
     public User getWinner() { return winner; }
     public void setWinner(User winner) { this.winner = winner; }
+
+    public String getMainImageUrl() { return mainImageUrl; }
+    public void setMainImageUrl(String mainImageUrl) { this.mainImageUrl = mainImageUrl; }
+
+    public List<CarImage> getImages() { return images; }
+    public void setImages(List<CarImage> images) { this.images = images; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

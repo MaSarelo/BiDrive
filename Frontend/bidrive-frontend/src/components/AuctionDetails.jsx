@@ -4,17 +4,14 @@ import axios from 'axios';
 import './AuctionDetails.css';
 
 function AuctionDetails() {
-  // Получаем ID аукциона из URL
   const { id } = useParams();
-
   const [auction, setAuction] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Состояние для формы ставки
+  // Ставки
   const [bidAmount, setBidAmount] = useState('');
   const [message, setMessage] = useState('');
 
-  // Загрузка данных лота
   useEffect(() => {
     axios.get(`http://localhost:8080/api/auctions/${id}`)
       .then(response => {
@@ -27,14 +24,12 @@ function AuctionDetails() {
       });
   }, [id]);
 
-  // Обработка нажатия "Сделать ставку"
   const handlePlaceBid = () => {
     if (!bidAmount) {
       setMessage('❌ Введите сумму ставки!');
       return;
     }
 
-    // Имитация текущего пользователя (ID = 3, Мария)
     const currentUserId = 3;
 
     axios.post('http://localhost:8080/api/bids', null, {
@@ -46,12 +41,10 @@ function AuctionDetails() {
     })
     .then(response => {
       setMessage('✅ Ставка принята!');
-      // Через секунду перезагружаем данные лота, чтобы обновить цену
       setTimeout(() => {
           axios.get(`http://localhost:8080/api/auctions/${id}`)
             .then(res => setAuction(res.data));
       }, 1000);
-      // Скрываем сообщение через 3 сек
       setTimeout(() => setMessage(''), 3000);
     })
     .catch(error => {
@@ -60,7 +53,6 @@ function AuctionDetails() {
   };
 
   if (loading) return <div className="loading">Загрузка лота...</div>;
-
   if (!auction) return <div className="loading">Лот не найден.</div>;
 
   return (
@@ -68,18 +60,32 @@ function AuctionDetails() {
         <Link to="/" className="back-btn">← Вернуться в каталог</Link>
 
         <div className="details-content">
-            {/* Левая колонка: Информация о машине */}
             <div className="details-info">
-                <h1>{auction.brand.name} {auction.model.name}</h1>
+                <h1>{auction.brand?.name} {auction.model?.name}</h1>
                 <p className="status-badge">Статус: {auction.status}</p>
                 <hr />
 
-                {/* Объединенный блок характеристик */}
+                {/* ГАЛЕРЕЯ ФОТОГРАФИЙ */}
+                <div className="gallery">
+                    {auction.images && auction.images.length > 0 ? (
+                        auction.images.map((img) => (
+                            <img
+                                key={img.id}
+                                src={`http://localhost:8080${img.imageUrl}`}
+                                alt="Фото авто"
+                                className={img.isMain ? "gallery-img main-img" : "gallery-img"}
+                            />
+                        ))
+                    ) : (
+                        <p className="no-photos">Фотографий пока нет</p>
+                    )}
+                </div>
+
                 <div className="data-grid">
                     <p><strong>Год:</strong> {auction.year}</p>
                     <p><strong>Пробег:</strong> {auction.mileage} км</p>
-                    <p><strong>КПП:</strong> {auction.transmission || 'Не указано'}</p>
-                    <p><strong>Топливо:</strong> {auction.fuelType || 'Не указано'}</p>
+                    <p><strong>КПП:</strong> {auction.transmission?.name || 'Не указано'}</p>
+                    <p><strong>Топливо:</strong> {auction.fuelType?.name || 'Не указано'}</p>
                 </div>
 
                 <div className="description">
@@ -88,7 +94,6 @@ function AuctionDetails() {
                 </div>
             </div>
 
-            {/* Правая колонка: Торги и цена */}
             <div className="details-sidebar">
                 <div className="price-card">
                     <h2>Текущая цена</h2>

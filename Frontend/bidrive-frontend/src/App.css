@@ -1,24 +1,88 @@
-body {
-  background-color: #f4f4f9;
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #ddd;
+}
+
+.header h1 {
   margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+.create-btn {
+  background-color: #2980b9;
+  color: white;
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background 0.3s;
 }
 
-.loading {
-  text-align: center;
-  font-size: 24px;
-  margin-top: 50px;
-  color: #555;
+.create-btn:hover {
+  background-color: #1f618d;
 }
 
-.auction-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+  border-radius: 8px;
+}
+
+.nav-right {
+  display: flex;
+  gap: 10px;
+}
+
+.login-link, .profile-link {
+  text-decoration: none;
+  color: #2980b9;
+  font-weight: bold;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.login-link:hover, .profile-link:hover {
+  background-color: #f0f0f0;
+}
+
+.filter-bar {
+  background-color: #f1f3f5;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.filter-bar label {
+  font-weight: bold;
+}
+
+.filter-bar select {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.btn-reset {
+  padding: 8px 15px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-reset:hover {
+  background-color: #5a6268;
 }
