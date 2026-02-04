@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Layout from './components/Layout';
 import AuctionCard from './components/AuctionCard';
-import AuctionDetails from './components/AuctionDetails';
-import CreateAuction from './components/CreateAuction';
-import Profile from './components/Profile';
-import Login from './components/Login';
+import AuctionDetails from './pages/AuctionDetails/AuctionDetails';
+import CreateAuction from './pages/CreateAuction/CreateAuction';
+import Profile from './pages/Profile/Profile';
+import Login from './pages/Login/Login';
 import './App.css';
 
 function App() {

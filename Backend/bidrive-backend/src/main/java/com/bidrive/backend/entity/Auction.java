@@ -69,6 +69,10 @@ public class Auction {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
+    @ManyToOne
+    @JoinColumn(name = "city_id")
+    private City city;
+
     // Победитель
     @ManyToOne
     @JoinColumn(name = "winner_id")
@@ -160,4 +164,7 @@ public class Auction {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public City getCity() { return city; }
+    public void setCity(City city) { this.city = city; }
 }

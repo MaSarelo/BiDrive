@@ -14,6 +14,9 @@ import java.util.Optional;
 public class AuctionService {
 
     @Autowired
+    private TelegramService telegramService;
+
+    @Autowired
     private AuctionRepository auctionRepository;
 
     @Autowired
@@ -39,6 +42,9 @@ public class AuctionService {
     @Autowired
     private BidRepository bidRepository;
 
+    @Autowired
+    private CityRepository cityRepository;
+
     // Метод для создания нового аукциона
     @Transactional
     public Auction createAuction(
@@ -51,7 +57,8 @@ public class AuctionService {
             Integer fuelTypeId,       // ID Топлива
             String description,
             BigDecimal startingPrice, // Исправлено: Принимаем BigDecimal, а не String
-            String mainImageUrl     // Ссылка на фото
+            String mainImageUrl,     // Ссылка на фото
+            Long cityId
     ) {
         // 1. Находим связанные сущности
         User seller = userRepository.findById(sellerId)
@@ -66,6 +73,8 @@ public class AuctionService {
                 .orElseThrow(() -> new RuntimeException("Тип КПП не найден"));
         FuelType fuelType = fuelTypeRepository.findById(fuelTypeId)
                 .orElseThrow(() -> new RuntimeException("Тип топлива не найден"));
+        City city = cityRepository.findById(cityId)
+                .orElseThrow(() -> new RuntimeException("Город не найден"));
 
         // 3. Создаем объект аукциона
         Auction auction = new Auction();
@@ -77,6 +86,8 @@ public class AuctionService {
 
         auction.setTransmission(transmission);
         auction.setFuelType(fuelType);
+
+        auction.setCity(city); // Устанавливаем город в аукцион
 
         auction.setDescription(description);
 
@@ -92,6 +103,15 @@ public class AuctionService {
 
         auction.setCreatedAt(LocalDateTime.now());
         auction.setUpdatedAt(LocalDateTime.now());
+
+        // Telegram
+        try {
+            String carName = brand.getName() + " " + model.getName();
+            String cityName = (city != null) ? city.getName() : "Не указан";
+            telegramService.sendNewLotNotification(carName, cityName, startingPrice.toString());
+        } catch (Exception e) {
+            System.out.println("Ошибка Telegram: " + e.getMessage());
+        }
 
         return auctionRepository.save(auction);
     }

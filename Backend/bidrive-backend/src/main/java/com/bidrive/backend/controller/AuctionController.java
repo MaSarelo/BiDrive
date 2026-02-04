@@ -51,11 +51,12 @@ public class AuctionController {
             @RequestParam Integer fuelTypeId,     // Принимаем ID
             @RequestParam String description,
             @RequestParam BigDecimal startingPrice,
-            @RequestParam String mainImageUrl   // Принимаем ссылку на фото
+            @RequestParam String mainImageUrl,   // Принимаем ссылку на фото
+            @RequestParam Long cityId // Принимаем ID города
     ) {
         return auctionService.createAuction(
                 sellerId, brandId, modelId, year, mileage,
-                transmissionId, fuelTypeId, description, startingPrice, mainImageUrl
+                transmissionId, fuelTypeId, description, startingPrice, mainImageUrl, cityId
         );
     }
 

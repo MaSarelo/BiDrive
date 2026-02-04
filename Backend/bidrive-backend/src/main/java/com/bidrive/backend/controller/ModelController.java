@@ -3,12 +3,12 @@ package com.bidrive.backend.controller;
 import com.bidrive.backend.entity.Model;
 import com.bidrive.backend.repository.ModelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// Добавили CORS
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/models")
 public class ModelController {
@@ -19,5 +19,11 @@ public class ModelController {
     @GetMapping
     public List<Model> getAllModels() {
         return modelRepository.findAll();
+    }
+
+    // === НОВЫЙ МЕТОД (обязателен для React) ===
+    @GetMapping("/by-brand")
+    public List<Model> getModelsByBrand(@RequestParam Long brandId) {
+        return modelRepository.findByBrandId(brandId);
     }
 }

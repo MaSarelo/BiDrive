@@ -21,5 +21,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     // Найти все лоты с определенным статусом
     List<Auction> findByStatus(String status);
 
+    // Найти все лоты пользователя (включая черновики)
     List<Auction> findBySellerId(Long sellerId);
 }
