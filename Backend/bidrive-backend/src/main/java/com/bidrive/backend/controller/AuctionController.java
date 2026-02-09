@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/auctions")
 public class AuctionController {
@@ -70,5 +71,23 @@ public class AuctionController {
     @GetMapping("/my")
     public List<Auction> getMyAuctions(@RequestParam Long sellerId) {
         return auctionRepository.findBySellerId(sellerId);
+    }
+
+    // DELETE: Удалить лот (только если это черновик и твой)
+    @DeleteMapping("/{id}")
+    public void deleteAuction(@PathVariable Long id, @RequestParam Long userId) {
+        auctionService.deleteAuction(id, userId);
+    }
+
+    // PUT: Опубликовать лот (перевести в ACTIVE)
+    @PutMapping("/{id}/publish")
+    public void publishAuction(@PathVariable Long id, @RequestParam Long userId) {
+        auctionService.publishAuction(id, userId);
+    }
+
+    // PUT: Завершить торги (назначить победителя)
+    @PutMapping("/{id}/finish")
+    public void finishAuction(@PathVariable Long id, @RequestParam Long userId) {
+        auctionService.finishAuction(id, userId);
     }
 }

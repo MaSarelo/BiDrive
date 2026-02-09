@@ -61,3 +61,38 @@
   color: #777;
   font-style: italic;
 }
+
+.card-actions {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.action-btn {
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: opacity 0.2s;
+}
+
+.action-btn:hover {
+    opacity: 0.8;
+}
+
+.btn-publish {
+    background-color: #27ae60;
+    color: white;
+}
+
+.btn-finish {
+    background-color: #2980b9;
+    color: white;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+    color: white;
+}

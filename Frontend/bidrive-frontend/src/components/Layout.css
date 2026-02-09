@@ -75,3 +75,18 @@ body {
   margin: 0 auto; /* Центрирование контента */
   width: 100%;
 }
+
+.btn-logout {
+    background: none;
+    border: none;
+    color: #d32f2f; /* Красный цвет для выхода */
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.95rem;
+    padding: 0;
+    margin-left: 10px;
+}
+
+.btn-logout:hover {
+    text-decoration: underline;
+}

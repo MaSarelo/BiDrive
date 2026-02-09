@@ -5,7 +5,7 @@ import com.bidrive.backend.entity.Bid;
 import com.bidrive.backend.entity.Notification;
 import com.bidrive.backend.entity.User;
 import com.bidrive.backend.repository.AuctionRepository;
-import com.bidrive.backend.repository.BidRepository;
+import com.bidrive.backend.repository.BidRepository; // Дубль был удален
 import com.bidrive.backend.repository.NotificationRepository;
 import com.bidrive.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,20 +45,30 @@ public class BidService {
             throw new RuntimeException("Ставки возможны только на активные аукционы!");
         }
 
-        if (amount.compareTo(auction.getCurrentPrice()) <= 0) {
+        BigDecimal currentPrice = auction.getCurrentPrice();
+        BigDecimal minStep = auction.getMinBidStep();
+
+        // Проверка 1: Ставка должна быть выше текущей цены
+        if (amount.compareTo(currentPrice) <= 0) {
             throw new RuntimeException("Ставка должна быть выше текущей цены!");
         }
 
-        // --- НОВАЯ ЛОГИКА: Уведомления ---
+        // === НОВОЕ: Проверка 2 (Минимальный шаг) ===
+        // Мы считаем: (Новая ставка - Текущая цена) >= Минимальный шаг
+        if (amount.subtract(currentPrice).compareTo(minStep) < 0) {
+            throw new RuntimeException(String.format(
+                    "Минимальный шаг ставки: %s$. Ваша ставка слишком мала. Ставка должна быть не ниже: %s$.",
+                    minStep, currentPrice.add(minStep)
+            ));
+        }
+        // =============================================
 
-        // Находим текущую максимальную ставку (перед сохранением новой)
+        // 3. Логика уведомлений
         Optional<Bid> currentTopBid = bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId);
 
-        // Если ставка была, и делал её другой человек
         if (currentTopBid.isPresent()) {
             User previousLeader = currentTopBid.get().getUser();
             if (!previousLeader.getId().equals(userId)) {
-                // Создаем уведомление о том, что ставку перебили
                 Notification notification = new Notification();
                 notification.setUser(previousLeader);
                 notification.setType("BID_OUTBID");
@@ -70,9 +80,7 @@ public class BidService {
             }
         }
 
-        // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
-
-        // 3. Создаем и сохраняем новую ставку
+        // 4. Создаем и сохраняем новую ставку
         Bid bid = new Bid();
         bid.setAuction(auction);
         bid.setUser(user);
@@ -81,7 +89,7 @@ public class BidService {
 
         Bid savedBid = bidRepository.save(bid);
 
-        // 4. Обновляем текущую цену в аукционе
+        // 5. Обновляем текущую цену в аукционе
         auction.setCurrentPrice(amount);
         auctionRepository.save(auction);
 

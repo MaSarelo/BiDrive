@@ -1,14 +1,13 @@
-import { Link, useLocation } from 'react-router-dom'; // Убрали Outlet, он не нужен
+import { Link, useLocation, useNavigate } from 'react-router-dom'; // 1. Импортируем useNavigate
 import { useState, useEffect } from 'react';
 import './Layout.css';
 
-// 1. Обязательно добавляем { children } в скобки
 function Layout({ children }) {
 
-  const location = useLocation(); // Отслеживаем смену страницы
-  const [userEmail, setUserEmail] = useState(null); // Храним email в стейте
+  const location = useLocation();
+  const [userEmail, setUserEmail] = useState(null);
+  const navigate = useNavigate(); // 2. Инициализируем навигацию
 
-  // Этот код срабатывает каждый раз, когда меняется страница
   useEffect(() => {
     const storedEmail = localStorage.getItem('userEmail');
     if (storedEmail) {
@@ -18,26 +17,36 @@ function Layout({ children }) {
     }
   }, [location]);
 
+  // 3. Функция выхода
+  const handleLogout = () => {
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userId');
+    setUserEmail(null);
+    navigate('/login'); // Перенаправляем на страницу логина
+  };
+
   return (
     <div className="layout-container">
-      {/* Глобальный Хедер */}
       <header className="header">
         <div className="logo">🚗 BiDrive</div>
 
         <nav className="nav-links">
           <Link to="/" className="nav-link">Каталог</Link>
 
-          {/* Кнопка создания */}
           <Link to="/create" className="nav-link btn-create">
             + Выставить лот
           </Link>
 
-          {/* Ссылки в зависимости от входа */}
           {userEmail ? (
             <>
               <Link to="/profile" className="nav-link">
                 👤 Кабинет ({userEmail.split('@')[0]})
               </Link>
+
+              {/* 4. Добавляем кнопку ВЫХОДА */}
+              <button onClick={handleLogout} className="nav-link btn-logout">
+                🚪 Выйти
+              </button>
             </>
           ) : (
             <Link to="/login" className="nav-link">
@@ -47,9 +56,7 @@ function Layout({ children }) {
         </nav>
       </header>
 
-      {/* Основной контент страницы */}
       <main className="content">
-        {/* 2. Рендерим children (то, что передал App.jsx), а не Outlet */}
         {children}
       </main>
     </div>

@@ -145,8 +145,22 @@ public class AuctionService {
             throw new RuntimeException("Ставки возможны только на активные аукционы!");
         }
 
-        if (amount.compareTo(auction.getCurrentPrice()) <= 0) {
+        // === НОВАЯ ЛОГИКА ПРОВЕРКИ СТАВКИ ===
+        BigDecimal currentPrice = auction.getCurrentPrice();
+        BigDecimal minStep = auction.getMinBidStep();
+
+        // 1. Проверка: Ставка должна быть больше текущей цены
+        if (amount.compareTo(currentPrice) <= 0) {
             throw new RuntimeException("Ставка должна быть выше текущей цены!");
+        }
+
+        // 2. Проверка: Разница ставки и текущей цены должна быть не меньше минимального шага
+        // (Твоя ставка - Текущая цена) >= Минимальный шаг
+        if (amount.subtract(currentPrice).compareTo(minStep) < 0) {
+            throw new RuntimeException(String.format(
+                    "Минимальный шаг ставки: %s$. Текущая цена: %s$. Ваша ставка слишком мала.",
+                    minStep, currentPrice
+            ));
         }
 
         // Уведомления
@@ -178,5 +192,65 @@ public class AuctionService {
         auctionRepository.save(auction);
 
         return savedBid;
+    }
+
+    // 1. Удаление лота
+    @Transactional
+    public void deleteAuction(Long auctionId, Long requestingUserId) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new RuntimeException("Лот не найден"));
+
+        // Проверяем, что это владелец
+        if (!auction.getSeller().getId().equals(requestingUserId)) {
+            throw new RuntimeException("Вы не можете удалить чужой лот");
+        }
+        // Нельзя удалять активный аукцион
+        if ("ACTIVE".equals(auction.getStatus())) {
+            throw new RuntimeException("Нельзя удалить активный аукцион");
+        }
+
+        auctionRepository.delete(auction);
+    }
+
+    // 2. Публикация лота (сделать активным)
+    @Transactional
+    public void publishAuction(Long auctionId, Long requestingUserId) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new RuntimeException("Лот не найден"));
+
+        if (!auction.getSeller().getId().equals(requestingUserId)) {
+            throw new RuntimeException("Вы не можете публиковать чужой лот");
+        }
+
+        // Меняем статус на Активный и одобренный
+        auction.setStatus("ACTIVE");
+        auction.setModerationStatus("APPROVED");
+        auction.setUpdatedAt(LocalDateTime.now());
+
+        auctionRepository.save(auction);
+    }
+
+    // 3. Завершение торгов (назначить победителя)
+    @Transactional
+    public void finishAuction(Long auctionId, Long requestingUserId) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new RuntimeException("Аукцион не найден"));
+
+        if (!auction.getSeller().getId().equals(requestingUserId)) {
+            throw new RuntimeException("Вы не можете завершить чужой аукцион");
+        }
+
+        // Находим последнюю ставку (победителя)
+        // Метод в репозитории уже есть (findTopByAuctionIdOrderByAmountDesc)
+        Bid topBid = bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId)
+                .orElse(null);
+
+        if (topBid != null) {
+            auction.setWinner(topBid.getUser());
+        }
+
+        auction.setStatus("FINISHED");
+        auction.setUpdatedAt(LocalDateTime.now());
+        auctionRepository.save(auction);
     }
 }
