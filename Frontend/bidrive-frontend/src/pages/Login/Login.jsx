@@ -25,6 +25,9 @@ function Login() {
       localStorage.setItem('userEmail', user.email);
       localStorage.setItem('userName', `${user.firstName} ${user.lastName}`);
 
+      // Сохраняем роль (2 - это ADMIN в базе, 1 - USER)
+          localStorage.setItem('userRole', user.roleId);
+
       // Перенаправляем на главную
       navigate("/", { replace: true });
 

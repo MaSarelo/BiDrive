@@ -32,10 +32,11 @@ public class AuthController {
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
 
         // Шифруем пароль и сохраняем в passwordHash
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setRoleId(2L); // Роль USER по умолчанию
+        user.setRoleId(1L); // Роль USER по умолчанию
 
         userRepository.save(user);
         return ResponseEntity.ok("Регистрация успешна! Теперь войдите в систему.");
@@ -74,6 +75,7 @@ public class AuthController {
         private String lastName;
         private String email;
         private String password;
+        private String phone;
 
         public String getFirstName() { return firstName; }
         public void setFirstName(String firstName) { this.firstName = firstName; }
@@ -83,5 +85,7 @@ public class AuthController {
         public void setEmail(String email) { this.email = email; }
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
+        public String getPhone() { return phone; }
+        public void setPhone(String phone) { this.phone = phone; }
     }
 }

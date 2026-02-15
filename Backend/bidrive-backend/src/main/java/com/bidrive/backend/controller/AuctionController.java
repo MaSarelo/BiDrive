@@ -20,27 +20,67 @@ public class AuctionController {
     @Autowired
     private AuctionService auctionService;
 
-    // GET: Список всех (ОБНОВЛЕННЫЙ)
+    // GET: Список всех
     @GetMapping
     public List<Auction> getAllAuctions() {
-        // На главной показываем только АКТИВНЫЕ лоты
         return auctionRepository.findByStatus("ACTIVE");
     }
 
-    // GET: Поиск по бренду
+    // GET: Расширенный поиск (с безопасной конвертацией)
     @GetMapping("/search")
-    public List<Auction> searchAuctions(@RequestParam Long brandId) {
-        return auctionRepository.findByBrandIdAndStatus(brandId, "ACTIVE");
+    public List<Auction> searchAuctions(
+            @RequestParam(required = false) String brandId,
+            @RequestParam(required = false) String modelId,
+            @RequestParam(required = false) String fuelTypeId,
+            @RequestParam(required = false) String transmissionId,
+            @RequestParam(required = false) String regionId,
+            @RequestParam(required = false) String cityId,
+            @RequestParam(required = false) String yearFrom,
+            @RequestParam(required = false) String yearTo,
+            @RequestParam(required = false) String priceFrom,
+            @RequestParam(required = false) String priceTo,
+            @RequestParam(required = false) String mileageFrom,
+            @RequestParam(required = false) String mileageTo
+    ) {
+        Long bId = toLong(brandId);
+        Long mId = toLong(modelId);
+        Integer fId = toInt(fuelTypeId);
+        Integer tId = toInt(transmissionId);
+        Integer rId = toInt(regionId);
+        Integer cId = toInt(cityId);
+
+        return auctionRepository.searchAuctions(
+                bId, mId, fId, tId, rId, cId,
+                toInt(yearFrom), toInt(yearTo),
+                toDouble(priceFrom), toDouble(priceTo),
+                toInt(mileageFrom), toInt(mileageTo)
+        );
     }
 
-    // GET: Получить один по ID
+    // Вспомогательные методы (должны быть в конце класса!)
+    private Long toLong(String val) {
+        if (val == null || val.isEmpty()) return null;
+        try { return Long.parseLong(val); } catch (Exception e) { return null; }
+    }
+
+    private Integer toInt(String val) {
+        if (val == null || val.isEmpty()) return null;
+        try { return Integer.parseInt(val); } catch (Exception e) { return null; }
+    }
+
+    private Double toDouble(String val) {
+        if (val == null || val.isEmpty()) return null;
+        try { return Double.parseDouble(val); } catch (Exception e) { return null; }
+    }
+
+    // --- Остальные методы (Create, Approve, etc.) ---
+
     @GetMapping("/{id}")
     public Auction getAuctionById(@PathVariable Long id) {
         return auctionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Аукцион не найден"));
     }
 
-    // POST: Создать аукцион (ОБНОВЛЕННЫЙ)
     @PostMapping
     public Auction createAuction(
             @RequestParam Long sellerId,
@@ -48,12 +88,12 @@ public class AuctionController {
             @RequestParam Long modelId,
             @RequestParam Integer year,
             @RequestParam Integer mileage,
-            @RequestParam Integer transmissionId, // Принимаем ID
-            @RequestParam Integer fuelTypeId,     // Принимаем ID
+            @RequestParam Integer transmissionId,
+            @RequestParam Integer fuelTypeId,
             @RequestParam String description,
             @RequestParam BigDecimal startingPrice,
-            @RequestParam String mainImageUrl,   // Принимаем ссылку на фото
-            @RequestParam Long cityId // Принимаем ID города
+            @RequestParam String mainImageUrl,
+            @RequestParam Long cityId
     ) {
         return auctionService.createAuction(
                 sellerId, brandId, modelId, year, mileage,
@@ -61,33 +101,33 @@ public class AuctionController {
         );
     }
 
-    // PUT: Одобрить аукцион
     @PutMapping("/{id}/approve")
     public void approveAuction(@PathVariable Long id) {
         auctionService.approveAuction(id);
     }
 
-    // GET: Получить аукционы конкретного пользователя (Личный кабинет)
     @GetMapping("/my")
     public List<Auction> getMyAuctions(@RequestParam Long sellerId) {
         return auctionRepository.findBySellerId(sellerId);
     }
 
-    // DELETE: Удалить лот (только если это черновик и твой)
     @DeleteMapping("/{id}")
     public void deleteAuction(@PathVariable Long id, @RequestParam Long userId) {
         auctionService.deleteAuction(id, userId);
     }
 
-    // PUT: Опубликовать лот (перевести в ACTIVE)
     @PutMapping("/{id}/publish")
     public void publishAuction(@PathVariable Long id, @RequestParam Long userId) {
         auctionService.publishAuction(id, userId);
     }
 
-    // PUT: Завершить торги (назначить победителя)
     @PutMapping("/{id}/finish")
     public void finishAuction(@PathVariable Long id, @RequestParam Long userId) {
         auctionService.finishAuction(id, userId);
+    }
+
+    @GetMapping("/pending")
+    public List<Auction> getPendingAuctions() {
+        return auctionRepository.findByModerationStatus("PENDING");
     }
 }

@@ -21,12 +21,14 @@ public class SecurityConfig {
                         // Разрешаем всем (публичные данные):
                         .requestMatchers("/api/auth/**").permitAll()   // Регистрация и Вход
                         .requestMatchers("/api/brands").permitAll()      // Бренды
-                        .requestMatchers("/3/api/models/**").permitAll()    // Модели (убрал лишний слэш, если путь такой)
+                        .requestMatchers("/api/models/**").permitAll()    // Модели
                         .requestMatchers("/api/auctions/**").permitAll()  // Лоты
                         .requestMatchers("/api/regions/**").permitAll()   // Области
                         .requestMatchers("/api/cities/**").permitAll()       // Города
                         .requestMatchers("/uploads/**").permitAll()       // Фотографии
                         .requestMatchers("/api/bids/**").permitAll()       // Ставки
+                        .requestMatchers("/api/fuel-types/**").permitAll() // Тип топлива
+                        .requestMatchers("/api/transmissions/**").permitAll() // Виды КПП
 
                         // Всё остальное требует авторизации
                         .anyRequest().authenticated()

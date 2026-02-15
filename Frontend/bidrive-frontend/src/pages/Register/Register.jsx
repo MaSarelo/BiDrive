@@ -8,7 +8,8 @@ function Register() {
     firstName: '',
     lastName: '',
     email: '',
-    password: ''
+    password: '',
+    phone: ''
   });
 
   const navigate = useNavigate();
@@ -49,6 +50,15 @@ function Register() {
         <input
             type="email" name="email" placeholder="ivan@example.com" value={formData.email}
             onChange={handleChange} required
+        />
+
+        <label>Телефон:</label>
+        <input
+          type="tel" // Тип tel лучше для мобильных
+          name="phone"
+          placeholder="+375 29 123-45-67"
+          value={formData.phone}
+          onChange={handleChange}
         />
 
         <label>Пароль:</label>
