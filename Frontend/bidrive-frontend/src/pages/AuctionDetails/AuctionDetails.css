@@ -395,3 +395,19 @@
     gap: 10px;
   }
 }
+
+/* Стили для активного превью */
+.thumbnail.active {
+  border: 2px solid #1976d2;
+  box-shadow: 0 0 5px rgba(25, 118, 210, 0.5);
+}
+
+.thumbnail {
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.thumbnail:hover {
+  border-color: #ccc;
+}

@@ -2,6 +2,7 @@ package com.bidrive.backend.entity;
 
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Table(name = "car_images")
@@ -14,7 +15,7 @@ public class CarImage {
     // Связь с аукционом (много фото могут относиться к одному лоту)
     @ManyToOne
     @JoinColumn(name = "auction_id", nullable = false)
-    @JsonManagedReference
+    @JsonBackReference
     private Auction auction;
 
     @Column(name = "image_url", nullable = false)

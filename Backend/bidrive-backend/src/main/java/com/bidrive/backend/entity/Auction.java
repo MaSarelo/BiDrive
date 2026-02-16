@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List; // Обязательно для списка фото
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
 @Table(name = "auctions")
@@ -86,7 +87,7 @@ public class Auction {
     // ГАЛЕРЕЯ ФОТОГРАФИЙ (Связь OneToMany)
     // ============================================
     @OneToMany(mappedBy = "auction", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JsonBackReference
+    @JsonManagedReference
     private List<CarImage> images;
 
     @Column(name = "created_at", updatable = false)

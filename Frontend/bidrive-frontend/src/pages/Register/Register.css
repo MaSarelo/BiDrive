@@ -1,15 +1,19 @@
+/* Основной контейнер */
 .login-container {
-  max-width: 400px;
-  margin: 100px auto;
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  max-width: 450px;
+  margin: 40px auto;
+  padding: 30px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
   background: white;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
 }
 
 .login-container h1 {
   text-align: center;
-  color: #333;
+  color: #2c3e50;
+  margin-bottom: 25px;
+  font-size: 1.8rem;
 }
 
 .login-form {
@@ -18,26 +22,135 @@
   gap: 15px;
 }
 
-.hint {
-  font-size: 0.8rem;
-  color: #666;
-  text-align: center;
-  background: #f9f9f9;
-  padding: 10px;
-  border-radius: 4px;
+/* Группа инпутов */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
+.input-group label {
+  font-weight: 600;
+  color: #34495e;
+  font-size: 0.9rem;
+}
+
+/* Обычные инпуты */
+.login-form input[type="text"],
+.login-form input[type="email"],
+.login-form input[type="password"] {
+  padding: 12px 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.login-form input[type="text"]:focus,
+.login-form input[type="email"]:focus,
+.login-form input[type="password"]:focus {
+  border-color: #2980b9;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.15);
+}
+
+/* === СПЕЦИАЛЬНЫЕ СТИЛИ ДЛЯ ТЕЛЕФОНА === */
+.phone-input-wrapper {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  /* Чтобы скругления внутри не вылезали */
+  overflow: hidden;
+}
+
+.phone-input-wrapper:focus-within {
+  border-color: #2980b9;
+  box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.15);
+}
+
+.phone-icon {
+  padding: 12px 15px;
+  background-color: #f8f9fa;
+  border-right: 1px solid #d1d5db;
+  font-size: 1.1rem;
+  color: #555;
+}
+
+.phone-input-wrapper input {
+  border: none;
+  padding: 12px 15px;
+  font-size: 1rem;
+  flex: 1;
+  outline: none;
+  background: transparent;
+  /* Убираем стандартные стили браузера */
+  appearance: none;
+}
+
+/* Подсказка под полем */
+.hint-text {
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: #7f8c8d;
+}
+
+/* === ЧЕКБОКС === */
+.checkbox-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.checkbox-container input[type="checkbox"] {
+  margin-top: 3px; /* Центрируем по вертикали относительно первой строки текста */
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #2980b9; /* Цвет галочки */
+}
+
+.checkbox-container label {
+  font-size: 0.9rem;
+  color: #555;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+/* === КНОПКА === */
 .login-btn {
-  background-color: #3498db;
+  background-color: #2980b9;
   color: white;
   border: none;
-  padding: 12px;
-  border-radius: 6px;
-  font-size: 1rem;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background-color 0.2s;
+  margin-top: 10px;
 }
 
-.login-btn:hover {
-  background-color: #2980b9;
+.login-btn:hover:not(:disabled) {
+  background-color: #1f6391;
+}
+
+/* Ссылка на вход */
+.no-account {
+  text-align: center;
+  margin-top: 15px;
+  color: #555;
+}
+
+.no-account a {
+  color: #2980b9;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.no-account a:hover {
+  text-decoration: underline;
 }

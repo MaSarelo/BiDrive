@@ -57,23 +57,19 @@ public class AuctionController {
         );
     }
 
-    // Вспомогательные методы (должны быть в конце класса!)
+    // Вспомогательные методы
     private Long toLong(String val) {
         if (val == null || val.isEmpty()) return null;
         try { return Long.parseLong(val); } catch (Exception e) { return null; }
     }
-
     private Integer toInt(String val) {
         if (val == null || val.isEmpty()) return null;
         try { return Integer.parseInt(val); } catch (Exception e) { return null; }
     }
-
     private Double toDouble(String val) {
         if (val == null || val.isEmpty()) return null;
         try { return Double.parseDouble(val); } catch (Exception e) { return null; }
     }
-
-    // --- Остальные методы (Create, Approve, etc.) ---
 
     @GetMapping("/{id}")
     public Auction getAuctionById(@PathVariable Long id) {
@@ -81,25 +77,67 @@ public class AuctionController {
                 .orElseThrow(() -> new RuntimeException("Аукцион не найден"));
     }
 
+    // === НОВЫЙ МЕТОД СОЗДАНИЯ (ПРИНИМАЕТ JSON) ===
     @PostMapping
-    public Auction createAuction(
-            @RequestParam Long sellerId,
-            @RequestParam Long brandId,
-            @RequestParam Long modelId,
-            @RequestParam Integer year,
-            @RequestParam Integer mileage,
-            @RequestParam Integer transmissionId,
-            @RequestParam Integer fuelTypeId,
-            @RequestParam String description,
-            @RequestParam BigDecimal startingPrice,
-            @RequestParam String mainImageUrl,
-            @RequestParam Long cityId
-    ) {
+    public Auction createAuction(@RequestBody CreateAuctionRequest request) {
         return auctionService.createAuction(
-                sellerId, brandId, modelId, year, mileage,
-                transmissionId, fuelTypeId, description, startingPrice, mainImageUrl, cityId
+                request.getSellerId(),
+                request.getBrandId(),
+                request.getModelId(),
+                request.getYear(),
+                request.getMileage(),
+                request.getTransmissionId(),
+                request.getFuelTypeId(),
+                request.getDescription(),
+                request.getStartingPrice(),
+                request.getMinBidStep(),
+                request.getCityId(),
+                request.getImageUrls()
         );
     }
+
+    // Вспомогательный класс для приема JSON
+    public static class CreateAuctionRequest {
+        private Long sellerId;
+        private Long brandId;
+        private Long modelId;
+        private Integer year;
+        private Integer mileage;
+        private Integer transmissionId;
+        private Integer fuelTypeId;
+        private String description;
+        private BigDecimal startingPrice;
+        private BigDecimal minBidStep;
+        private Long cityId;
+        private List<String> imageUrls;
+
+        // Геттеры и сеттеры
+        public Long getSellerId() { return sellerId; }
+        public void setSellerId(Long sellerId) { this.sellerId = sellerId; }
+        public Long getBrandId() { return brandId; }
+        public void setBrandId(Long brandId) { this.brandId = brandId; }
+        public Long getModelId() { return modelId; }
+        public void setModelId(Long modelId) { this.modelId = modelId; }
+        public Integer getYear() { return year; }
+        public void setYear(Integer year) { this.year = year; }
+        public Integer getMileage() { return mileage; }
+        public void setMileage(Integer mileage) { this.mileage = mileage; }
+        public Integer getTransmissionId() { return transmissionId; }
+        public void setTransmissionId(Integer transmissionId) { this.transmissionId = transmissionId; }
+        public Integer getFuelTypeId() { return fuelTypeId; }
+        public void setFuelTypeId(Integer fuelTypeId) { this.fuelTypeId = fuelTypeId; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public BigDecimal getStartingPrice() { return startingPrice; }
+        public void setStartingPrice(BigDecimal startingPrice) { this.startingPrice = startingPrice; }
+        public BigDecimal getMinBidStep() { return minBidStep; }
+        public void setMinBidStep(BigDecimal minBidStep) { this.minBidStep = minBidStep; }
+        public Long getCityId() { return cityId; }
+        public void setCityId(Long cityId) { this.cityId = cityId; }
+        public List<String> getImageUrls() { return imageUrls; }
+        public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
+    }
+    // ==========================================
 
     @PutMapping("/{id}/approve")
     public void approveAuction(@PathVariable Long id) {

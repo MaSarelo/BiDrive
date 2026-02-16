@@ -9,7 +9,10 @@ public class FileConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:uploads/");
+        // Получаем абсолютный путь к папке проекта
+        String uploadPath = System.getProperty("user.dir") + "/uploads/";
+
+                registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:" + uploadPath);
     }
 }

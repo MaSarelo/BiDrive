@@ -10,8 +10,9 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**") // Разрешаем доступ ко всем API методам
-                .allowedOrigins("http://localhost:5173", "http://localhost:3000") // Адреса фронтенда
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH") // Разрешенные методы
+                .allowedOrigins("http://localhost:5173", "http://localhost:3000")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS") // OPTIONS важно для файлов
+                .allowedHeaders("*") // Разрешаем все заголовки (важно для multipart)
                 .allowCredentials(true);
     }
 }

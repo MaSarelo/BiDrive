@@ -1,3 +1,4 @@
+/* Основной контейнер */
 .create-container {
   max-width: 1000px;
   margin: 40px auto;
@@ -10,6 +11,7 @@
   gap: 20px;
 }
 
+/* Колонки */
 .column {
   flex: 1;
   min-width: 300px;
@@ -25,6 +27,7 @@
   margin-top: 20px;
 }
 
+/* Элементы формы */
 label {
   font-weight: bold;
   margin-bottom: 5px;
@@ -42,6 +45,7 @@ textarea {
   resize: vertical;
 }
 
+/* === БЛОК ФОТО === */
 .photo-block {
   background: #f9f9f9;
   padding: 15px;
@@ -49,32 +53,94 @@ textarea {
   border: 2px dashed #ddd;
 }
 
-.upload-btn {
-  background-color: #3498db;
-  color: white;
-  border: none;
-  padding: 10px;
-  border-radius: 5px;
-  cursor: pointer;
+/* Кастомная кнопка загрузки */
+.upload-btn-wrapper {
   margin-top: 10px;
 }
 
-.preview {
-  margin-top: 15px;
-  text-align: center;
-}
-
-.preview img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 5px;
-  border: 2px solid #27ae60;
-}
-
-.success-text {
-  color: #27ae60;
+.upload-btn-custom {
+  background-color: #3498db;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
   font-weight: bold;
-  margin: 0;
+  width: 100%; /* На всю ширину блока */
+}
+
+.upload-btn-custom:hover {
+  background-color: #2980b9;
+}
+
+/* Сетка превью */
+.preview-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.preview-item {
+  position: relative;
+  border: 1px solid #eee;
+  padding: 5px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.preview-item img {
+  width: 100px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.preview-item.is-main {
+  border: 2px solid #27ae60;
+  box-shadow: 0 0 10px rgba(39, 174, 96, 0.3);
+}
+
+/* Кнопка удаления фото */
+.delete-btn {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-btn:hover {
+  background: #c0392b;
+}
+
+/* Надпись "Главное" */
+.main-label {
+  font-size: 10px;
+  color: #27ae60;
+  text-align: center;
+  font-weight: bold;
+  margin-top: 3px;
+}
+
+/* Сообщения и кнопки */
+.message {
+  margin-top: 10px;
+  text-align: center;
+  font-weight: bold;
+  color: #e74c3c;
 }
 
 .submit-btn {
@@ -93,11 +159,9 @@ textarea {
   background-color: #219150;
 }
 
-.message {
-  margin-top: 10px;
-  text-align: center;
-  font-weight: bold;
-  color: #e74c3c;
+.submit-btn:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
 }
 
 .back-btn {
@@ -106,4 +170,25 @@ textarea {
   color: #2980b9;
   font-weight: bold;
   margin-bottom: 20px;
+}
+
+/* Кнопка загрузки фото на сервер */
+.upload-btn {
+  background-color: #e67e22; /* Оранжевая, чтобы отличать от синей "Выбрать" */
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.upload-btn:hover {
+  background-color: #d35400;
+}
+
+.upload-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
