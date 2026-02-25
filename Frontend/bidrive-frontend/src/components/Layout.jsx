@@ -1,20 +1,21 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom'; // 1. Импортируем useNavigate
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'; // 1. Импортируем Outlet
 import { useState, useEffect } from 'react';
 import './Layout.css';
 
-function Layout({ children }) {
+function Layout() {
+
   const location = useLocation();
   const [userEmail, setUserEmail] = useState(null);
-  const [userRole, setUserRole] = useState(null); // 1. Добавляем стейт роли
+  const [userRole, setUserRole] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const storedEmail = localStorage.getItem('userEmail');
-    const storedRole = localStorage.getItem('userRole'); // 2. Считываем роль
+    const storedRole = localStorage.getItem('userRole');
 
     if (storedEmail) {
       setUserEmail(storedEmail);
-      setUserRole(storedRole ? parseInt(storedRole) : null); // 3. Сохраняем в стейт
+      setUserRole(storedRole ? parseInt(storedRole) : null);
     } else {
       setUserEmail(null);
       setUserRole(null);
@@ -24,7 +25,7 @@ function Layout({ children }) {
   const handleLogout = () => {
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userId');
-    localStorage.removeItem('userRole'); // 4. Удаляем роль при выходе
+    localStorage.removeItem('userRole');
     setUserEmail(null);
     setUserRole(null);
     navigate('/login');
@@ -33,17 +34,16 @@ function Layout({ children }) {
   return (
     <div className="layout-container">
       <header className="header">
-        <div className="logo">🚗 BiDrive</div>
+        {/* Логотип ведет на Главную */}
+        <Link to="/" className="logo">🚗 BiDrive</Link>
 
         <nav className="nav-links">
-          <Link to="/" className="nav-link">Каталог</Link>
+          {/* Ссылка "Каталог" ведет на /catalog */}
+          <Link to="/catalog" className="nav-link">Каталог</Link>
 
-          {/* Ссылка на создание видна всем залогиненным */}
-          {userEmail && (
-             <Link to="/create" className="nav-link btn-create">
-               + Выставить лот
-             </Link>
-          )}
+          <Link to="/create" className="nav-link btn-create">
+            + Выставить лот
+          </Link>
 
           {userRole === 2 && (
             <Link to="/admin" className="nav-link" style={{backgroundColor: '#e74c3c', color: 'white'}}>
@@ -56,6 +56,7 @@ function Layout({ children }) {
               <Link to="/profile" className="nav-link">
                 👤 Кабинет ({userEmail.split('@')[0]})
               </Link>
+
               <button onClick={handleLogout} className="nav-link btn-logout">
                 🚪 Выйти
               </button>
@@ -69,7 +70,9 @@ function Layout({ children }) {
       </header>
 
       <main className="content">
-        {children}
+        {/* === ВАЖНОЕ ИЗМЕНЕНИЕ === */}
+        {/* Вместо {children} используем <Outlet /> */}
+        <Outlet />
       </main>
     </div>
   );

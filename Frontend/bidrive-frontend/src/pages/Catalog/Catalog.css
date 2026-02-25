@@ -1,0 +1,7 @@
+/* Стили для страницы каталога */
+.catalog-page {
+    padding-bottom: 40px;
+}
+
+/* При необходимости перенеси сюда стили filter-bar, range-group из App.css,
+   но они скорее всего уже глобальные в index.css или App.css */

@@ -60,7 +60,7 @@ public class TelegramService {
                 .append(" (").append(a.getYear()).append(")</b>\n\n");
 
         // Цена
-        sb.append("💰 <b>Цена:</b> ").append(a.getCurrentPrice()).append(" $\n");
+        sb.append("💰 <b>Цена:</b> ").append(a.getCurrentPrice()).append(" BYN\n");
 
         // Характеристики
         sb.append("⚙️ <b>КПП:</b> ").append(a.getTransmission() != null ? a.getTransmission().getName() : "-").append("\n");

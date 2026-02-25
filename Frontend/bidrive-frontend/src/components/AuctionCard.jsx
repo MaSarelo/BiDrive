@@ -37,7 +37,7 @@ const getStatusText = (status) => {
 
         <div className="price-block">
           <h3>Текущая цена:</h3>
-          <p className="price">{auction.currentPrice} $</p>
+          <p className="price">{auction.currentPrice} BYN</p>
             <p className="status">Статус: {getStatusText(auction.status)}</p>
         </div>
       </div>

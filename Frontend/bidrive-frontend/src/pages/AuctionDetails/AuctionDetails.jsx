@@ -206,7 +206,7 @@ function AuctionDetails() {
                     </div>
                     <div>
                         <span>Мин. шаг</span>
-                        <strong>{auction.minBidStep} $</strong>
+                        <strong>{auction.minBidStep} BYN</strong>
                     </div>
                 </div>
 

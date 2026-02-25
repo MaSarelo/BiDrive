@@ -1,0 +1,217 @@
+/* === Основной контейнер страницы === */
+.home-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Убираем лишние отступы у Layout для этой страницы (если нужно) */
+/* Обычно Layout управляет отступами, но для Hero нужен полный экран */
+
+/* === HERO SECTION === */
+.hero-section {
+  background: linear-gradient(135deg, #1E88E5 0%, #00ACC1 100%);
+  color: white;
+  padding: 100px 20px;
+  text-align: center;
+  margin-top: -20px; /* Чтобы прижать к шапке */
+}
+
+.hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-section h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 20px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.hero-section p {
+  font-size: 1.3rem;
+  opacity: 0.9;
+  margin-bottom: 40px;
+  line-height: 1.6;
+}
+
+.hero-btn {
+  display: inline-block;
+  background-color: white;
+  color: #1E88E5;
+  padding: 15px 40px;
+  border-radius: 30px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-decoration: none;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.hero-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+
+/* === POPULAR SECTION === */
+.popular-section {
+  padding: 60px 20px;
+  background-color: #f9fafb;
+}
+
+.popular-section h2 {
+  text-align: center;
+  margin-bottom: 40px;
+  font-size: 2rem;
+  color: #333;
+}
+
+.popular-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+}
+
+.view-all-btn-wrapper {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.view-all-btn {
+  padding: 12px 30px;
+  border: 2px solid #1E88E5;
+  color: #1E88E5;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.view-all-btn:hover {
+  background-color: #1E88E5;
+  color: white;
+}
+
+/* === HOW IT WORKS === */
+.how-it-works-section {
+  padding: 80px 20px;
+  background-color: white;
+}
+
+.how-it-works-section h2 {
+  text-align: center;
+  margin-bottom: 50px;
+  font-size: 2rem;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 30px;
+  text-align: center;
+}
+
+.step-card {
+  padding: 30px 20px;
+  background: #f4f6f8;
+  border-radius: 12px;
+  transition: transform 0.2s;
+}
+
+.step-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+.step-number {
+  width: 50px;
+  height: 50px;
+  background: #1E88E5;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px auto;
+}
+
+.step-card h3 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.step-card p {
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* === FOOTER === */
+.home-footer {
+  background-color: #1a1a1a;
+  color: white;
+  padding: 50px 20px 20px 20px;
+  margin-top: auto;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.footer-brand h3 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.footer-brand p {
+  color: #aaa;
+}
+
+.footer-links {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.footer-links a {
+  color: #ccc;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: white;
+  text-decoration: underline;
+}
+
+.footer-copyright {
+  border-top: 1px solid #333;
+  padding-top: 20px;
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Адаптив */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 60px 20px;
+  }
+  .hero-section h1 {
+    font-size: 2rem;
+  }
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  .footer-links {
+    flex-direction: column;
+  }
+}
