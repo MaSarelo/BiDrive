@@ -1,106 +1,187 @@
-/* Ссылка-обертка для карточки (для React Router) */
-.card-link {
+/* ============================================================
+   CARD LINK WRAPPER
+   ============================================================ */
+.ac-link {
   text-decoration: none;
   color: inherit;
+  display: block;
+  height: 100%;
 }
 
-/* Основной контейнер карточки */
-.card {
-  background-color: white;
-  border-radius: 12px;
-  padding: 20px;
-  /* Легкая тень для нормального состояния */
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  /* Плавная анимация всех свойств */
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+/* ============================================================
+   CARD
+   ============================================================ */
+.ac {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   height: 100%;
-  /* Прозрачная полоска по умолчанию */
-  border-left: 5px solid transparent;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  transition: border-color 0.3s var(--ease), transform 0.3s var(--ease);
   cursor: pointer;
-}
-
-/* Эффект при наведении мыши (Hover) */
-.card:hover {
-  /* Карточка поднимается вверх */
-  transform: translateY(-8px);
-  /* Тень становится глубже */
-  box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-  /* Левая полоска становится зеленой */
-  border-left: 5px solid #27ae60;
-}
-
-/* Стили заголовка (Марка + Модель) */
-.card h2 {
-  color: #2c3e50;
-  margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 1.4rem;
-  transition: color 0.3s;
-}
-
-/* Цвет заголовка при наведении */
-.card:hover h2 {
-  color: #27ae60;
-}
-
-/* Блок с технической информацией */
-.info p {
-  margin: 5px 0;
-  color: #555;
-}
-
-/* Блок с ценой */
-.price-block {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid #eee;
-}
-
-.price {
-  font-size: 1.8rem;
-  color: #27ae60;
-  font-weight: bold;
-  margin: 5px 0;
-}
-
-/* Статус аукциона */
-.status {
-  font-size: 0.9rem;
-  color: #7f8c8d;
-  text-align: right;
-  font-style: italic;
-}
-
-/* Подсказка кликабельности */
-.click-hint {
-  margin-top: 15px;
-  color: #2980b9;
-  font-size: 0.9rem;
-  text-align: center;
-  opacity: 0.7;
-  font-weight: bold;
-}
-
-.card-image {
-  width: 100%;
-  height: 200px;
   overflow: hidden;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
-  background-color: #f0f0f0;
-  margin-bottom: 15px;
 }
 
-.card-image img {
+.ac:hover {
+  border-color: var(--c-gold);
+  transform: translateY(-4px);
+}
+
+/* ============================================================
+   PHOTO
+   ============================================================ */
+.ac-photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--c-surface2);
+  flex-shrink: 0;
+}
+
+.ac-photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s;
+  display: block;
+  transition: transform 0.5s var(--ease), opacity 0.3s;
 }
 
-.card:hover .card-image img {
-  transform: scale(1.05);
+.ac:hover .ac-photo img {
+  transform: scale(1.04);
+}
+
+.ac-photo__empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--c-text-3);
+}
+
+/* ── Status badge on photo ── */
+.ac-status {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid;
+  backdrop-filter: blur(6px);
+}
+
+.ac-status--active   { color: #6db87a; border-color: rgba(109,184,122,0.5); background: rgba(10,10,10,0.6); }
+.ac-status--draft    { color: var(--c-text-3); border-color: var(--c-border); background: rgba(10,10,10,0.6); }
+.ac-status--pending  { color: #c9a84c; border-color: rgba(201,168,76,0.5);  background: rgba(10,10,10,0.6); }
+.ac-status--finished { color: var(--c-text-2); border-color: var(--c-border); background: rgba(10,10,10,0.6); }
+.ac-status--approved { color: var(--c-gold);   border-color: rgba(181,150,90,0.5); background: rgba(10,10,10,0.6); }
+
+/* ============================================================
+   BODY
+   ============================================================ */
+.ac-body {
+  padding: 20px 20px 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ac-title {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--c-text);
+  line-height: 1.3;
+  transition: color 0.3s;
+}
+
+.ac:hover .ac-title { color: var(--c-gold); }
+
+/* Specs grid */
+.ac-specs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+}
+
+.ac-spec {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ac-spec__label {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+}
+
+.ac-spec__value {
+  font-size: 0.95rem;
+  color: var(--c-text-2);
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.ac-footer {
+  padding: 0 20px 20px;
+}
+
+.ac-footer__divider {
+  height: 1px;
+  background: var(--c-border);
+  margin-bottom: 16px;
+  transition: background 0.3s;
+}
+.ac:hover .ac-footer__divider { background: rgba(181,150,90,0.3); }
+
+.ac-footer__inner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.ac-price__label {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+  margin-bottom: 4px;
+}
+
+.ac-price__value {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--c-text);
+  line-height: 1;
+}
+
+.ac-price__value span {
+  font-size: 1rem;
+  color: var(--c-gold);
+  margin-left: 3px;
+}
+
+.ac-arrow {
+  font-size: 1.1rem;
+  color: var(--c-text-3);
+  transition: color 0.3s, transform 0.3s;
+  display: inline-block;
+}
+
+.ac:hover .ac-arrow {
+  color: var(--c-gold);
+  transform: translateX(4px);
 }

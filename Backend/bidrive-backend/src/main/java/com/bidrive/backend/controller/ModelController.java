@@ -18,12 +18,12 @@ public class ModelController {
 
     @GetMapping
     public List<Model> getAllModels() {
-        return modelRepository.findAll();
+        return modelRepository.findAllByOrderByNameAsc();
     }
 
     // === НОВЫЙ МЕТОД (обязателен для React) ===
     @GetMapping("/by-brand")
     public List<Model> getModelsByBrand(@RequestParam Long brandId) {
-        return modelRepository.findByBrandId(brandId);
+        return modelRepository.findByBrandIdOrderByNameAsc(brandId);
     }
 }

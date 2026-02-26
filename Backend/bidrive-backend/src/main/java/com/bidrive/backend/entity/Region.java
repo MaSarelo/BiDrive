@@ -1,19 +1,18 @@
 package com.bidrive.backend.entity;
 
 import jakarta.persistence.*;
-import java.util.List;
 
 @Entity
 @Table(name = "regions")
 public class Region {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Integer id; // Возвращаем Integer
 
     @Column(name = "name", nullable = false)
     private String name;
 
-    // Конструкторы и геттеры/сеттеры
     public Region() {}
 
     public Integer getId() { return id; }

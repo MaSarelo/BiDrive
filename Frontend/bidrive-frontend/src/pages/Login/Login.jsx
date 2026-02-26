@@ -4,68 +4,110 @@ import axios from 'axios';
 import './Login.css';
 
 function Login() {
-  const [credentials, setCredentials] = useState({
-    email: '',
-    password: ''
-  });
-
+  const [credentials, setCredentials] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
+    setError('');
+    setLoading(true);
     try {
-      // Отправляем email и пароль на бэкенд
       const res = await axios.post('http://localhost:8080/api/auth/login', credentials);
-
-      const user = res.data; // Сервер вернет объект User (id, email, roles...)
-
-      // Сохраняем данные в LocalStorage
-      localStorage.setItem('userId', user.id);
+      const user = res.data;
+      localStorage.setItem('userId',    user.id);
       localStorage.setItem('userEmail', user.email);
-      localStorage.setItem('userName', `${user.firstName} ${user.lastName}`);
-
-      // Сохраняем роль (2 - это ADMIN в базе, 1 - USER)
-          localStorage.setItem('userRole', user.roleId);
-
-      // Перенаправляем на главную
-      navigate("/", { replace: true });
-
-    } catch (error) {
-      alert('Ошибка входа: ' + (error.response?.data || 'Неверный логин или пароль'));
+      localStorage.setItem('userName',  `${user.firstName} ${user.lastName}`);
+      localStorage.setItem('userRole',  user.roleId);
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(err.response?.data || 'Неверный логин или пароль');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const set = (field) => (e) =>
+    setCredentials(prev => ({ ...prev, [field]: e.target.value }));
+
   return (
-    <div className="login-container">
-      <h1>Вход в BiDrive</h1>
-      <form onSubmit={handleLogin} className="login-form">
-        <label>Email:</label>
-        <input
-            type="email"
-            name="email"
-            placeholder="ivan@example.com"
-            value={credentials.email}
-            onChange={e => setCredentials({...credentials, email: e.target.value})}
-            required
-        />
+    <div className="lg">
 
-        <label>Пароль:</label>
-        <input
-            type="password"
-            name="password"
-            placeholder="Введите пароль (123 для тестов)"
-            value={credentials.password}
-            onChange={e => setCredentials({...credentials, password: e.target.value})}
-            required
-        />
+      {/* Left — cinematic panel */}
+      <div className="lg-visual" aria-hidden="true">
+        <div className="lg-visual__overlay" />
+        <div className="lg-visual__content">
+          <p className="lg-visual__wordmark">BiDrive</p>
+          <p className="lg-visual__tagline">Аукцион исключительных автомобилей</p>
+        </div>
+      </div>
 
-        <button type="submit" className="login-btn">Войти</button>
+      {/* Right — form panel */}
+      <div className="lg-panel">
+        <div className="lg-panel__inner">
 
-        <p className="no-account">
-            Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
-        </p>
-      </form>
+          {/* Mobile logo */}
+          <Link to="/" className="lg-mobile-logo">BiDrive</Link>
+
+          <p className="lg-eyebrow">Добро пожаловать</p>
+          <h1 className="lg-title">Вход в аккаунт</h1>
+          <div className="lg-divider" aria-hidden="true" />
+
+          <form onSubmit={handleLogin} className="lg-form">
+
+            <div className="lg-field">
+              <label className="lg-label" htmlFor="email">Электронная почта</label>
+              <input
+                id="email"
+                className="lg-input"
+                type="email"
+                placeholder="ivan@example.com"
+                value={credentials.email}
+                onChange={set('email')}
+                required
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="lg-field">
+              <label className="lg-label" htmlFor="password">Пароль</label>
+              <input
+                id="password"
+                className="lg-input"
+                type="password"
+                placeholder="••••••••"
+                value={credentials.password}
+                onChange={set('password')}
+                required
+                autoComplete="current-password"
+              />
+            </div>
+
+            {error && (
+              <p className="lg-error" role="alert">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              className={`lg-btn${loading ? ' lg-btn--loading' : ''}`}
+              disabled={loading}
+            >
+              {loading ? 'Проверка...' : 'Войти'}
+            </button>
+
+          </form>
+
+          <p className="lg-footer-text">
+            Нет аккаунта?&ensp;
+            <Link to="/register" className="lg-link">Зарегистрироваться</Link>
+          </p>
+
+          <Link to="/" className="lg-back">← Вернуться на главную</Link>
+
+        </div>
+      </div>
+
     </div>
   );
 }

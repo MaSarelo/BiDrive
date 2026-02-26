@@ -19,6 +19,6 @@ public class BrandController {
     // Этот метод вернет список брендов (Toyota, BMW и т.д.)
     @GetMapping
     public List<Brand> getAllBrands() {
-        return brandRepository.findAll();
+        return brandRepository.findAllByOrderByNameAsc();
     }
 }

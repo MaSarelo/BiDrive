@@ -16,6 +16,6 @@ public class TransmissionController {
 
     @GetMapping
     public List<Transmission> getAll() {
-        return transmissionRepository.findAll();
+        return transmissionRepository.findAllByOrderByNameAsc();
     }
 }

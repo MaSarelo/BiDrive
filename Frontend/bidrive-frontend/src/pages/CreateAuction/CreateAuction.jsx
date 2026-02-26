@@ -5,307 +5,350 @@ import './CreateAuction.css';
 
 function CreateAuction() {
   const [formData, setFormData] = useState({
-    sellerId: null,
-    brandId: '',
-    modelId: '',
-    year: '',
-    mileage: '',
-    transmissionId: '',
-    fuelTypeId: '',
-    cityId: '',
-    description: '',
-    startingPrice: '',
-    minBidStep: '100'
+    sellerId: null, brandId: '', modelId: '', year: '', mileage: '',
+    transmissionId: '', fuelTypeId: '', cityId: '',
+    description: '', startingPrice: '', minBidStep: '100'
   });
 
-  // Справочники
-  const [brands, setBrands] = useState([]);
-  const [models, setModels] = useState([]);
+  const [brands,        setBrands]        = useState([]);
+  const [models,        setModels]        = useState([]);
   const [transmissions, setTransmissions] = useState([]);
-  const [fuelTypes, setFuelTypes] = useState([]);
-  const [regions, setRegions] = useState([]);
-  const [cities, setCities] = useState([]);
-
-  const [selectedBrand, setSelectedBrand] = useState('');
+  const [fuelTypes,     setFuelTypes]     = useState([]);
+  const [regions,       setRegions]       = useState([]);
+  const [cities,        setCities]        = useState([]);
+  const [selectedBrand,  setSelectedBrand]  = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
 
-  // === ЛОГИКА ФОТО ===
-  const [files, setFiles] = useState([]); // Файлы, которые выбрал юзер
-  const [uploadedUrls, setUploadedUrls] = useState([]); // Ссылки, которые вернул сервер
-  const [mainImageIndex, setMainImageIndex] = useState(0); // Индекс главного фото
+  const [files,          setFiles]          = useState([]);
+  const [uploadedUrls,   setUploadedUrls]   = useState([]);
+  const [mainImageIndex, setMainImageIndex] = useState(0);
+  const [uploading,      setUploading]      = useState(false);
+  const [isSubmitting,   setIsSubmitting]   = useState(false);
+  const [msg,            setMsg]            = useState({ text: '', ok: true });
 
-  const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Получаем ID пользователя
   useEffect(() => {
     const id = localStorage.getItem('userId');
-    if (id) setFormData(prev => ({...prev, sellerId: parseInt(id)}));
+    if (id) { setFormData(p => ({ ...p, sellerId: parseInt(id) })); }
   }, []);
 
-  // Загрузка справочников
   useEffect(() => {
-    axios.get('http://localhost:8080/api/brands').then(res => setBrands(res.data)).catch(err => console.error(err));
-    axios.get('http://localhost:8080/api/regions').then(res => setRegions(res.data)).catch(err => console.error(err));
-    axios.get('http://localhost:8080/api/transmissions').then(res => setTransmissions(res.data)).catch(err => console.error(err));
-    axios.get('http://localhost:8080/api/fuel-types').then(res => setFuelTypes(res.data)).catch(err => console.error(err));
+    axios.get('http://localhost:8080/api/brands').then(r => setBrands(r.data)).catch(console.error);
+    axios.get('http://localhost:8080/api/regions').then(r => setRegions(r.data)).catch(console.error);
+    axios.get('http://localhost:8080/api/transmissions').then(r => setTransmissions(r.data)).catch(console.error);
+    axios.get('http://localhost:8080/api/fuel-types').then(r => setFuelTypes(r.data)).catch(console.error);
   }, []);
 
   useEffect(() => {
     if (selectedBrand) {
       axios.get(`http://localhost:8080/api/models/by-brand?brandId=${selectedBrand}`)
-        .then(res => setModels(res.data))
-        .catch(() => setModels([]));
-    } else {
-      setModels([]);
-    }
+        .then(r => setModels(r.data)).catch(() => setModels([]));
+    } else { setModels([]); }
   }, [selectedBrand]);
 
   useEffect(() => {
     if (selectedRegion) {
       axios.get(`http://localhost:8080/api/cities/by-region?regionId=${selectedRegion}`)
-        .then(res => setCities(res.data))
-        .catch(() => setCities([]));
-    } else {
-      setCities([]);
-    }
+        .then(r => setCities(r.data)).catch(() => setCities([]));
+    } else { setCities([]); }
   }, [selectedRegion]);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleChange = e =>
+    setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
 
-  // === ОБРАБОТКА ФАЙЛОВ ===
-
-  // 1. Просто сохраняем файлы в стейт при выборе
-  const handleFileChange = (e) => {
+  const handleFileChange = e => {
     if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setFiles(prev => [...prev, ...newFiles]);
-      setUploadedUrls([]); // Сбрасываем загруженные ссылки, если файлы изменились
+      setFiles(p => [...p, ...Array.from(e.target.files)]);
+      setUploadedUrls([]);
     }
   };
 
-  const removeFile = (index) => {
-    setFiles(files.filter((_, i) => i !== index));
-    // Если удаляем из загруженных, тоже надо убрать
-    if (uploadedUrls.length > 0) {
-        setUploadedUrls(uploadedUrls.filter((_, i) => i !== index));
-    }
-    if (mainImageIndex === index) setMainImageIndex(0);
+  const removeFile = i => {
+    setFiles(p => p.filter((_, idx) => idx !== i));
+    if (uploadedUrls.length > 0) setUploadedUrls(p => p.filter((_, idx) => idx !== i));
+    if (mainImageIndex === i) setMainImageIndex(0);
   };
 
-  const setMainPhoto = (index) => {
-    setMainImageIndex(index);
-  };
-
-  // 2. Функция загрузки фото на сервер (по нажатию кнопки)
   const handleUploadFiles = async () => {
-    if (files.length === 0) {
-      setMessage('❌ Выберите файлы для загрузки!');
-      return;
-    }
-
-    // Если уже загружено столько же, сколько выбрано, не загружаем повторно
-    if (uploadedUrls.length === files.length) {
-        setMessage('✅ Фото уже загружены!');
-        return;
-    }
+    if (!files.length) { setMsg({ text: 'Выберите файлы для загрузки', ok: false }); return; }
+    if (uploadedUrls.length === files.length) { setMsg({ text: 'Фото уже загружены', ok: true }); return; }
 
     setUploading(true);
-    setMessage('⏳ Загрузка фото на сервер...');
-    const newUrls = [];
+    setMsg({ text: 'Загрузка фотографий...', ok: true });
+    const urls = [];
 
     try {
       for (const file of files) {
-        const formDataUpload = new FormData();
-        formDataUpload.append('file', file);
-
-        const res = await axios.post('http://localhost:8080/api/files/upload', formDataUpload, {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await axios.post('http://localhost:8080/api/files/upload', fd, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        newUrls.push(res.data.url);
+        urls.push(res.data.url);
       }
-
-      setUploadedUrls(newUrls);
-      setMessage('✅ Фото успешно загружены! Можно создавать лот.');
-      setUploading(false);
-    } catch (error) {
-      console.error(error);
-      setMessage('❌ Ошибка загрузки фото.');
+      setUploadedUrls(urls);
+      setMsg({ text: `${urls.length} фото успешно загружено`, ok: true });
+    } catch {
+      setMsg({ text: 'Ошибка загрузки фото', ok: false });
+    } finally {
       setUploading(false);
     }
   };
 
-  // 3. Отправка формы
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-
-    // Проверка: если фото не загружены на сервер
-    if (uploadedUrls.length === 0) {
-      setMessage('❌ Сначала нажмите кнопку "Загрузить фото"!');
-      return;
-    }
-
-    if (uploadedUrls.length !== files.length) {
-        setMessage('❌ Количество загруженных фото не совпадает с выбранными. Попробуйте загрузить снова.');
-        return;
-    }
+    if (!uploadedUrls.length) { setMsg({ text: 'Сначала загрузите фотографии', ok: false }); return; }
+    if (uploadedUrls.length !== files.length) { setMsg({ text: 'Количество загруженных фото не совпадает. Попробуйте ещё раз.', ok: false }); return; }
 
     setIsSubmitting(true);
-    setMessage('⏳ Создание лота...');
+    setMsg({ text: 'Создание лота...', ok: true });
 
     try {
-      // Сортируем: главное фото в начало
-      const sortedUrls = [...uploadedUrls];
-      if (mainImageIndex >= 0 && mainImageIndex < sortedUrls.length) {
-          const mainImg = sortedUrls.splice(mainImageIndex, 1)[0];
-          sortedUrls.unshift(mainImg);
+      const sorted = [...uploadedUrls];
+      if (mainImageIndex >= 0 && mainImageIndex < sorted.length) {
+        const main = sorted.splice(mainImageIndex, 1)[0];
+        sorted.unshift(main);
       }
-
-      const payload = {
-        ...formData,
-        imageUrls: sortedUrls
-      };
-
-      await axios.post('http://localhost:8080/api/auctions', payload);
-
-      setMessage('✅ Аукцион успешно создан! Возвращаемся...');
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 2000);
-
-    } catch (error) {
-      console.error(error);
-      setMessage('❌ Ошибка при создании лота: ' + (error.response?.data || ''));
+      await axios.post('http://localhost:8080/api/auctions', { ...formData, imageUrls: sorted });
+      setMsg({ text: 'Лот успешно создан! Перенаправление...', ok: true });
+      setTimeout(() => { window.location.href = '/'; }, 2000);
+    } catch (err) {
+      setMsg({ text: 'Ошибка при создании лота: ' + (err.response?.data || ''), ok: false });
       setIsSubmitting(false);
     }
   };
 
+  /* helpers */
+  const Field = ({ label, children }) => (
+    <div className="ca-field">
+      <label className="ca-label">{label}</label>
+      {children}
+    </div>
+  );
+
   return (
-    <div className="create-container">
-      <Link to="/" className="back-btn">← Вернуться в каталог</Link>
-      <h1>Выставить автомобиль на аукцион</h1>
+    <div className="ca">
 
-      <form onSubmit={handleSubmit} className="create-form">
-        {/* Левая колонка */}
-        <div className="column">
-            <label>Марка:</label>
-            <select name="brandId" value={formData.brandId} onChange={(e) => { setSelectedBrand(e.target.value); handleChange(e); }} required>
-                <option value="">Выберите марку...</option>
-                {brands.map(brand => (<option key={brand.id} value={brand.id}>{brand.name}</option>))}
-            </select>
-
-            <label>Модель:</label>
-            <select name="modelId" value={formData.modelId} onChange={handleChange} required disabled={!selectedBrand}>
-                <option value="">Выберите модель...</option>
-                {models.map(model => (<option key={model.id} value={model.id}>{model.name}</option>))}
-            </select>
-
-            <label>Область:</label>
-            <select value={selectedRegion} onChange={(e) => setSelectedRegion(e.target.value)} required>
-                <option value="">Выберите область...</option>
-                {regions.map(region => (<option key={region.id} value={region.id}>{region.name}</option>))}
-            </select>
-
-            {selectedRegion && (
-                <>
-                    <label>Город:</label>
-                    <select name="cityId" value={formData.cityId} onChange={handleChange} required>
-                        <option value="">Выберите город...</option>
-                        {cities.map(city => (<option key={city.id} value={city.id}>{city.name}</option>))}
-                    </select>
-                </>
-            )}
-
-            <label>Год выпуска:</label>
-            <input type="number" name="year" placeholder="2022" value={formData.year} onChange={handleChange} required />
-
-            <label>Пробег (км):</label>
-            <input type="number" name="mileage" placeholder="50000" value={formData.mileage} onChange={handleChange} required />
+      {/* ── HERO ── */}
+      <div className="ca-hero">
+        <div className="ca-container">
+          <p className="ca-eyebrow">Новый лот</p>
+          <h1 className="ca-title">Выставить автомобиль на аукцион</h1>
+          <div className="ca-divider" aria-hidden="true" />
         </div>
+      </div>
 
-        {/* Правая колонка */}
-        <div className="column">
-            {/* БЛОК ГАЛЕРЕИ */}
-            <div className="photo-block">
-                <label>Фотографии:</label>
+      {/* ── FORM ── */}
+      <main className="ca-container ca-body">
+        <form onSubmit={handleSubmit} className="ca-form">
 
-                {/* Кнопка выбора файлов */}
-                <div className="upload-btn-wrapper">
-                    <button type="button" className="upload-btn-custom" onClick={() => document.getElementById('file-input').click()}>
-                        📁 Выбрать файлы
-                    </button>
-                    <input
-                        id="file-input"
-                        type="file"
-                        onChange={handleFileChange}
-                        accept="image/*"
-                        multiple
-                        style={{display: 'none'}}
-                    />
-                </div>
+          {/* ── SECTION: Автомобиль ── */}
+          <section className="ca-section">
+            <p className="ca-section__title">Автомобиль</p>
+            <div className="ca-grid ca-grid--2">
 
-                {/* Превью выбранных файлов */}
-                <div className="preview-grid">
-                    {files.map((file, index) => (
-                        <div key={index} className={`preview-item ${index === mainImageIndex ? 'is-main' : ''}`}>
-                            <img src={URL.createObjectURL(file)} alt="preview" onClick={() => setMainPhoto(index)} title="Сделать главной" />
-                            <button type="button" onClick={() => removeFile(index)} className="delete-btn">×</button>
-                            {index === mainImageIndex && <div className="main-label">Главное</div>}
-                        </div>
-                    ))}
-                </div>
+              <Field label="Марка">
+                <select className="ca-select" name="brandId" value={formData.brandId} required
+                  onChange={e => { setSelectedBrand(e.target.value); handleChange(e); }}>
+                  <option value="">Выберите марку...</option>
+                  {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </Field>
 
-                {/* === КНОПКА ЗАГРУЗКИ НА СЕРВЕР === */}
-                {files.length > 0 && (
-                    <button
-                        type="button"
-                        onClick={handleUploadFiles}
-                        className="upload-btn" // Используем старый класс стиля
-                        disabled={uploading}
-                        style={{marginTop: '10px', width: '100%'}}
-                    >
-                        {uploading ? 'Загрузка...' : '⬆️ Загрузить фото на сервер'}
-                    </button>
-                )}
+              <Field label="Модель">
+                <select className="ca-select" name="modelId" value={formData.modelId} required
+                  onChange={handleChange} disabled={!selectedBrand}>
+                  <option value="">Выберите модель...</option>
+                  {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              </Field>
 
-                {files.length === 0 && <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>Выберите файлы, затем нажмите "Загрузить"</small>}
-                {uploadedUrls.length > 0 && <small style={{ color: 'green', display: 'block', marginTop: '5px', fontWeight: 'bold' }}>✅ {uploadedUrls.length} фото успешно загружено!</small>}
+              <Field label="Год выпуска">
+                <input className="ca-input" type="number" name="year"
+                  placeholder="2022" value={formData.year} onChange={handleChange} required />
+              </Field>
+
+              <Field label="Пробег (км)">
+                <input className="ca-input" type="number" name="mileage"
+                  placeholder="50 000" value={formData.mileage} onChange={handleChange} required />
+              </Field>
+
+              <Field label="КПП">
+                <select className="ca-select" name="transmissionId" value={formData.transmissionId}
+                  onChange={handleChange} required>
+                  <option value="">Выберите КПП...</option>
+                  {transmissions.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </Field>
+
+              <Field label="Тип топлива">
+                <select className="ca-select" name="fuelTypeId" value={formData.fuelTypeId}
+                  onChange={handleChange} required>
+                  <option value="">Выберите топливо...</option>
+                  {fuelTypes.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
+              </Field>
+
+            </div>
+          </section>
+
+          {/* ── SECTION: Местоположение ── */}
+          <section className="ca-section">
+            <p className="ca-section__title">Местоположение</p>
+            <div className="ca-grid ca-grid--2">
+
+              <Field label="Область">
+                <select className="ca-select" value={selectedRegion}
+                  onChange={e => setSelectedRegion(e.target.value)} required>
+                  <option value="">Выберите область...</option>
+                  {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+              </Field>
+
+              <Field label="Город">
+                <select className="ca-select" name="cityId" value={formData.cityId}
+                  onChange={handleChange} required disabled={!selectedRegion}>
+                  <option value="">Выберите город...</option>
+                  {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </Field>
+
+            </div>
+          </section>
+
+          {/* ── SECTION: Торги ── */}
+          <section className="ca-section">
+            <p className="ca-section__title">Параметры торгов</p>
+            <div className="ca-grid ca-grid--2">
+
+              <Field label="Начальная цена ($)">
+                <input className="ca-input" type="number" name="startingPrice"
+                  placeholder="10 000" value={formData.startingPrice} onChange={handleChange} required />
+              </Field>
+
+              <Field label="Минимальный шаг ставки ($)">
+                <input className="ca-input" type="number" name="minBidStep"
+                  placeholder="100" value={formData.minBidStep} onChange={handleChange} required />
+              </Field>
+
+            </div>
+          </section>
+
+          {/* ── SECTION: Описание ── */}
+          <section className="ca-section">
+            <p className="ca-section__title">Описание</p>
+            <Field label="Подробно опишите состояние автомобиля">
+              <textarea className="ca-textarea" name="description" rows="5"
+                value={formData.description} onChange={handleChange} required />
+            </Field>
+          </section>
+
+          {/* ── SECTION: Фотографии ── */}
+          <section className="ca-section">
+            <p className="ca-section__title">Фотографии</p>
+            <p className="ca-section__hint">Кликните на фото, чтобы сделать его главным. Главное фото отображается на карточке лота.</p>
+
+            {/* Upload zone */}
+            <div
+              className="ca-dropzone"
+              onClick={() => document.getElementById('ca-file-input').click()}
+            >
+              <span className="ca-dropzone__icon">+</span>
+              <p className="ca-dropzone__text">Нажмите для выбора фотографий</p>
+              <p className="ca-dropzone__hint">JPG, PNG, WEBP</p>
+              <input
+                id="ca-file-input" type="file"
+                onChange={handleFileChange}
+                accept="image/*" multiple
+                style={{ display: 'none' }}
+              />
             </div>
 
-            <label>КПП:</label>
-            <select name="transmissionId" value={formData.transmissionId} onChange={handleChange} required>
-                <option value="">Выберите КПП...</option>
-                {transmissions.map(t => (<option key={t.id} value={t.id}>{t.name}</option>))}
-            </select>
+            {/* Preview grid */}
+            {files.length > 0 && (
+              <div className="ca-preview">
+                {files.map((file, i) => (
+                  <div key={i}
+                    className={`ca-thumb${i === mainImageIndex ? ' ca-thumb--main' : ''}`}
+                    onClick={() => setMainImageIndex(i)}
+                    title="Сделать главным"
+                  >
+                    <img src={URL.createObjectURL(file)} alt="" />
+                    {i === mainImageIndex && (
+                      <span className="ca-thumb__badge">Главное</span>
+                    )}
+                    <button
+                      type="button"
+                      className="ca-thumb__remove"
+                      onClick={e => { e.stopPropagation(); removeFile(i); }}
+                      aria-label="Удалить фото"
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+            )}
 
-            <label>Тип топлива:</label>
-            <select name="fuelTypeId" value={formData.fuelTypeId} onChange={handleChange} required>
-                <option value="">Выберите топливо...</option>
-                {fuelTypes.map(f => (<option key={f.id} value={f.id}>{f.name}</option>))}
-            </select>
+            {/* Upload button */}
+            {files.length > 0 && (
+              <button
+                type="button"
+                className={`ca-btn ca-btn--upload${uploading ? ' ca-btn--disabled' : ''}`}
+                onClick={handleUploadFiles}
+                disabled={uploading}
+              >
+                {uploading ? 'Загрузка...' : `Загрузить ${files.length} фото на сервер`}
+              </button>
+            )}
 
-            <label>Начальная цена ($):</label>
-            <input type="number" name="startingPrice" placeholder="10000" value={formData.startingPrice} onChange={handleChange} required />
+            {uploadedUrls.length > 0 && (
+              <p className="ca-upload-ok">{uploadedUrls.length} фото загружено и готово к публикации</p>
+            )}
+          </section>
 
-            <label>Минимальный шаг ставки ($):</label>
-            <input type="number" name="minBidStep" placeholder="100" value={formData.minBidStep} onChange={handleChange} required />
-        </div>
-
-        <div className="full-width">
-            <label>Описание:</label>
-            <textarea name="description" rows="5" value={formData.description} onChange={handleChange} required />
-        </div>
-
-        <div className="full-width">
-            <button type="submit" className="submit-btn" disabled={isSubmitting || uploading || uploadedUrls.length === 0}>
-                {isSubmitting ? 'Создание...' : 'Создать аукцион'}
+          {/* ── SUBMIT ── */}
+          <div className="ca-submit">
+            {msg.text && (
+              <p className={`ca-msg${msg.ok ? ' ca-msg--ok' : ' ca-msg--err'}`}>{msg.text}</p>
+            )}
+            <button
+              type="submit"
+              className={`ca-btn ca-btn--gold ca-btn--lg ca-btn--full${isSubmitting || uploading || !uploadedUrls.length ? ' ca-btn--disabled' : ''}`}
+              disabled={isSubmitting || uploading || !uploadedUrls.length}
+            >
+              {isSubmitting ? 'Создание...' : 'Опубликовать лот'}
             </button>
-            {message && <p className="message">{message}</p>}
+          </div>
+
+        </form>
+      </main>
+
+      {/* ── FOOTER ── */}
+      <footer className="ca-footer">
+        <div className="ca-container ca-footer__grid">
+          <div>
+            <p className="ca-footer__wordmark">BiDrive</p>
+            <p className="ca-footer__desc">Платформа онлайн-аукционов автомобилей. Прозрачно и безопасно.</p>
+          </div>
+          <div>
+            <p className="ca-footer__col-title">Навигация</p>
+            <ul className="ca-footer__list">
+              <li><Link to="/catalog">Каталог</Link></li>
+              <li><Link to="/register">Регистрация</Link></li>
+            </ul>
+          </div>
+          <div>
+            <p className="ca-footer__col-title">Контакты</p>
+            <ul className="ca-footer__list">
+              <li><a href="mailto:support@bidrive.by">support@bidrive.by</a></li>
+              <li><a href="https://t.me/bidrive_bot" target="_blank" rel="noopener noreferrer">Telegram</a></li>
+              <li>+375 (29) 123-45-67</li>
+            </ul>
+          </div>
         </div>
-      </form>
+        <div className="ca-footer__bottom">
+          <p>© 2026 BiDrive. Дипломный проект. Все права защищены.</p>
+        </div>
+      </footer>
+
     </div>
   );
 }

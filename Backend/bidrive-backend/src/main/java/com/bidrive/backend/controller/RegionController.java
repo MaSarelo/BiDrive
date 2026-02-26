@@ -16,6 +16,6 @@ public class RegionController {
 
     @GetMapping
     public List<Region> getAll() {
-        return regionRepository.findAll();
+        return regionRepository.findAllByOrderByNameAsc();
     }
 }

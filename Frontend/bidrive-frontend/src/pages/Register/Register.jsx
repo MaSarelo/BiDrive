@@ -6,184 +6,169 @@ import './Register.css';
 function Register() {
   const [formData, setFormData] = useState({
     firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    phone: ''
+    lastName:  '',
+    email:     '',
+    password:  '',
+    phone:     ''
   });
-
-  const [agreed, setAgreed] = useState(false);
+  const [agreed,  setAgreed]  = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState('');
   const navigate = useNavigate();
 
-  // === ИСПРАВЛЕННАЯ ФУНКЦИЯ МАСКИРОВКИ ===
-  const formatPhoneNumber = (value) => {
-    // 1. Оставляем только цифры
+  /* ── Phone mask ── */
+  const formatPhone = (value) => {
     const cleaned = value.replace(/\D/g, '');
-
-    // 2. Если пусто - возвращаем пустоту
     if (!cleaned) return '';
-
-    // 3. ЗАЩИТА ОТ "ПРИЗРАКОВ":
-    // Если пользователь стер номер и остались только куски кода 375 (3, 37, 375),
-    // мы просто возвращаем +375, чтобы не было цикла.
-    if (cleaned === '3' || cleaned === '37' || cleaned === '375') {
-      return '+375';
-    }
-
-    // 4. Основная логика
-    let numbers = cleaned;
-
-    // Если строка начинается с 375, отрезаем их (мы сами их добавим в формате)
-    if (cleaned.startsWith('375')) {
-      numbers = cleaned.substring(3);
-    }
-
-    // Если строка не начинается с 375, значит пользователь вводит номер с нуля (например 029...)
-    // Мы это не трогаем, даем пользователю ввести как есть, либо можно отрезать первый ноль.
-    // Для простоты оставляем как есть, НО маска рассчитана на 9 цифр после +375.
-
-    // Ограничиваем длину (9 цифр: код оператора + номер)
-    numbers = numbers.substring(0, 9);
-
-    // 5. Сборка красивой строки
-    let formatted = '+375';
-
-    if (numbers.length > 0) {
-      formatted += ' (' + numbers.substring(0, 2);
-    }
-    if (numbers.length > 2) {
-      formatted += ') ' + numbers.substring(2, 5);
-    }
-    if (numbers.length > 5) {
-      formatted += '-' + numbers.substring(5, 7);
-    }
-    if (numbers.length > 7) {
-      formatted += '-' + numbers.substring(7, 9);
-    }
-
-    return formatted;
+    if (['3','37','375'].includes(cleaned)) return '+375';
+    let n = cleaned.startsWith('375') ? cleaned.substring(3) : cleaned;
+    n = n.substring(0, 9);
+    let f = '+375';
+    if (n.length > 0) f += ' (' + n.substring(0, 2);
+    if (n.length > 2) f += ') ' + n.substring(2, 5);
+    if (n.length > 5) f += '-'  + n.substring(5, 7);
+    if (n.length > 7) f += '-'  + n.substring(7, 9);
+    return f;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    if (name === 'phone') {
-      setFormData({ ...formData, [name]: formatPhoneNumber(value) });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'phone' ? formatPhone(value) : value
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!agreed) {
-      alert('Вы должны согласиться на обработку персональных данных');
-      return;
-    }
-
+    if (!agreed) { setError('Необходимо согласиться на обработку персональных данных.'); return; }
+    setError('');
+    setLoading(true);
     try {
       await axios.post('http://localhost:8080/api/auth/register', formData);
-      alert('Регистрация успешна! Теперь войдите в систему.');
-      navigate('/login');
-    } catch (error) {
-      alert('Ошибка регистрации: ' + (error.response?.data || 'Попробуйте другой email'));
+      navigate('/login', { state: { registered: true } });
+    } catch (err) {
+      setError(err.response?.data || 'Попробуйте другой email');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <h1>Регистрация в BiDrive</h1>
-      <form onSubmit={handleSubmit} className="login-form">
+    <div className="rg">
 
-        <div className="input-group">
-          <label>Имя:</label>
-          <input
-            type="text"
-            name="firstName"
-            placeholder="Иван"
-            value={formData.firstName}
-            onChange={handleChange}
-            required
-          />
+      {/* Left — visual */}
+      <div className="rg-visual" aria-hidden="true">
+        <div className="rg-visual__overlay" />
+        <div className="rg-visual__content">
+          <p className="rg-visual__wordmark">BiDrive</p>
+          <p className="rg-visual__tagline">Аукцион исключительных автомобилей</p>
         </div>
+      </div>
 
-        <div className="input-group">
-          <label>Фамилия:</label>
-          <input
-            type="text"
-            name="lastName"
-            placeholder="Иванов"
-            value={formData.lastName}
-            onChange={handleChange}
-            required
-          />
+      {/* Right — form */}
+      <div className="rg-panel">
+        <div className="rg-panel__inner">
+
+          <Link to="/" className="rg-mobile-logo">BiDrive</Link>
+
+          <p className="rg-eyebrow">Создание аккаунта</p>
+          <h1 className="rg-title">Регистрация</h1>
+          <div className="rg-divider" aria-hidden="true" />
+
+          <form onSubmit={handleSubmit} className="rg-form">
+
+            {/* Name row */}
+            <div className="rg-row">
+              <div className="rg-field">
+                <label className="rg-label" htmlFor="firstName">Имя</label>
+                <input
+                  id="firstName" className="rg-input"
+                  type="text" name="firstName" placeholder="Иван"
+                  value={formData.firstName} onChange={handleChange}
+                  autoComplete="given-name" required
+                />
+              </div>
+              <div className="rg-field">
+                <label className="rg-label" htmlFor="lastName">Фамилия</label>
+                <input
+                  id="lastName" className="rg-input"
+                  type="text" name="lastName" placeholder="Иванов"
+                  value={formData.lastName} onChange={handleChange}
+                  autoComplete="family-name" required
+                />
+              </div>
+            </div>
+
+            <div className="rg-field">
+              <label className="rg-label" htmlFor="phone">Мобильный телефон</label>
+              <input
+                id="phone" className="rg-input"
+                type="tel" name="phone"
+                placeholder="+375 (XX) XXX-XX-XX"
+                value={formData.phone} onChange={handleChange}
+                maxLength="19" autoComplete="tel"
+              />
+              <span className="rg-hint">Формат: +375 (XX) XXX-XX-XX</span>
+            </div>
+
+            <div className="rg-field">
+              <label className="rg-label" htmlFor="reg-email">Электронная почта</label>
+              <input
+                id="reg-email" className="rg-input"
+                type="email" name="email" placeholder="ivan@example.com"
+                value={formData.email} onChange={handleChange}
+                autoComplete="email" required
+              />
+            </div>
+
+            <div className="rg-field">
+              <label className="rg-label" htmlFor="reg-password">Пароль</label>
+              <input
+                id="reg-password" className="rg-input"
+                type="password" name="password" placeholder="Не менее 6 символов"
+                value={formData.password} onChange={handleChange}
+                autoComplete="new-password" minLength="6" required
+              />
+            </div>
+
+            {/* Consent */}
+            <label className={`rg-consent${agreed ? ' rg-consent--checked' : ''}`}>
+              <span className="rg-checkbox">
+                <input
+                  type="checkbox" checked={agreed}
+                  onChange={e => setAgreed(e.target.checked)}
+                />
+                <span className="rg-checkbox__box" aria-hidden="true" />
+              </span>
+              <span className="rg-consent__text">
+                Я согласен на обработку и хранение моих персональных данных в&nbsp;целях
+                регистрации и использования сервиса
+              </span>
+            </label>
+
+            {error && <p className="rg-error" role="alert">{error}</p>}
+
+            <button
+              type="submit"
+              className={`rg-btn${!agreed || loading ? ' rg-btn--disabled' : ''}`}
+              disabled={!agreed || loading}
+            >
+              {loading ? 'Регистрация...' : 'Создать аккаунт'}
+            </button>
+
+          </form>
+
+          <p className="rg-footer-text">
+            Уже есть аккаунт?&ensp;
+            <Link to="/login" className="rg-link">Войти</Link>
+          </p>
+
+          <Link to="/" className="rg-back">← Вернуться на главную</Link>
+
         </div>
+      </div>
 
-        <div className="input-group">
-          <label>Мобильный телефон:</label>
-          <div className="phone-input-wrapper">
-            <span className="phone-icon">📱</span>
-            <input
-              type="tel"
-              name="phone"
-              placeholder="+375 (29) 123-45-67"
-              value={formData.phone}
-              onChange={handleChange}
-              maxLength="19"
-            />
-          </div>
-          <small className="hint-text">Формат: +375 (XX) XXX-XX-XX</small>
-        </div>
-
-        <div className="input-group">
-          <label>Email:</label>
-          <input
-            type="email"
-            name="email"
-            placeholder="ivan@example.com"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="input-group">
-          <label>Пароль:</label>
-          <input
-            type="password"
-            name="password"
-            placeholder="Не менее 6 символов"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="checkbox-container">
-          <input
-            type="checkbox"
-            id="agree"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-          />
-          <label htmlFor="agree">
-            Я согласен на обработку и хранение моих персональных данных в целях регистрации и использования сервиса
-          </label>
-        </div>
-
-        <button
-          type="submit"
-          className="login-btn"
-          disabled={!agreed}
-          style={{ opacity: agreed ? 1 : 0.6, cursor: agreed ? 'pointer' : 'not-allowed' }}
-        >
-          Зарегистрироваться
-        </button>
-
-        <p className="no-account">
-          Уже есть аккаунт? <Link to="/login">Войти</Link>
-        </p>
-      </form>
     </div>
   );
 }

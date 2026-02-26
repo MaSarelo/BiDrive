@@ -1,92 +1,323 @@
-/* СБРОС СТАНДАРТНЫХ СТИЛЕЙ */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ============================================================
+   GLOBAL RESET + BASE
+   Этот файл — точка входа для глобальных стилей всего приложения.
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: #f4f6f8; /* Светлый фон для глаз */
-  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  background: #0e0e0e;
+  color: #f5f2ec;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* КОНТЕЙНЕР */
-.layout-container {
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root {
+  --c-bg:        #0e0e0e;
+  --c-surface:   #141414;
+  --c-surface2:  #1a1a1a;
+  --c-border:    rgba(255,255,255,0.08);
+  --c-gold:      #b5965a;
+  --c-gold-light:#d4b483;
+  --c-text:      #f5f2ec;
+  --c-text-2:    #c4bfb7;
+  --c-text-3:    #7a7570;
+
+  --font-serif: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  --font-sans:  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+  --t:    0.3s;
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+.ly {
   display: flex;
   flex-direction: column;
-  min-height: 100vh; /* Шапка всегда сверху, контент занимает остальное */
+  min-height: 100vh;
+  background: var(--c-bg);
 }
 
-/* ХЕДЕР */
-.header {
-  background-color: #fff;
-  padding: 15px 5%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05); /* Легкая тень */
-  position: sticky; /* Хедер прилипает к верху при скролле */
-  top: 0;
-  z-index: 100;
-}
-
-.logo {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #2980b9;
-  text-decoration: none;
-}
-
-/* НАВИГАЦИЯ */
-.nav-links {
-  display: flex;
-  gap: 15px;
-}
-
-.nav-link {
-  text-decoration: none;
-  color: #555;
-  font-weight: 500;
-  padding: 8px 12px;
-  border-radius: 6px;
-  transition: background 0.2s, color 0.2s;
-}
-
-.nav-link:hover {
-  background-color: #f0f0f0;
-  color: #2980b9;
-}
-
-.btn-create {
-  background-color: #27ae60; /* Зеленая кнопка создания */
-  color: white;
-}
-
-.btn-create:hover {
-  background-color: #219150;
-}
-
-/* ОСНОВНОЙ КОНТЕНТ */
-.content {
+.ly-content {
   flex: 1;
-  padding: 30px 20px;
-  margin: 0 auto; /* Центрирование контента */
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.ly-header {
+  position: sticky;
+  top: 0;
+  z-index: 300;
+  transition: background var(--t) var(--ease),
+              border-bottom var(--t) var(--ease);
+}
+
+.ly-header--solid {
+  background: rgba(14,14,14,0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.ly-header__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 18px 32px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ── Wordmark ── */
+.ly-wordmark {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  line-height: 1.2;
+}
+
+.ly-wordmark__main {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  color: var(--c-text);
+}
+
+.ly-wordmark__sub {
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-gold);
+}
+
+/* ── Nav (center) ── */
+.ly-nav {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+
+.ly-nav__link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+  text-decoration: none;
+  transition: color var(--t);
+}
+.ly-nav__link:hover      { color: var(--c-text); }
+.ly-nav__link--active    {
+  color: var(--c-text);
+  border-bottom: 1px solid var(--c-gold);
+  padding-bottom: 2px;
+}
+
+/* ── Buttons ── */
+.ly-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  border-radius: 0;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--t), color var(--t), border-color var(--t);
+  white-space: nowrap;
+  background: none;
+}
+
+.ly-btn--gold {
+  background: var(--c-gold);
+  color: #0e0e0e;
+  border-color: var(--c-gold);
+}
+.ly-btn--gold:hover {
+  background: var(--c-gold-light);
+  border-color: var(--c-gold-light);
+}
+
+/* "Выставить лот" — outline */
+.ly-btn--create {
+  color: var(--c-text-2);
+  border-color: var(--c-border);
+}
+.ly-btn--create:hover {
+  border-color: var(--c-gold);
+  color: var(--c-gold);
+}
+
+/* Admin — subtle red tint */
+.ly-btn--admin {
+  color: #c0675a;
+  border-color: rgba(192,103,90,0.35);
+}
+.ly-btn--admin:hover {
+  background: rgba(192,103,90,0.08);
+  border-color: #c0675a;
+}
+
+/* Logout */
+.ly-btn--logout {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+  cursor: pointer;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  transition: color var(--t);
+}
+.ly-btn--logout:hover { color: #c0675a; }
+
+/* ── Auth (right) ── */
+.ly-auth {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* User chip */
+.ly-auth__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  transition: opacity var(--t);
+}
+.ly-auth__user:hover { opacity: 0.75; }
+
+.ly-auth__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(181,150,90,0.15);
+  border: 1px solid rgba(181,150,90,0.4);
+  color: var(--c-gold);
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ly-auth__name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--c-text-2);
+  letter-spacing: 0.04em;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   BURGER
+   ============================================================ */
+.ly-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 24px;
+  height: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-left: auto;
+}
+
+.ly-burger span {
+  display: block;
+  height: 1px;
+  background: var(--c-text-2);
+  transition: transform var(--t), opacity var(--t);
+}
+
+.ly-burger--open span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+.ly-burger--open span:nth-child(2) { opacity: 0; }
+.ly-burger--open span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+/* ============================================================
+   MOBILE DRAWER
+   ============================================================ */
+.ly-drawer {
+  display: none;
+  flex-direction: column;
+  background: var(--c-surface);
+  border-top: 1px solid var(--c-border);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s var(--ease);
+}
+
+.ly-drawer--open { max-height: 500px; }
+
+.ly-drawer__link {
+  display: block;
+  padding: 15px 32px;
+  font-size: 0.875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--c-border);
+  transition: color var(--t);
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  text-align: left;
   width: 100%;
-  max-width: 95%;
+}
+.ly-drawer__link:hover { color: var(--c-gold); }
+
+.ly-drawer__divider {
+  height: 1px;
+  background: var(--c-border);
+  margin: 4px 0;
 }
 
-.btn-logout {
-    background: none;
-    border: none;
-    color: #d32f2f; /* Красный цвет для выхода */
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 0.95rem;
-    padding: 0;
-    margin-left: 10px;
+.ly-drawer__logout {
+  color: var(--c-text-3);
+}
+.ly-drawer__logout:hover { color: #c0675a; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 900px) {
+  .ly-header__inner {
+    grid-template-columns: 1fr auto;
+  }
+
+  .ly-nav,
+  .ly-auth { display: none; }
+
+  .ly-burger { display: flex; }
+  .ly-drawer { display: flex; }
 }
 
-.btn-logout:hover {
-    text-decoration: underline;
+@media (max-width: 480px) {
+  .ly-header__inner { padding: 14px 20px; }
 }

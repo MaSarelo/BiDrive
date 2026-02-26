@@ -16,6 +16,6 @@ public class FuelTypeController {
 
     @GetMapping
     public List<FuelType> getAll() {
-        return fuelTypeRepository.findAll();
+        return fuelTypeRepository.findAllByOrderByNameAsc();
     }
 }

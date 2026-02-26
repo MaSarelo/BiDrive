@@ -108,7 +108,7 @@ public class AuctionController {
         private String description;
         private BigDecimal startingPrice;
         private BigDecimal minBidStep;
-        private Long cityId;
+        private Integer cityId;
         private List<String> imageUrls;
 
         // Геттеры и сеттеры
@@ -132,8 +132,8 @@ public class AuctionController {
         public void setStartingPrice(BigDecimal startingPrice) { this.startingPrice = startingPrice; }
         public BigDecimal getMinBidStep() { return minBidStep; }
         public void setMinBidStep(BigDecimal minBidStep) { this.minBidStep = minBidStep; }
-        public Long getCityId() { return cityId; }
-        public void setCityId(Long cityId) { this.cityId = cityId; }
+        public Integer getCityId() { return cityId; }
+        public void setCityId(Integer cityId) { this.cityId = cityId; }
         public List<String> getImageUrls() { return imageUrls; }
         public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
     }

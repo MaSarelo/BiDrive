@@ -61,7 +61,7 @@ public class AuctionService {
             String description,
             BigDecimal startingPrice,
             BigDecimal minBidStep,
-            Long cityId,
+            Integer cityId,
             List<String> imageUrls // <--- СПИСОК ФОТО
     ) {
         // 1. Находим связанные сущности

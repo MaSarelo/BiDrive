@@ -16,12 +16,12 @@ public class CityController {
 
     @GetMapping
     public List<City> getAll() {
-        return cityRepository.findAll();
+        return cityRepository.findAllByOrderByNameAsc();
     }
 
     // Важно: endpoint для получения городов по ID области
     @GetMapping("/by-region")
     public List<City> getCitiesByRegion(@RequestParam Long regionId) {
-        return cityRepository.findByRegionId(regionId);
+        return cityRepository.findByRegionIdOrderByNameAsc(regionId);
     }
 }

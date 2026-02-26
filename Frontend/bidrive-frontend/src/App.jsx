@@ -6,29 +6,25 @@ import AuctionDetails from './pages/AuctionDetails/AuctionDetails';
 import CreateAuction from './pages/CreateAuction/CreateAuction';
 import Profile from './pages/Profile/Profile';
 import Login from './pages/Login/Login';
-import Register from "./pages/Register/Register";
+import Register from './pages/Register/Register';
 import AdminPage from './pages/AdminPage/AdminPage';
-import './App.css';
+import './App.css'; // Импортируем глобальные стили
 
 function App() {
   return (
     <Router>
       <Routes>
 
-        {/* Главная страница (Витрина) - без шапки Layout, так как у нее своя */}
-        <Route path="/" element={<HomePage />} />
-
-        {/* Группа страниц с общей шапкой (Layout) */}
+        {/* Все страницы оборачиваем в Layout (в твоем случае это шапка .ly-header) */}
         <Route element={<Layout />}>
-
-          <Route path="/catalog" element={<Catalog />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/create" element={<CreateAuction />} />
+          <Route path="/"            element={<HomePage />} />
+          <Route path="/catalog"     element={<Catalog />} />
+          <Route path="/login"       element={<Login />} />
+          <Route path="/register"    element={<Register />} />
+          <Route path="/profile"     element={<Profile />} />
+          <Route path="/create"      element={<CreateAuction />} />
           <Route path="/auction/:id" element={<AuctionDetails />} />
-          <Route path="/admin" element={<AdminPage />} />
-
+          <Route path="/admin"       element={<AdminPage />} />
         </Route>
 
       </Routes>

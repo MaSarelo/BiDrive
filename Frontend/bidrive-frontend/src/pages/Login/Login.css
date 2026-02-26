@@ -1,43 +1,282 @@
-.login-container {
+/* ============================================================
+   TOKENS — должны совпадать с HomePage.css
+   ============================================================ */
+:root {
+  --c-bg:        #0e0e0e;
+  --c-surface:   #141414;
+  --c-surface2:  #1a1a1a;
+  --c-border:    rgba(255,255,255,0.08);
+  --c-gold:      #b5965a;
+  --c-gold-light:#d4b483;
+  --c-text:      #f5f2ec;
+  --c-text-2:    #c4bfb7;
+  --c-text-3:    #7a7570;
+  --c-error:     #c0675a;
+
+  --font-serif:  'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  --font-sans:   -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+  --t: 0.3s;
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* ============================================================
+   LAYOUT — split screen
+   ============================================================ */
+.lg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+  background: var(--c-bg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   LEFT — VISUAL PANEL
+   ============================================================ */
+.lg-visual {
+  position: relative;
+  overflow: hidden;
+  background:
+    url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80')
+    center / cover no-repeat;
+}
+
+.lg-visual__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    160deg,
+    rgba(14,14,14,0.45) 0%,
+    rgba(14,14,14,0.80) 100%
+  );
+}
+
+.lg-visual__content {
+  position: absolute;
+  bottom: 60px;
+  left: 52px;
+  z-index: 1;
+}
+
+.lg-visual__wordmark {
+  font-family: var(--font-serif);
+  font-size: 2.4rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  color: var(--c-text);
+  margin-bottom: 8px;
+}
+
+.lg-visual__tagline {
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--c-gold);
+}
+
+/* ============================================================
+   RIGHT — FORM PANEL
+   ============================================================ */
+.lg-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  background: var(--c-surface);
+  border-left: 1px solid var(--c-border);
+}
+
+.lg-panel__inner {
+  width: 100%;
   max-width: 400px;
-  margin: 100px auto;
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: white;
-}
-
-.login-container h1 {
-  text-align: center;
-  color: #333;
-}
-
-.login-form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
 }
 
-.hint {
-  font-size: 0.8rem;
-  color: #666;
+/* Mobile logo — hidden on desktop */
+.lg-mobile-logo {
+  display: none;
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  color: var(--c-text);
+  text-decoration: none;
+  margin-bottom: 36px;
   text-align: center;
-  background: #f9f9f9;
-  padding: 10px;
-  border-radius: 4px;
 }
 
-.login-btn {
-  background-color: #3498db;
-  color: white;
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+.lg-eyebrow {
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--c-gold);
+  margin-bottom: 10px;
+}
+
+.lg-title {
+  font-family: var(--font-serif);
+  font-size: 2.2rem;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  color: var(--c-text);
+  line-height: 1.2;
+  margin-bottom: 24px;
+}
+
+.lg-divider {
+  width: 36px;
+  height: 1px;
+  background: var(--c-gold);
+  margin-bottom: 40px;
+}
+
+/* ============================================================
+   FORM
+   ============================================================ */
+.lg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.lg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lg-label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+}
+
+.lg-input {
+  background: transparent;
   border: none;
-  padding: 12px;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.3s;
+  border-bottom: 1px solid var(--c-border);
+  color: var(--c-text);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  padding: 10px 0;
+  outline: none;
+  transition: border-color var(--t) var(--ease);
+  width: 100%;
 }
 
-.login-btn:hover {
-  background-color: #2980b9;
+.lg-input::placeholder { color: var(--c-text-3); }
+
+.lg-input:focus {
+  border-bottom-color: var(--c-gold);
+}
+
+/* Browser autofill override */
+.lg-input:-webkit-autofill,
+.lg-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--c-surface) inset;
+  -webkit-text-fill-color: var(--c-text);
+  caret-color: var(--c-text);
+}
+
+/* ============================================================
+   ERROR
+   ============================================================ */
+.lg-error {
+  font-size: 0.8rem;
+  color: var(--c-error);
+  letter-spacing: 0.04em;
+  border-left: 2px solid var(--c-error);
+  padding-left: 10px;
+}
+
+/* ============================================================
+   SUBMIT BUTTON
+   ============================================================ */
+.lg-btn {
+  margin-top: 8px;
+  padding: 14px;
+  background: var(--c-gold);
+  color: #0e0e0e;
+  border: 1px solid var(--c-gold);
+  border-radius: 0;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--t) var(--ease), border-color var(--t) var(--ease);
+}
+
+.lg-btn:hover:not(:disabled) {
+  background: var(--c-gold-light);
+  border-color: var(--c-gold-light);
+}
+
+.lg-btn--loading,
+.lg-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   FOOTER LINKS
+   ============================================================ */
+.lg-footer-text {
+  font-size: 0.8rem;
+  color: var(--c-text-2);
+  margin-bottom: 20px;
+}
+
+.lg-link {
+  color: var(--c-gold);
+  text-decoration: none;
+  transition: color var(--t);
+}
+.lg-link:hover { color: var(--c-gold-light); }
+
+.lg-back {
+  display: inline-block;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+  text-decoration: none;
+  transition: color var(--t);
+  margin-top: auto;
+}
+.lg-back:hover { color: var(--c-text-2); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .lg {
+    grid-template-columns: 1fr;
+  }
+
+  .lg-visual {
+    display: none;
+  }
+
+  .lg-panel {
+    border-left: none;
+    padding: 48px 28px;
+    min-height: 100vh;
+    align-items: flex-start;
+    padding-top: 72px;
+  }
+
+  .lg-mobile-logo {
+    display: block;
+  }
 }
