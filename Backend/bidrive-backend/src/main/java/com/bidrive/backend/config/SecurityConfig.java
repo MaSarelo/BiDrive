@@ -31,7 +31,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/fuel-types/**").permitAll()
                         .requestMatchers("/api/transmissions/**").permitAll()
                         .requestMatchers("/api/users/**").permitAll() // Для админки
-                        .requestMatchers("/api/files/**").permitAll() // <=== ДОБАВИТЬ ЭТО: Разрешаем загрузку файлов
+                        .requestMatchers("/api/files/**").permitAll() // Разрешаем загрузку файлов
+                        .requestMatchers("/api/admin/**").permitAll()
 
                         .anyRequest().authenticated()
                 );

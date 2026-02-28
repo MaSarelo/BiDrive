@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom'; // 1. Добавили useNavigate
 import axios from 'axios';
 import './AuctionDetails.css';
 
@@ -13,6 +13,8 @@ const STATUS_MAP = {
 
 function AuctionDetails() {
   const { id } = useParams();
+  const navigate = useNavigate(); // 2. Инициализировали навигацию
+
   const [auction,      setAuction]      = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [currentUser,  setCurrentUser]  = useState(null);
@@ -43,12 +45,23 @@ function AuctionDetails() {
 
   const handlePlaceBid = () => {
     if (!bidAmount) { setBidMsg({ text: 'Введите сумму ставки', ok: false }); return; }
-    const userId = parseInt(localStorage.getItem('userId')) || 3;
+
+    // 3. ПРОВЕРКА НА ГОСТЯ
+    const userId = parseInt(localStorage.getItem('userId'));
+    if (!userId) {
+      setBidMsg({ text: 'Вы должны войти в систему, чтобы сделать ставку', ok: false });
+      // Можно перенаправить на логин через 2 секунды
+      setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
+
+    // Отправка ставки
     axios.post('http://localhost:8080/api/bids', null, {
       params: { auctionId: auction.id, userId, amount: bidAmount }
     })
     .then(() => {
       setBidMsg({ text: 'Ставка принята', ok: true });
+      setBidAmount(''); // 4. ОЧИСТКА ПОЛЯ
       setTimeout(() => loadAuction().catch(console.error), 1000);
       setTimeout(() => setBidMsg({ text: '', ok: true }), 3500);
     })
@@ -132,8 +145,8 @@ function AuctionDetails() {
             )}
           </div>
 
-          {/* Specs */}
-          <div className="ad-specs">
+          {/* Specs, Seller, Description, History... (Код сокращен для читаемости, копируй из своего файла, если нужно, но он такой же) */}
+           <div className="ad-specs">
             <p className="ad-specs__heading">Технические характеристики</p>
             <div className="ad-specs__grid">
               {[
@@ -150,7 +163,6 @@ function AuctionDetails() {
             </div>
           </div>
 
-          {/* Seller */}
           <div className="ad-seller">
             <p className="ad-seller__heading">Продавец</p>
             <p className="ad-seller__name">
@@ -161,7 +173,6 @@ function AuctionDetails() {
             )}
           </div>
 
-          {/* Description */}
           <div className="ad-description">
             <p className="ad-description__heading">Описание</p>
             <div className="ad-description__divider" aria-hidden="true" />
@@ -170,7 +181,6 @@ function AuctionDetails() {
             </p>
           </div>
 
-          {/* Bids history */}
           {auction.bids?.length > 0 && (
             <div className="ad-history">
               <p className="ad-history__heading">История ставок</p>
@@ -223,32 +233,45 @@ function AuctionDetails() {
 
             <div className="ad-price-card__divider" aria-hidden="true" />
 
-            {/* Bid form */}
-            <div className="ad-bid-form">
-              <label className="ad-bid-form__label">Ваша ставка</label>
-              <input
-                className="ad-bid-form__input"
-                type="number"
-                placeholder="Введите сумму в $"
-                value={bidAmount}
-                onChange={e => setBidAmount(e.target.value)}
-                disabled={!isActive}
-              />
-              <button
-                className={`ad-btn ad-btn--gold ad-btn--full${!isActive ? ' ad-btn--disabled' : ''}`}
-                onClick={handlePlaceBid}
-                disabled={!isActive}
-              >
-                {isActive ? 'Сделать ставку' : 'Торги завершены'}
-              </button>
-              {bidMsg.text && (
-                <p className={`ad-bid-msg${bidMsg.ok ? ' ad-bid-msg--ok' : ' ad-bid-msg--err'}`}>
-                  {bidMsg.text}
-                </p>
-              )}
-            </div>
+            {/* Bid form — 5. ИЗМЕНЕН БЛОК ФОРМЫ */}
+            {currentUser ? (
+                // Если пользователь ВОШЕЛ — показываем форму
+                <div className="ad-bid-form">
+                  <label className="ad-bid-form__label">Ваша ставка</label>
+                  <input
+                    className="ad-bid-form__input"
+                    type="number"
+                    placeholder="Введите сумму в BYN"
+                    value={bidAmount}
+                    onChange={e => setBidAmount(e.target.value)}
+                    disabled={!isActive}
+                  />
+                  <button
+                    className={`ad-btn ad-btn--gold ad-btn--full${!isActive ? ' ad-btn--disabled' : ''}`}
+                    onClick={handlePlaceBid}
+                    disabled={!isActive}
+                  >
+                    {isActive ? 'Сделать ставку' : 'Торги завершены'}
+                  </button>
+                  {bidMsg.text && (
+                    <p className={`ad-bid-msg${bidMsg.ok ? ' ad-bid-msg--ok' : ' ad-bid-msg--err'}`}>
+                      {bidMsg.text}
+                    </p>
+                  )}
+                </div>
+            ) : (
+                // Если ГОСТЬ — показываем сообщение
+                <div className="ad-bid-form" style={{textAlign: 'center', padding: '20px 0'}}>
+                  <p style={{color: 'var(--c-text-2)', marginBottom: '15px', fontSize: '0.9rem'}}>
+                    Чтобы сделать ставку, необходимо войти в аккаунт.
+                  </p>
+                  <Link to="/login" className="ad-btn ad-btn--gold ad-btn--full">
+                    Войти
+                  </Link>
+                </div>
+            )}
 
-            {!isActive && (
+            {!isActive && currentUser && (
               <p className="ad-price-card__closed">
                 Приём ставок по данному лоту закрыт
               </p>
@@ -258,8 +281,8 @@ function AuctionDetails() {
 
       </main>
 
-      {/* ── FOOTER ── */}
-      <footer className="ad-footer">
+      {/* Footer (как был) */}
+       <footer className="ad-footer">
         <div className="ad-container ad-footer__grid">
           <div>
             <p className="ad-footer__wordmark">BiDrive</p>

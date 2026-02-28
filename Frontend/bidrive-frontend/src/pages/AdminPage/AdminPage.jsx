@@ -6,7 +6,14 @@ function AdminPage() {
   const [pendingAuctions, setPendingAuctions] = useState([]);
   const [users, setUsers] = useState([]);
 
-  // Загрузка данных
+  // === НОВАЯ СТАТИСТИКА ===
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeAuctions: 0,
+    totalBids: 0,
+    totalTurnover: 0
+  });
+
   useEffect(() => {
     // 1. Загружаем лоты на модерации
     axios.get('http://localhost:8080/api/auctions/pending')
@@ -17,30 +24,30 @@ function AdminPage() {
     axios.get('http://localhost:8080/api/users')
       .then(res => setUsers(res.data))
       .catch(err => console.error("Ошибка загрузки пользователей", err));
+
+    // 3. === ЗАГРУЖАЕМ СТАТИСТИКУ (ВЫЗОВ ФУНКЦИИ БД) ===
+    axios.get('http://localhost:8080/api/admin/stats')
+      .then(res => setStats(res.data))
+      .catch(err => console.error("Ошибка загрузки статистики", err));
   }, []);
 
-  // === ФУНКЦИИ АДМИНА ===
-
-  // Одобрить лот
+  // Функции approve/block (как были)
   const handleApprove = (id) => {
     axios.put(`http://localhost:8080/api/auctions/${id}/approve`)
       .then(() => {
         alert("Лот одобрен!");
-        // Убираем из списка
         setPendingAuctions(pendingAuctions.filter(a => a.id !== id));
       })
       .catch(err => alert("Ошибка: " + err.message));
   };
 
-  // Заблокировать пользователя
   const handleBlock = (userId, currentStatus) => {
-    const newStatus = !currentStatus; // Инвертируем
+    const newStatus = !currentStatus;
     axios.put(`http://localhost:8080/api/users/${userId}/block`, null, {
       params: { isBlocked: newStatus }
     })
     .then(() => {
       alert(newStatus ? "Пользователь заблокирован" : "Пользователь разблокирован");
-      // Обновляем список пользователей в стейте
       setUsers(users.map(u => u.id === userId ? { ...u, isBlocked: newStatus } : u));
     })
     .catch(err => alert("Ошибка: " + err.message));
@@ -50,7 +57,30 @@ function AdminPage() {
     <div className="admin-container">
       <h1>Панель администратора</h1>
 
-      {/* СЕКЦИЯ 1: МОДЕРАЦИЯ ЛОТОВ */}
+      {/* === НОВЫЙ БЛОК: СТАТИСТИКА (ИЗ ФУНКЦИИ БД) === */}
+      <div className="admin-section">
+        <h2>📊 Общая статистика</h2>
+        <div className="stats-grid">
+          <div className="stat-card">
+            <h3>Всего пользователей</h3>
+            <p className="stat-value">{stats.totalUsers}</p>
+          </div>
+          <div className="stat-card">
+            <h3>Активных лотов</h3>
+            <p className="stat-value">{stats.activeAuctions}</p>
+          </div>
+          <div className="stat-card">
+            <h3>Всего ставок</h3>
+            <p className="stat-value">{stats.totalBids}</p>
+          </div>
+          <div className="stat-card">
+            <h3>Оборот (BYN)</h3>
+            <p className="stat-value">{stats.totalTurnover ? stats.totalTurnover.toLocaleString() : 0}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Секция 1: Модерация лотов (как было) */}
       <div className="admin-section">
         <h2>🛠 Модерация объявлений ({pendingAuctions.length})</h2>
 
@@ -63,7 +93,7 @@ function AdminPage() {
                 <div>
                   <h3>{auction.brand?.name} {auction.model?.name}</h3>
                   <p><strong>Год:</strong> {auction.year}</p>
-                  <p><strong>Цена:</strong> {auction.startingPrice} $</p>
+                  <p><strong>Цена:</strong> {auction.startingPrice} BYN</p>
                   <p><strong>Продавец ID:</strong> {auction.seller?.id} ({auction.seller?.firstName})</p>
                   <p><em>{auction.description?.substring(0, 50)}...</em></p>
                 </div>
@@ -71,7 +101,6 @@ function AdminPage() {
                   <button className="btn-approve" onClick={() => handleApprove(auction.id)}>
                     ✅ Одобрить
                   </button>
-                  {/* Кнопку "Отклонить" можно добавить потом, пока просто одобряем */}
                 </div>
               </div>
             ))}
@@ -79,7 +108,7 @@ function AdminPage() {
         )}
       </div>
 
-      {/* СЕКЦИЯ 2: УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ */}
+      {/* Секция 2: Пользователи (как было) */}
       <div className="admin-section">
         <h2>👥 Управление пользователями</h2>
 
@@ -93,7 +122,6 @@ function AdminPage() {
                 {user.roleId === 2 && <span style={{color: 'green', marginLeft: '10px'}}> [ADMIN]</span>}
               </div>
 
-              {/* Не даем блокировать самого себя (админа) или другого админа легко */}
               {user.roleId !== 2 && (
                 <button
                   onClick={() => handleBlock(user.id, user.isBlocked)}

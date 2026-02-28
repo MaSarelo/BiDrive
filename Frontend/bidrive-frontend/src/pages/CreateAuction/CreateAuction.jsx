@@ -3,6 +3,17 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './CreateAuction.css';
 
+// === Вспомогательный компонент вынесен НАРУЖУ ===
+// Это предотвращает пересоздание компонента при каждом вводе символа,
+// что решает проблему со "сбросом" курсора.
+const Field = ({ label, children }) => (
+  <div className="ca-field">
+    <label className="ca-label">{label}</label>
+    {children}
+  </div>
+);
+// ==============================================
+
 function CreateAuction() {
   const [formData, setFormData] = useState({
     sellerId: null, brandId: '', modelId: '', year: '', mileage: '',
@@ -117,14 +128,6 @@ function CreateAuction() {
     }
   };
 
-  /* helpers */
-  const Field = ({ label, children }) => (
-    <div className="ca-field">
-      <label className="ca-label">{label}</label>
-      {children}
-    </div>
-  );
-
   return (
     <div className="ca">
 
@@ -220,12 +223,12 @@ function CreateAuction() {
             <p className="ca-section__title">Параметры торгов</p>
             <div className="ca-grid ca-grid--2">
 
-              <Field label="Начальная цена ($)">
+              <Field label="Начальная цена (BYN)">
                 <input className="ca-input" type="number" name="startingPrice"
                   placeholder="10 000" value={formData.startingPrice} onChange={handleChange} required />
               </Field>
 
-              <Field label="Минимальный шаг ставки ($)">
+              <Field label="Минимальный шаг ставки (BYN)">
                 <input className="ca-input" type="number" name="minBidStep"
                   placeholder="100" value={formData.minBidStep} onChange={handleChange} required />
               </Field>
