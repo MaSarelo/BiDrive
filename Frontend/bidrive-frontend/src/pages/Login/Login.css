@@ -1,282 +1,409 @@
 /* ============================================================
-   TOKENS — должны совпадать с HomePage.css
+   AUTH.CSS — Login & Register (общий файл)
+   Импортируй в Login.jsx и Register.jsx вместо родных CSS
    ============================================================ */
+
+/* ── Токены (единая палитра) ── */
 :root {
-  --c-bg:        #0e0e0e;
-  --c-surface:   #141414;
-  --c-surface2:  #1a1a1a;
-  --c-border:    rgba(255,255,255,0.08);
-  --c-gold:      #b5965a;
-  --c-gold-light:#d4b483;
-  --c-text:      #f5f2ec;
-  --c-text-2:    #c4bfb7;
-  --c-text-3:    #7a7570;
-  --c-error:     #c0675a;
+  --bg:        #0B0F19;
+  --bg-2:      #111624;
+  --bg-3:      #161C2D;
+  --bg-4:      #1C2338;
+  --border:    rgba(255,255,255,0.07);
+  --border-2:  rgba(255,255,255,0.13);
+  --border-f:  rgba(212,175,55,0.45);   /* focus */
 
-  --font-serif:  'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
-  --font-sans:   -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --gold:      #D4AF37;
+  --gold-h:    #E5C43F;
+  --gold-dim:  rgba(212,175,55,0.14);
+  --gold-glow: rgba(212,175,55,0.22);
 
-  --t: 0.3s;
+  --text:      #F5F7FA;
+  --text-2:    rgba(245,247,250,0.68);
+  --text-3:    rgba(245,247,250,0.35);
+
+  --red:       #EF4444;
+  --red-dim:   rgba(239,68,68,0.12);
+
+  --font: 'Inter', system-ui, sans-serif;
+  --t:    0.2s;
   --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 /* ============================================================
-   LAYOUT — split screen
+   SPLIT LAYOUT
    ============================================================ */
-.lg {
+.lg, .rg {
   display: grid;
   grid-template-columns: 1fr 1fr;
   min-height: 100vh;
-  background: var(--c-bg);
-  font-family: var(--font-sans);
+  background: var(--bg);
+  font-family: var(--font);
   -webkit-font-smoothing: antialiased;
 }
 
 /* ============================================================
    LEFT — VISUAL PANEL
    ============================================================ */
-.lg-visual {
+.lg-visual, .rg-visual {
   position: relative;
   overflow: hidden;
   background:
-    url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80')
-    center / cover no-repeat;
+          url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80')
+          center / cover no-repeat;
 }
 
-.lg-visual__overlay {
+.lg-visual__overlay, .rg-visual__overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    160deg,
-    rgba(14,14,14,0.45) 0%,
-    rgba(14,14,14,0.80) 100%
+          155deg,
+          rgba(11,15,25,0.35) 0%,
+          rgba(11,15,25,0.82) 100%
   );
 }
 
-.lg-visual__content {
+/* Декоративная золотая рамка */
+.lg-visual__overlay::after, .rg-visual__overlay::after {
+  content: '';
   position: absolute;
-  bottom: 60px;
+  bottom: 0; left: 0;
+  width: 2px;
+  height: 120px;
+  background: linear-gradient(to bottom, transparent, var(--gold));
+  opacity: 0.5;
+}
+
+.lg-visual__content, .rg-visual__content {
+  position: absolute;
+  bottom: 56px;
   left: 52px;
   z-index: 1;
 }
 
-.lg-visual__wordmark {
-  font-family: var(--font-serif);
-  font-size: 2.4rem;
-  font-weight: 300;
-  letter-spacing: 0.12em;
-  color: var(--c-text);
-  margin-bottom: 8px;
+.lg-visual__wordmark, .rg-visual__wordmark {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin-bottom: 10px;
 }
 
-.lg-visual__tagline {
-  font-size: 0.72rem;
-  letter-spacing: 0.2em;
+.lg-visual__tagline, .rg-visual__tagline {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--c-gold);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lg-visual__tagline::before, .rg-visual__tagline::before {
+  content: '';
+  display: block;
+  width: 20px; height: 1px;
+  background: var(--gold);
+  opacity: 0.6;
 }
 
 /* ============================================================
    RIGHT — FORM PANEL
    ============================================================ */
-.lg-panel {
+.lg-panel, .rg-panel {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px 40px;
-  background: var(--c-surface);
-  border-left: 1px solid var(--c-border);
+  padding: 60px 48px;
+  background: var(--bg-2);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
 }
 
-.lg-panel__inner {
+.lg-panel__inner, .rg-panel__inner {
   width: 100%;
   max-width: 400px;
   display: flex;
   flex-direction: column;
 }
 
-/* Mobile logo — hidden on desktop */
-.lg-mobile-logo {
+/* Mobile logo */
+.lg-mobile-logo, .rg-mobile-logo {
   display: none;
-  font-family: var(--font-serif);
-  font-size: 1.6rem;
-  font-weight: 300;
-  letter-spacing: 0.12em;
-  color: var(--c-text);
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--gold);
   text-decoration: none;
   margin-bottom: 36px;
   text-align: center;
 }
 
 /* ============================================================
-   TYPOGRAPHY
+   HEADING BLOCK
    ============================================================ */
-.lg-eyebrow {
-  font-size: 0.68rem;
+.lg-eyebrow, .rg-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.62rem;
+  font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--c-gold);
+  color: var(--gold);
+  margin-bottom: 14px;
+}
+.lg-eyebrow::before, .rg-eyebrow::before {
+  content: '';
+  display: block;
+  width: 18px; height: 1px;
+  background: var(--gold);
+  opacity: 0.6;
+}
+
+.lg-title, .rg-title {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  color: var(--text);
   margin-bottom: 10px;
 }
 
-.lg-title {
-  font-family: var(--font-serif);
-  font-size: 2.2rem;
-  font-weight: 300;
-  letter-spacing: 0.02em;
-  color: var(--c-text);
-  line-height: 1.2;
-  margin-bottom: 24px;
-}
-
-.lg-divider {
-  width: 36px;
-  height: 1px;
-  background: var(--c-gold);
-  margin-bottom: 40px;
+.lg-divider, .rg-divider {
+  width: 40px; height: 1px;
+  background: var(--gold);
+  opacity: 0.6;
+  margin-bottom: 36px;
 }
 
 /* ============================================================
    FORM
    ============================================================ */
-.lg-form {
+.lg-form, .rg-form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-bottom: 28px;
+  gap: 20px;
+  margin-bottom: 26px;
 }
 
-.lg-field {
+.rg-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.lg-field, .rg-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
-.lg-label {
-  font-size: 0.68rem;
-  font-weight: 500;
+.lg-label, .rg-label {
+  font-size: 0.62rem;
+  font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--c-text-2);
+  color: var(--text-3);
 }
 
-.lg-input {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--c-border);
-  color: var(--c-text);
-  font-family: var(--font-sans);
-  font-size: 0.95rem;
-  padding: 10px 0;
+/* ── Input (нормальный border-box, не underline) ── */
+.lg-input, .rg-input {
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.92rem;
+  font-weight: 500;
+  padding: 11px 14px;
   outline: none;
-  transition: border-color var(--t) var(--ease);
   width: 100%;
+  transition: border-color var(--t) var(--ease), box-shadow var(--t) var(--ease);
+}
+.lg-input:focus, .rg-input:focus {
+  border-color: var(--border-f);
+  box-shadow: 0 0 0 3px rgba(212,175,55,0.08);
+}
+.lg-input::placeholder, .rg-input::placeholder {
+  color: var(--text-3);
+  font-weight: 400;
+}
+.lg-input:disabled, .rg-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-.lg-input::placeholder { color: var(--c-text-3); }
-
-.lg-input:focus {
-  border-bottom-color: var(--c-gold);
-}
-
-/* Browser autofill override */
+/* Autofill override */
 .lg-input:-webkit-autofill,
-.lg-input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px var(--c-surface) inset;
-  -webkit-text-fill-color: var(--c-text);
-  caret-color: var(--c-text);
+.rg-input:-webkit-autofill,
+.lg-input:-webkit-autofill:focus,
+.rg-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-3) inset;
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  border-color: var(--border-2);
+  border-radius: 8px;
+}
+
+.rg-hint {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+
+/* ============================================================
+   CHECKBOX (согласие)
+   ============================================================ */
+.rg-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  padding: 14px 16px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color var(--t);
+}
+.rg-consent:hover      { border-color: var(--border-2); }
+.rg-consent--checked   { border-color: rgba(212,175,55,0.3); background: var(--gold-dim); }
+
+.rg-checkbox { flex-shrink: 0; position: relative; width: 18px; height: 18px; margin-top: 1px; }
+.rg-checkbox input[type="checkbox"] { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.rg-checkbox__box {
+  display: block;
+  width: 18px; height: 18px;
+  border: 1.5px solid var(--border-2);
+  border-radius: 4px;
+  background: var(--bg-4);
+  position: relative;
+  transition: border-color var(--t), background var(--t);
+}
+.rg-checkbox__box::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 5px;
+  width: 5px; height: 9px;
+  border: 1.5px solid var(--bg);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+  opacity: 0;
+  transition: opacity var(--t);
+}
+.rg-consent--checked .rg-checkbox__box {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.rg-consent--checked .rg-checkbox__box::after { opacity: 1; }
+
+.rg-consent__text {
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--text-2);
+  line-height: 1.6;
 }
 
 /* ============================================================
    ERROR
    ============================================================ */
-.lg-error {
+.lg-error, .rg-error {
   font-size: 0.8rem;
-  color: var(--c-error);
-  letter-spacing: 0.04em;
-  border-left: 2px solid var(--c-error);
-  padding-left: 10px;
+  font-weight: 500;
+  color: var(--red);
+  letter-spacing: 0.03em;
+  background: var(--red-dim);
+  border-left: 2px solid var(--red);
+  border-radius: 0 6px 6px 0;
+  padding: 9px 12px;
 }
 
 /* ============================================================
    SUBMIT BUTTON
    ============================================================ */
-.lg-btn {
-  margin-top: 8px;
-  padding: 14px;
-  background: var(--c-gold);
-  color: #0e0e0e;
-  border: 1px solid var(--c-gold);
-  border-radius: 0;
-  font-family: var(--font-sans);
+.lg-btn, .rg-btn {
+  margin-top: 4px;
+  padding: 13px;
+  background: var(--gold);
+  color: #0B0F19;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  font-family: var(--font);
   font-size: 0.78rem;
-  font-weight: 500;
-  letter-spacing: 0.16em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background var(--t) var(--ease), border-color var(--t) var(--ease);
+  transition: background var(--t) var(--ease),
+  border-color var(--t) var(--ease),
+  box-shadow var(--t) var(--ease),
+  transform 0.12s;
 }
-
-.lg-btn:hover:not(:disabled) {
-  background: var(--c-gold-light);
-  border-color: var(--c-gold-light);
+.lg-btn:hover:not(:disabled):not(.lg-btn--loading),
+.rg-btn:hover:not(.rg-btn--disabled) {
+  background: var(--gold-h);
+  border-color: var(--gold-h);
+  box-shadow: 0 4px 16px var(--gold-glow);
 }
+.lg-btn:active, .rg-btn:active { transform: scale(0.98); }
 
 .lg-btn--loading,
-.lg-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.lg-btn:disabled,
+.rg-btn--disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ============================================================
    FOOTER LINKS
    ============================================================ */
-.lg-footer-text {
-  font-size: 0.8rem;
-  color: var(--c-text-2);
-  margin-bottom: 20px;
+.lg-footer-text, .rg-footer-text {
+  font-size: 0.83rem;
+  font-weight: 400;
+  color: var(--text-3);
+  margin-bottom: 18px;
 }
 
-.lg-link {
-  color: var(--c-gold);
+.lg-link, .rg-link {
+  color: var(--gold);
+  font-weight: 600;
   text-decoration: none;
   transition: color var(--t);
 }
-.lg-link:hover { color: var(--c-gold-light); }
+.lg-link:hover, .rg-link:hover { color: var(--gold-h); }
 
-.lg-back {
-  display: inline-block;
-  font-size: 0.72rem;
+.lg-back, .rg-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--c-text-3);
+  color: var(--text-3);
   text-decoration: none;
   transition: color var(--t);
   margin-top: auto;
+  padding-top: 8px;
 }
-.lg-back:hover { color: var(--c-text-2); }
+.lg-back:hover, .rg-back:hover { color: var(--text-2); }
 
 /* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 768px) {
-  .lg {
-    grid-template-columns: 1fr;
-  }
-
-  .lg-visual {
-    display: none;
-  }
-
-  .lg-panel {
+  .lg, .rg { grid-template-columns: 1fr; }
+  .lg-visual, .rg-visual { display: none; }
+  .lg-panel, .rg-panel {
     border-left: none;
-    padding: 48px 28px;
+    padding: 48px 28px 60px;
     min-height: 100vh;
     align-items: flex-start;
-    padding-top: 72px;
+    padding-top: 80px;
   }
-
-  .lg-mobile-logo {
-    display: block;
-  }
+  .lg-mobile-logo, .rg-mobile-logo { display: block; }
+}
+@media (max-width: 400px) {
+  .rg-row { grid-template-columns: 1fr; }
 }

@@ -1,221 +1,281 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import AuctionCard from '../../components/AuctionCard';
 import './HomePage.css';
 
-function HomePage() {
-  const [featuredLots, setFeaturedLots]   = useState([]);
-  const [loading, setLoading]             = useState(true);
-  const [isLoggedIn, setIsLoggedIn]       = useState(false);
-  const [scrolled, setScrolled]           = useState(false);
-  const [menuOpen, setMenuOpen]           = useState(false);
+/* ── SVG icons ── */
+const Ic = ({ children, size = 20 }) => (
+    <svg width={size} height={size} fill="none" stroke="currentColor"
+         strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+      {children}
+    </svg>
+);
+const ArrowRight = () => <Ic><path d="M5 12h14M12 5l7 7-7 7"/></Ic>;
+const IconShield = () => <Ic><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Ic>;
+const IconZap    = () => <Ic><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Ic>;
+const IconLock   = () => <Ic><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Ic>;
+const IconSend   = () => <Ic><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Ic>;
+const IconUser   = () => <Ic><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Ic>;
+const IconSearch = () => <Ic><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></Ic>;
+const IconGavel  = () => <Ic><path d="m14.5 2.5 7 7-10 10-7-7z"/><path d="M2 22l6-6"/></Ic>;
+const IconCheck  = () => <Ic><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Ic>;
 
-  useEffect(() => {
-    const userId = localStorage.getItem('userId');
-    if (userId) setIsLoggedIn(true);
-  }, []);
+const FEATURES = [
+  { icon: <IconShield />, title: 'Проверенные авто',         desc: 'Каждый лот проходит модерацию до публикации' },
+  { icon: <IconZap    />, title: 'Торги в реальном времени', desc: 'Мгновенные уведомления при каждой новой ставке' },
+  { icon: <IconLock   />, title: 'Безопасные сделки',        desc: 'Контакты раскрываются только победителю торгов' },
+  { icon: <IconSend   />, title: 'Telegram-бот',             desc: 'Следите за лотами прямо в мессенджере' },
+];
+
+const STEPS = [
+  { n: '01', icon: <IconUser   />, title: 'Регистрация', desc: 'Создайте аккаунт за минуту — это бесплатно' },
+  { n: '02', icon: <IconSearch />, title: 'Выбор лота',  desc: 'Изучите фото, описание и историю автомобиля' },
+  { n: '03', icon: <IconGavel  />, title: 'Ставки',      desc: 'Участвуйте в торгах в режиме реального времени' },
+  { n: '04', icon: <IconCheck  />, title: 'Сделка',      desc: 'Безопасное оформление с проверенным продавцом' },
+];
+
+export default function HomePage() {
+  const [lots,    setLots]    = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
+  const [userEmail]            = useState(() => localStorage.getItem('userEmail'));
+  const revealRefs             = useRef([]);
 
   useEffect(() => {
     axios.get('http://localhost:8080/api/auctions')
-      .then(res  => { setFeaturedLots(res.data.slice(0, 6)); setLoading(false); })
-      .catch(err => { console.error(err); setLoading(false); });
+        .then(r  => { setLots(r.data.slice(0, 6)); setLoading(false); })
+        .catch(() => { setError('Не удалось загрузить лоты.'); setLoading(false); });
   }, []);
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', fn);
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
+    const io = new IntersectionObserver(
+        entries => entries.forEach(e => {
+          if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); }
+        }),
+        { threshold: 0.06 }
+    );
+    const els = revealRefs.current;
+    els.forEach(el => el && io.observe(el));
+    return () => els.forEach(el => el && io.unobserve(el));
+  }, [loading]);
 
-  const pillars = [
-    {
-      title: 'Подлинность',
-      text:  'Каждый автомобиль проходит многоуровневую техническую экспертизу до выхода на торги.',
-    },
-    {
-      title: 'Конфиденциальность',
-      text:  'Ваши данные и условия сделки остаются строго между покупателем, продавцом и платформой.',
-    },
-    {
-      title: 'Безупречный сервис',
-      text:  'Персональный куратор сопровождает вас от первой ставки до передачи ключей.',
-    },
-  ];
+  const r = el => { if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el); };
 
   return (
-    <div className="rr">
+      <div className="hp">
 
+        {/* ════ HERO ════ */}
+        <section className="hp-hero">
+          <div className="hp-hero__content">
 
-      {/* ── HERO ── */}
-      <section className="rr-hero">
-        {/* Cinematic overlay */}
-        <div className="rr-hero__overlay" aria-hidden="true" />
+            {/* Левая: текст */}
+            <div className="hp-hero__text">
+            <span className="hp-hero__badge">
+              <span className="hp-hero__badge-dot" />
+              Онлайн-аукцион · Беларусь
+            </span>
 
-        <div className="rr-hero__content">
-          <p className="rr-hero__eyebrow">Аукцион исключительных автомобилей</p>
-          <h1 className="rr-hero__title">
-            Искусство<br />владеть лучшим
-          </h1>
-          <div className="rr-hero__divider" aria-hidden="true" />
-          <p className="rr-hero__sub">
-            BiDrive — закрытая площадка для тех, кто ценит безупречное качество.<br />
-            Прозрачные торги. Проверенные продавцы. Полное сопровождение.
-          </p>
-          <div className="rr-hero__actions">
-            <Link to="/catalog" className="rr-btn rr-btn--gold rr-btn--lg">
-              Открыть каталог
-            </Link>
-            {!isLoggedIn && (
-              <Link to="/register" className="rr-btn rr-btn--outline rr-btn--lg">
-                Стать участником
-              </Link>
-            )}
-          </div>
-        </div>
+              <h1 className="hp-hero__h1">
+                Найдите свой<br />
+                следующий<br />
+                <em>автомобиль.</em>
+              </h1>
 
-        {/* Scroll hint */}
-        <div className="rr-hero__scroll" aria-hidden="true">
-          <span className="rr-hero__scroll-line" />
-          <span className="rr-hero__scroll-text">Прокрутите</span>
-        </div>
-      </section>
+              <p className="hp-hero__sub">
+                Прозрачные торги, безопасные сделки
+                и проверенные автомобили — в одном месте.
+              </p>
 
-      {/* ── FEATURED LOTS ── */}
-      <section className="rr-lots">
-        <div className="rr-container">
-          <header className="rr-section-head">
-            <p className="rr-section-head__eyebrow">Торги открыты</p>
-            <h2 className="rr-section-head__title">Актуальные лоты</h2>
-            <Link to="/catalog" className="rr-section-head__more">
-              Смотреть весь каталог&ensp;→
-            </Link>
-          </header>
-
-          {loading ? (
-            <div className="rr-skeleton-grid">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="rr-skeleton" />
-              ))}
-            </div>
-          ) : featuredLots.length > 0 ? (
-            <div className="rr-lots__grid">
-              {featuredLots.map(a => <AuctionCard key={a.id} auction={a} />)}
-            </div>
-          ) : (
-            <p className="rr-empty">На данный момент активных лотов нет.</p>
-          )}
-        </div>
-      </section>
-
-      {/* ── PILLARS ── */}
-      <section className="rr-pillars" id="pillars">
-        <div className="rr-container">
-          <header className="rr-section-head rr-section-head--center">
-            <p className="rr-section-head__eyebrow">Наши принципы</p>
-            <h2 className="rr-section-head__title">Три столпа BiDrive</h2>
-          </header>
-          <div className="rr-pillars__grid">
-            {pillars.map((p, i) => (
-              <div key={i} className="rr-pillar">
-                <span className="rr-pillar__num">{String(i + 1).padStart(2, '0')}</span>
-                <div className="rr-pillar__line" aria-hidden="true" />
-                <h3 className="rr-pillar__title">{p.title}</h3>
-                <p  className="rr-pillar__text">{p.text}</p>
+              <div className="hp-hero__actions">
+                <Link to="/catalog" className="hp-btn hp-btn--primary hp-btn--lg">
+                  Смотреть лоты <ArrowRight />
+                </Link>
+                {!userEmail && (
+                    <Link to="/register" className="hp-btn hp-btn--outline hp-btn--lg">
+                      Регистрация
+                    </Link>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ── QUOTE INTERLUDE ── */}
-      <section className="rr-quote">
-        <div className="rr-container">
-          <blockquote className="rr-quote__body">
-            «Автомобиль — это не просто транспорт.<br />
-            Это выражение характера своего владельца.»
-          </blockquote>
-          <p className="rr-quote__attr">— Философия BiDrive</p>
-        </div>
-      </section>
+              <div className="hp-hero__trust">
+                {['Бесплатная регистрация', 'Проверенные лоты', 'Безопасные сделки'].map(t => (
+                    <span className="hp-hero__trust-item" key={t}>
+                  <span className="hp-hero__trust-check">✓</span>
+                      {t}
+                </span>
+                ))}
+              </div>
+            </div>
 
-      {/* ── HOW IT WORKS ── */}
-      <section className="rr-process">
-        <div className="rr-container">
-          <header className="rr-section-head rr-section-head--center">
-            <p className="rr-section-head__eyebrow">Участие в торгах</p>
-            <h2 className="rr-section-head__title">Четыре шага до победы</h2>
-          </header>
-          <ol className="rr-steps">
-            {[
-              { t: 'Регистрация',      d: 'Создайте аккаунт и пройдите верификацию — это занимает менее минуты.' },
-              { t: 'Выбор автомобиля', d: 'Изучите подробные карточки лотов с историей, пробегом и экспертным заключением.' },
-              { t: 'Ставка',           d: 'Участвуйте в торгах в режиме реального времени. Шаг ставки указан в лоте.' },
-              { t: 'Сделка',           d: 'Ваш куратор оформит все документы и организует передачу автомобиля.' },
-            ].map((s, i) => (
-              <li key={i} className="rr-step">
-                <span className="rr-step__num">{String(i + 1).padStart(2, '0')}</span>
-                <div className="rr-step__body">
-                  <h3 className="rr-step__title">{s.t}</h3>
-                  <p  className="rr-step__desc">{s.d}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
+            {/* Правая: карточки-статистика */}
+            <div className="hp-hero__visual">
+              <span className="hp-hero__watermark">500+</span>
+              <div className="hp-hero__cards">
+                {[
+                  { icon: '🚗', val: '500+',    label: 'Активных лотов' },
+                  { icon: '👥', val: '1 200+',  label: 'Участников' },
+                  { icon: '🔒', val: '100%',    label: 'Безопасность' },
+                  { icon: '⚡', val: '< 1 мин', label: 'Регистрация' },
+                ].map(({ icon, val, label }) => (
+                    <div className="hp-hero__card" key={label}>
+                      <span className="hp-hero__card-icon">{icon}</span>
+                      <div className="hp-hero__card-val">{val}</div>
+                      <div className="hp-hero__card-label">{label}</div>
+                    </div>
+                ))}
+              </div>
+            </div>
 
-      {/* ── CTA ── */}
-      {!isLoggedIn && (
-        <section className="rr-cta">
-          <div className="rr-container rr-cta__inner">
-            <h2 className="rr-cta__title">Готовы участвовать в торгах?</h2>
-            <p  className="rr-cta__sub">Регистрация открыта — присоединяйтесь к сообществу ценителей.</p>
-            <Link to="/register" className="rr-btn rr-btn--gold rr-btn--lg">
-              Создать аккаунт
-            </Link>
           </div>
         </section>
-      )}
 
-      {/* ── FOOTER ── */}
-      <footer className="rr-footer" id="contact">
-        <div className="rr-container rr-footer__grid">
-          <div className="rr-footer__brand">
-            <p className="rr-footer__wordmark">BiDrive</p>
-            <p className="rr-footer__tagline">
-              Платформа онлайн-аукционов премиальных автомобилей.<br />
-              Прозрачно. Безопасно. Исключительно.
-            </p>
-          </div>
-          <div>
-            <p className="rr-footer__col-title">Навигация</p>
-            <ul className="rr-footer__list">
-              <li><Link to="/catalog">Каталог</Link></li>
-              <li><Link to="/register">Регистрация</Link></li>
-              <li><a href="#">Правила участия</a></li>
-            </ul>
-          </div>
-          <div>
-            <p className="rr-footer__col-title">Контакты</p>
-            <ul className="rr-footer__list">
-              <li><a href="mailto:support@bidrive.by">support@bidrive.by</a></li>
-              <li>
-                <a href="https://t.me/bidrive_bot" target="_blank" rel="noopener noreferrer">
-                  Telegram
-                </a>
-              </li>
-              <li>+375 (29) 123-45-67</li>
-            </ul>
+        {/* ════ STATS ════ */}
+        <div className="hp-stats">
+          <div className="hp-wrap hp-stats__row">
+            {[
+              { v: '500+',   l: 'Аукционов',    s: 'Активных прямо сейчас' },
+              { v: '1 200+', l: 'Участников',   s: 'Зарегистрировано' },
+              { v: '100%',   l: 'Безопасность', s: 'Гарантия каждой сделки' },
+            ].map(({ v, l, s }) => (
+                <div className="hp-stat" key={l}>
+                  <strong className="hp-stat__num">{v}</strong>
+                  <span className="hp-stat__label">{l}</span>
+                  <span className="hp-stat__sub">{s}</span>
+                </div>
+            ))}
           </div>
         </div>
-        <div className="rr-footer__bottom">
-          <p>© 2026 BiDrive. Дипломный проект. Все права защищены.</p>
-        </div>
-      </footer>
 
-    </div>
+        {/* ════ LOTS ════ */}
+        <section className="hp-lots">
+          <div className="hp-wrap">
+            <div className="hp-reveal" ref={r}>
+              <div className="hp-section-head">
+                <div>
+                  <p className="hp-eyebrow">Актуальные предложения</p>
+                  <h2 className="hp-h2">Лоты в продаже</h2>
+                </div>
+                <Link to="/catalog" className="hp-more">Все лоты <ArrowRight /></Link>
+              </div>
+            </div>
+
+            {error ? (
+                <p className="hp-msg hp-msg-err">{error}</p>
+            ) : loading ? (
+                <div className="hp-grid">{[1,2,3,4,5,6].map(i => <div key={i} className="hp-skel" />)}</div>
+            ) : lots.length ? (
+                <div className="hp-grid">
+                  {lots.map((a, i) => (
+                      <div key={a.id} className="hp-card-enter" style={{ animationDelay: `${i * 0.07}s` }}>
+                        <AuctionCard auction={a} />
+                      </div>
+                  ))}
+                </div>
+            ) : (
+                <p className="hp-msg">Активных лотов пока нет.</p>
+            )}
+          </div>
+        </section>
+
+        {/* ════ FEATURES ════ */}
+        <section className="hp-features-section">
+          <div className="hp-wrap">
+            <div className="hp-reveal" ref={r} style={{ textAlign: 'center' }}>
+              <p className="hp-eyebrow">Почему BiDrive</p>
+              <h2 className="hp-h2">Всё для успешной покупки</h2>
+            </div>
+            <div className="hp-features-grid hp-reveal" ref={r}>
+              {FEATURES.map(({ icon, title, desc }) => (
+                  <div className="hp-feature" key={title}>
+                    <div className="hp-feature__icon">{icon}</div>
+                    <h3 className="hp-feature__title">{title}</h3>
+                    <p className="hp-feature__desc">{desc}</p>
+                  </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ════ HOW IT WORKS ════ */}
+        <section className="hp-how-section">
+          <div className="hp-wrap">
+            <div className="hp-reveal" ref={r} style={{ textAlign: 'center' }}>
+              <p className="hp-eyebrow">Как это работает</p>
+              <h2 className="hp-h2">4 шага к вашему авто</h2>
+            </div>
+            <div className="hp-steps-grid hp-reveal" ref={r}>
+              {STEPS.map(({ n, icon, title, desc }) => (
+                  <div className="hp-step" key={n}>
+                    <div className="hp-step__num">Шаг {n}</div>
+                    <div className="hp-step__icon">{icon}</div>
+                    <h3 className="hp-step__title">{title}</h3>
+                    <p className="hp-step__desc">{desc}</p>
+                  </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ════ CTA ════ */}
+        {!userEmail && (
+            <section className="hp-cta">
+              <div className="hp-wrap">
+                <div className="hp-cta__inner hp-reveal" ref={r}>
+                  <div>
+                    <p className="hp-cta__label">Бесплатно</p>
+                    <h2 className="hp-cta__title">Готовы найти свой автомобиль?</h2>
+                    <p className="hp-cta__sub">Присоединяйтесь к тысячам покупателей на BiDrive.</p>
+                  </div>
+                  <Link to="/register" className="hp-btn hp-btn--primary hp-btn--lg">
+                    Создать аккаунт <ArrowRight />
+                  </Link>
+                </div>
+              </div>
+            </section>
+        )}
+
+        {/* ════ FOOTER ════ */}
+        <footer className="hp-footer">
+          <div className="hp-wrap hp-footer__grid">
+            <div>
+              <p className="hp-footer__logo">BiDrive</p>
+              <p className="hp-footer__about">
+                Первый онлайн-аукцион автомобилей нового поколения в Беларуси.
+              </p>
+            </div>
+            <div>
+              <p className="hp-footer__col-title">Навигация</p>
+              <ul className="hp-footer__list">
+                <li><Link to="/catalog">Каталог</Link></li>
+                <li>
+                  <Link to={userEmail ? '/profile' : '/login'}>
+                    {userEmail ? 'Личный кабинет' : 'Войти'}
+                  </Link>
+                </li>
+                {!userEmail && <li><Link to="/register">Регистрация</Link></li>}
+              </ul>
+            </div>
+            <div>
+              <p className="hp-footer__col-title">Контакты</p>
+              <ul className="hp-footer__list">
+                <li>Беларусь, г. Минск</li>
+                <li><a href="tel:+375291234567">+375 (29) 123-45-67</a></li>
+                <li>
+                  <a href="https://t.me/MyBiDriveBot_bot" target="_blank" rel="noreferrer">
+                    Telegram Bot
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="hp-footer__bottom">
+            <div className="hp-wrap">
+              <p>© {new Date().getFullYear()} BiDrive. Дипломный проект.</p>
+            </div>
+          </div>
+        </footer>
+
+      </div>
   );
 }
-
-export default HomePage;

@@ -14,9 +14,27 @@ public class NotificationController {
     @Autowired
     private NotificationRepository notificationRepository;
 
-    // GET: Получить все уведомления пользователя
-    @GetMapping
-    public List<Notification> getUserNotifications(@RequestParam Long userId) {
-        return notificationRepository.findByUserId(userId);
+    // Получить все уведомления для пользователя
+    @GetMapping("/user/{userId}")
+    public List<Notification> getUserNotifications(@PathVariable Long userId) {
+        // Сортируем по дате (новые сверху)
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    // Пометить уведомление как прочитанное
+    @PutMapping("/{id}/read")
+    public void markAsRead(@PathVariable Long id) {
+        notificationRepository.findById(id).ifPresent(notif -> {
+            notif.setIsRead(true);
+            notificationRepository.save(notif);
+        });
+    }
+
+    // Пометить ВСЕ как прочитанные
+    @PutMapping("/user/{userId}/read-all")
+    public void markAllAsRead(@PathVariable Long userId) {
+        List<Notification> notifs = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        notifs.forEach(n -> n.setIsRead(true));
+        notificationRepository.saveAll(notifs);
     }
 }

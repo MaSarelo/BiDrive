@@ -2,7 +2,7 @@ package com.bidrive.backend.controller;
 
 import com.bidrive.backend.entity.Bid;
 import com.bidrive.backend.repository.BidRepository;
-import com.bidrive.backend.service.BidService;
+import com.bidrive.backend.service.AuctionService; // <--- ИМПОРТИРУЕМ AuctionService
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,9 +16,9 @@ public class BidController {
     @Autowired
     private BidRepository bidRepository;
 
-    // Добавляем сервис
+    // Подключаем AuctionService, там где проверка продавца
     @Autowired
-    private BidService bidService;
+    private AuctionService auctionService;
 
     // GET: Получить все ставки
     @GetMapping
@@ -26,14 +26,14 @@ public class BidController {
         return bidRepository.findAll();
     }
 
-    // POST: Сделать ставку (Создать ставку)
-    // Чтобы протестировать этот метод, нужен Postman (браузер не умеет отправлять POST так просто)
+    // POST: Сделать ставку
     @PostMapping
     public Bid createBid(
             @RequestParam Long auctionId,
             @RequestParam Long userId,
             @RequestParam BigDecimal amount
     ) {
-        return bidService.placeBid(auctionId, userId, amount);
+        // ВЫЗЫВАЕМ МЕТОД ИЗ AuctionService (там работает проверка!)
+        return auctionService.placeBid(auctionId, userId, amount);
     }
 }

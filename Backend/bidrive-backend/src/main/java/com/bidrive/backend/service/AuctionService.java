@@ -1,13 +1,17 @@
 package com.bidrive.backend.service;
 
+import com.bidrive.backend.dto.BidHistoryDTO;
 import com.bidrive.backend.entity.*;
 import com.bidrive.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -43,12 +47,35 @@ public class AuctionService {
     @Autowired
     private CityRepository cityRepository;
 
-    // === ДОБАВЛЕН РЕПОЗИТОРИЙ ДЛЯ ФОТО ===
     @Autowired
     private CarImageRepository carImageRepository;
-    // =====================================
 
-    // ОБНОВЛЕННЫЙ МЕТОД (Принимает List<String> imageUrls)
+    @Autowired
+    private EntityManager entityManager;
+
+    // === 1. ИСТОРИЯ СТАВОК (Функция БД) ===
+    public List<BidHistoryDTO> getBidHistory(Long auctionId) {
+        List<BidHistoryDTO> history = new ArrayList<>();
+        try {
+            Query query = entityManager.createNativeQuery("SELECT * FROM get_bid_history(:auctionId)");
+            query.setParameter("auctionId", auctionId);
+
+            List<Object[]> results = query.getResultList();
+            for (Object[] row : results) {
+                BidHistoryDTO dto = new BidHistoryDTO();
+                dto.setBidId(((Number) row[0]).longValue());
+                dto.setUserName((String) row[1]);
+                dto.setAmount((BigDecimal) row[2]);
+                dto.setCreatedAt((LocalDateTime) row[3]);
+                history.add(dto);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return history;
+    }
+
+    // === 2. СОЗДАНИЕ АУКЦИОНА ===
     @Transactional
     public Auction createAuction(
             Long sellerId,
@@ -62,9 +89,8 @@ public class AuctionService {
             BigDecimal startingPrice,
             BigDecimal minBidStep,
             Integer cityId,
-            List<String> imageUrls // <--- СПИСОК ФОТО
+            List<String> imageUrls
     ) {
-        // 1. Находим связанные сущности
         User seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
         Brand brand = brandRepository.findById(brandId)
@@ -79,7 +105,6 @@ public class AuctionService {
         City city = cityRepository.findById(cityId)
                 .orElseThrow(() -> new RuntimeException("Город не найден"));
 
-        // 2. Создаем объект аукциона
         Auction auction = new Auction();
         auction.setSeller(seller);
         auction.setBrand(brand);
@@ -100,27 +125,22 @@ public class AuctionService {
         auction.setCreatedAt(LocalDateTime.now());
         auction.setUpdatedAt(LocalDateTime.now());
 
-        // Сначала сохраняем аукцион, чтобы получить ID
         Auction savedAuction = auctionRepository.save(auction);
 
-        // 3. СОХРАНЯЕМ ФОТО
         if (imageUrls != null && !imageUrls.isEmpty()) {
             for (int i = 0; i < imageUrls.size(); i++) {
                 CarImage img = new CarImage();
                 img.setAuction(savedAuction);
                 img.setImageUrl(imageUrls.get(i));
                 img.setDisplayOrder(i + 1);
-                img.setIsMain(i == 0); // Первое фото - главное
+                img.setIsMain(i == 0);
                 carImageRepository.save(img);
             }
-            // Дублируем ссылку на главное фото в таблицу аукционов (для удобства)
             savedAuction.setMainImageUrl(imageUrls.get(0));
             auctionRepository.save(savedAuction);
         }
 
-        // 4. Telegram
         try {
-            // Передаем весь объект savedAuction
             telegramService.sendNewLotNotification(savedAuction);
         } catch (Exception e) {
             System.out.println("Ошибка Telegram: " + e.getMessage());
@@ -129,6 +149,7 @@ public class AuctionService {
         return savedAuction;
     }
 
+    // === 3. Одобрение аукциона ===
     @Transactional
     public void approveAuction(Long auctionId) {
         Auction auction = auctionRepository.findById(auctionId)
@@ -142,39 +163,56 @@ public class AuctionService {
         auctionRepository.save(auction);
     }
 
+    // === 4. СТАВКА (МЕТОД С ПРОВЕРКОЙ) ===
     @Transactional
     public Bid placeBid(Long auctionId, Long userId, BigDecimal amount) {
+
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new RuntimeException("Аукцион не найден"));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+
+        // === ПРОВЕРКА ПРОДАВЦА ===
+        Long sellerId = auction.getSeller().getId();
+
+        if (sellerId.equals(userId)) {
+            System.out.println(">>> ОТКАЗ: Продавец пытается сделать ставку на свой лот!");
+            throw new RuntimeException("Нельзя делать ставки на свой лот.");
+        }
+
         if (!"ACTIVE".equals(auction.getStatus())) {
             throw new RuntimeException("Ставки возможны только на активные аукционы!");
         }
+
         BigDecimal currentPrice = auction.getCurrentPrice();
         BigDecimal minStep = auction.getMinBidStep();
+
         if (amount.compareTo(currentPrice) <= 0) {
             throw new RuntimeException("Ставка должна быть выше текущей цены!");
         }
+
         if (amount.subtract(currentPrice).compareTo(minStep) < 0) {
             throw new RuntimeException(String.format(
-                    "Минимальный шаг ставки: %s$. Текущая цена: %s$. Ваша ставка слишком мала.",
-                    minStep, currentPrice
+                    "Минимальный шаг ставки: %s BYN.",
+                    minStep
             ));
         }
-        // Уведомления
 
         Bid bid = new Bid();
         bid.setAuction(auction);
         bid.setUser(user);
         bid.setAmount(amount);
         bid.setCreatedAt(LocalDateTime.now());
+
         Bid savedBid = bidRepository.save(bid);
+
         auction.setCurrentPrice(amount);
         auctionRepository.save(auction);
+
         return savedBid;
     }
 
+    // === 5. Удаление ===
     @Transactional
     public void deleteAuction(Long auctionId, Long requestingUserId) {
         Auction auction = auctionRepository.findById(auctionId)
@@ -188,6 +226,7 @@ public class AuctionService {
         auctionRepository.delete(auction);
     }
 
+    // === 6. Публикация ===
     @Transactional
     public void publishAuction(Long auctionId, Long requestingUserId) {
         Auction auction = auctionRepository.findById(auctionId)
@@ -201,6 +240,7 @@ public class AuctionService {
         auctionRepository.save(auction);
     }
 
+    // === 7. Завершение вручную ===
     @Transactional
     public void finishAuction(Long auctionId, Long requestingUserId) {
         Auction auction = auctionRepository.findById(auctionId)

@@ -1,33 +1,50 @@
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import axios from 'axios';
 import './Layout.css';
 
 function Layout() {
-  const location  = useLocation();
-  const navigate  = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const [userEmail,  setUserEmail]  = useState(null);
-  const [userRole,   setUserRole]   = useState(null);
-  const [scrolled,   setScrolled]   = useState(false);
-  const [menuOpen,   setMenuOpen]   = useState(false);
+  const [userEmail, setUserEmail] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [notifCount, setNotifCount] = useState(0);
+  const drawerRef = useRef(null);
 
-  // Sync auth state on every route change
   useEffect(() => {
     const email = localStorage.getItem('userEmail');
-    const role  = localStorage.getItem('userRole');
+    const role = localStorage.getItem('userRole');
     setUserEmail(email || null);
     setUserRole(role ? parseInt(role) : null);
   }, [location]);
 
-  // Close mobile menu on route change
   useEffect(() => { setMenuOpen(false); }, [location]);
 
-  // Frosted-glass header on scroll
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', fn);
-    return () => window.removeEventListener('scroll', fn);
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) { setNotifCount(0); return; }
+    axios.get(`http://localhost:8080/api/notifications/user/${userId}`)
+        .then(r => setNotifCount(r.data.filter(n => !n.isRead).length))
+        .catch(() => setNotifCount(0));
+  }, [location, userEmail]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = e => {
+      if (drawerRef.current && !drawerRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
 
   const handleLogout = () => {
     ['userEmail', 'userId', 'userRole', 'userName'].forEach(k => localStorage.removeItem(k));
@@ -36,97 +53,124 @@ function Layout() {
     navigate('/login');
   };
 
-  const userName = userEmail ? userEmail.split('@')[0] : null;
+  const userName = useMemo(() => userEmail ? userEmail.split('@')[0] : null, [userEmail]);
+  const isActive = path => location.pathname === path;
 
   return (
-    <div className="ly">
+      <div className="ly">
+        <div
+            className={`ly-overlay${menuOpen ? ' ly-overlay--visible' : ''}`}
+            onClick={() => setMenuOpen(false)}
+        />
 
-      {/* ── HEADER ── */}
-      <header className={`ly-header${scrolled ? ' ly-header--solid' : ''}`}>
-        <div className="ly-header__inner">
+        {/* ── HEADER ── */}
+        <header className={`ly-header${scrolled ? ' ly-header--solid' : ''}`}>
+          <div className="ly-header__inner">
 
-          {/* Wordmark */}
-          <Link to="/" className="ly-wordmark">
-            <span className="ly-wordmark__main">BiDrive</span>
-            <span className="ly-wordmark__sub">Est. 2026 · Минск</span>
-          </Link>
-
-          {/* Desktop nav */}
-          <nav className="ly-nav">
-            <Link to="/catalog" className={`ly-nav__link${location.pathname === '/catalog' ? ' ly-nav__link--active' : ''}`}>
-              Каталог
+            <Link to="/" className="ly-logo">
+            <span className="ly-logo__icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+              <span className="ly-logo__text">BiDrive</span>
             </Link>
-            <Link to="/create" className="ly-btn ly-btn--create">
-              Выставить лот
-            </Link>
-            {userRole === 2 && (
-              <Link to="/admin" className="ly-btn ly-btn--admin">
-                Админ
+
+            <nav className="ly-nav">
+              <Link to="/catalog" className={`ly-nav__link${isActive('/catalog') ? ' ly-nav__link--active' : ''}`}>
+                Каталог
               </Link>
-            )}
-          </nav>
+              <Link to="/create" className={`ly-nav__link${isActive('/create') ? ' ly-nav__link--active' : ''}`}>
+                Выставить лот
+              </Link>
 
-          {/* Auth */}
-          <div className="ly-auth">
-            {userEmail ? (
-              <>
-                <Link to="/profile" className="ly-auth__user">
-                  <span className="ly-auth__avatar">{userName?.[0]?.toUpperCase()}</span>
-                  <span className="ly-auth__name">{userName}</span>
-                </Link>
-                <button className="ly-btn ly-btn--logout" onClick={handleLogout}>
-                  Выйти
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login"    className="ly-nav__link">Войти</Link>
-                <Link to="/register" className="ly-btn ly-btn--gold">Регистрация</Link>
-              </>
-            )}
+              {userRole === 2 && (
+                  <>
+                    <span className="ly-nav__sep" />
+                    <Link to="/admin" className={`ly-nav__link ly-nav__link--admin${isActive('/admin') ? ' ly-nav__link--active' : ''}`}>
+                      Админ
+                    </Link>
+                  </>
+              )}
+            </nav>
+
+            <div className="ly-right">
+              {userEmail && (
+                  <Link to="/notifications" className="ly-bell" title="Уведомления">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    {notifCount > 0 && (
+                        <span className="ly-bell__badge">{notifCount > 99 ? '99+' : notifCount}</span>
+                    )}
+                  </Link>
+              )}
+
+              {userEmail ? (
+                  <>
+                    <Link to="/profile" className="ly-user">
+                      <span className="ly-user__avatar">{userName?.[0]?.toUpperCase()}</span>
+                      <span className="ly-user__name">{userName}</span>
+                    </Link>
+                    <button className="ly-logout" onClick={handleLogout} title="Выйти">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                      </svg>
+                    </button>
+                  </>
+              ) : (
+                  <div className="ly-guest">
+                    <Link to="/login" className="ly-btn ly-btn--ghost">Войти</Link>
+                    <Link to="/register" className="ly-btn ly-btn--primary">Регистрация</Link>
+                  </div>
+              )}
+            </div>
+
+            <button className={`ly-burger${menuOpen ? ' ly-burger--open' : ''}`} onClick={() => setMenuOpen(v => !v)} aria-label="Меню">
+              <span /><span /><span />
+            </button>
           </div>
-
-          {/* Burger */}
-          <button
-            className={`ly-burger${menuOpen ? ' ly-burger--open' : ''}`}
-            onClick={() => setMenuOpen(v => !v)}
-            aria-label="Меню"
-          >
-            <span /><span /><span />
-          </button>
-
-        </div>
+        </header>
 
         {/* Mobile drawer */}
-        <div className={`ly-drawer${menuOpen ? ' ly-drawer--open' : ''}`}>
-          <Link to="/catalog" className="ly-drawer__link">Каталог</Link>
-          <Link to="/create"  className="ly-drawer__link">Выставить лот</Link>
-          {userRole === 2 && (
-            <Link to="/admin" className="ly-drawer__link">Администрирование</Link>
-          )}
-          <div className="ly-drawer__divider" />
-          {userEmail ? (
-            <>
-              <Link to="/profile" className="ly-drawer__link">Профиль ({userName})</Link>
-              <button className="ly-drawer__link ly-drawer__logout" onClick={handleLogout}>
-                Выйти
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login"    className="ly-drawer__link">Войти</Link>
-              <Link to="/register" className="ly-drawer__link">Регистрация</Link>
-            </>
-          )}
-        </div>
-      </header>
+        <aside ref={drawerRef} className={`ly-drawer${menuOpen ? ' ly-drawer--open' : ''}`}>
+          <div className="ly-drawer__body">
+            <Link to="/catalog" className="ly-drawer__link">Каталог</Link>
+            <Link to="/create" className="ly-drawer__link">Выставить лот</Link>
 
-      {/* ── CONTENT ── */}
-      <main className="ly-content">
-        <Outlet />
-      </main>
+            {userEmail && (
+                <Link to="/notifications" className="ly-drawer__link">
+                  Уведомления {notifCount > 0 && <span style={{marginLeft:'auto', background:'var(--red)', color:'#fff', padding:'2px 8px', borderRadius:'10px', fontSize:'0.75rem'}}>{notifCount}</span>}
+                </Link>
+            )}
 
-    </div>
+            {userRole === 2 && (
+                <Link to="/admin" className="ly-drawer__link ly-drawer__link--admin">Панель администратора</Link>
+            )}
+
+            <div className="ly-drawer__divider" />
+
+            {userEmail ? (
+                <>
+                  <Link to="/profile" className="ly-drawer__link">Профиль ({userName})</Link>
+                  <button className="ly-drawer__link" style={{color: 'var(--text-3)'}} onClick={handleLogout}>Выйти из аккаунта</button>
+                </>
+            ) : (
+                <div style={{display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0'}}>
+                  <Link to="/login" className="ly-btn ly-btn--ghost ly-btn--full">Войти</Link>
+                  <Link to="/register" className="ly-btn ly-btn--primary ly-btn--full">Регистрация</Link>
+                </div>
+            )}
+          </div>
+        </aside>
+
+        <main className="ly-content">
+          <Outlet />
+        </main>
+      </div>
   );
 }
 

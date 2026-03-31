@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").permitAll() // Для админки
                         .requestMatchers("/api/files/**").permitAll() // Разрешаем загрузку файлов
                         .requestMatchers("/api/admin/**").permitAll()
+                        .requestMatchers("/api/notifications/**").permitAll()
 
                         .anyRequest().authenticated()
                 );

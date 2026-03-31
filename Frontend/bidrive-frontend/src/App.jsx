@@ -8,23 +8,24 @@ import Profile from './pages/Profile/Profile';
 import Login from './pages/Login/Login';
 import Register from './pages/Register/Register';
 import AdminPage from './pages/AdminPage/AdminPage';
-import './App.css'; // Импортируем глобальные стили
+import Notifications from './pages/Notifications/Notifications'; // === НОВЫЙ ИМПОРТ ===
+import './App.css';
 
 function App() {
   return (
     <Router>
       <Routes>
-
-        {/* Все страницы оборачиваем в Layout (в твоем случае это шапка .ly-header) */}
+        {/* Все страницы внутри Layout */}
         <Route element={<Layout />}>
-          <Route path="/"            element={<HomePage />} />
-          <Route path="/catalog"     element={<Catalog />} />
-          <Route path="/login"       element={<Login />} />
-          <Route path="/register"    element={<Register />} />
-          <Route path="/profile"     element={<Profile />} />
-          <Route path="/create"      element={<CreateAuction />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/catalog" element={<Catalog />} />
+          <Route path="/notifications" element={<Notifications />} /> {/* === НОВЫЙ МАРШРУТ === */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/create" element={<CreateAuction />} />
           <Route path="/auction/:id" element={<AuctionDetails />} />
-          <Route path="/admin"       element={<AdminPage />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Route>
 
       </Routes>

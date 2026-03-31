@@ -1,41 +1,39 @@
-/* ============================================================
-   CARD LINK WRAPPER
-   ============================================================ */
+/* ════════════════════════════════════════════
+   AUCTION CARD — Modern Dark Luxury
+════════════════════════════════════════════ */
+
 .ac-link {
-  text-decoration: none;
-  color: inherit;
   display: block;
   height: 100%;
+  text-decoration: none;
+  color: inherit;
 }
 
-/* ============================================================
-   CARD
-   ============================================================ */
 .ac {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  transition: border-color 0.3s var(--ease), transform 0.3s var(--ease);
-  cursor: pointer;
+  background: #111624;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
   overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .ac:hover {
-  border-color: var(--c-gold);
-  transform: translateY(-4px);
+  border-color: rgba(212,175,55,0.35);
+  transform: translateY(-5px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(212,175,55,0.1);
 }
 
-/* ============================================================
-   PHOTO
-   ============================================================ */
+/* ── Photo ── */
 .ac-photo {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  background: var(--c-surface2);
+  background: #161C2D;
   flex-shrink: 0;
 }
 
@@ -44,12 +42,9 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.5s var(--ease), opacity 0.3s;
+  transition: transform 0.55s ease;
 }
-
-.ac:hover .ac-photo img {
-  transform: scale(1.04);
-}
+.ac:hover .ac-photo img { transform: scale(1.05); }
 
 .ac-photo__empty {
   width: 100%;
@@ -57,94 +52,99 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 0.9rem;
-  color: var(--c-text-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.12);
+  text-transform: uppercase;
 }
 
-/* ── Status badge on photo ── */
+/* Gold shimmer line on hover */
+.ac-photo::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.ac:hover .ac-photo::after { opacity: 1; }
+
+/* Status badge */
 .ac-status {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
+  top: 10px; left: 10px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   padding: 4px 10px;
+  border-radius: 100px;
   border: 1px solid;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-.ac-status--active   { color: #6db87a; border-color: rgba(109,184,122,0.5); background: rgba(10,10,10,0.6); }
-.ac-status--draft    { color: var(--c-text-3); border-color: var(--c-border); background: rgba(10,10,10,0.6); }
-.ac-status--pending  { color: #c9a84c; border-color: rgba(201,168,76,0.5);  background: rgba(10,10,10,0.6); }
-.ac-status--finished { color: var(--c-text-2); border-color: var(--c-border); background: rgba(10,10,10,0.6); }
-.ac-status--approved { color: var(--c-gold);   border-color: rgba(181,150,90,0.5); background: rgba(10,10,10,0.6); }
+.ac-status--active   { color: #4ADE80; border-color: rgba(74,222,128,0.3);   background: rgba(74,222,128,0.1); }
+.ac-status--draft    { color: rgba(245,247,250,0.4); border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); }
+.ac-status--pending  { color: #FBBF24; border-color: rgba(251,191,36,0.3);  background: rgba(251,191,36,0.1); }
+.ac-status--finished { color: rgba(245,247,250,0.3); border-color: rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); }
+.ac-status--approved { color: #60A5FA; border-color: rgba(96,165,250,0.3);  background: rgba(96,165,250,0.1); }
 
-/* ============================================================
-   BODY
-   ============================================================ */
+/* ── Body ── */
 .ac-body {
-  padding: 20px 20px 16px;
+  padding: 16px 16px 12px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .ac-title {
-  font-family: var(--font-serif);
-  font-size: 1.25rem;
-  font-weight: 400;
-  letter-spacing: 0.01em;
-  color: var(--c-text);
+  font-size: 0.97rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #F5F7FA;
   line-height: 1.3;
-  transition: color 0.3s;
+  transition: color 0.18s;
 }
+.ac:hover .ac-title { color: #D4AF37; }
 
-.ac:hover .ac-title { color: var(--c-gold); }
-
-/* Specs grid */
+/* Specs */
 .ac-specs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px 16px;
-}
-
-.ac-spec {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  gap: 9px 12px;
 }
 
 .ac-spec__label {
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--c-text-3);
+  color: rgba(245,247,250,0.25);
+  margin-bottom: 3px;
 }
 
 .ac-spec__value {
-  font-size: 0.95rem;
-  color: var(--c-text-2);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(245,247,250,0.6);
 }
 
-/* ============================================================
-   FOOTER
-   ============================================================ */
+/* ── Footer ── */
 .ac-footer {
-  padding: 0 20px 20px;
+  padding: 0 16px 16px;
 }
 
 .ac-footer__divider {
   height: 1px;
-  background: var(--c-border);
-  margin-bottom: 16px;
-  transition: background 0.3s;
+  background: rgba(255,255,255,0.06);
+  margin-bottom: 12px;
+  transition: background 0.25s;
 }
-.ac:hover .ac-footer__divider { background: rgba(181,150,90,0.3); }
+.ac:hover .ac-footer__divider { background: rgba(212,175,55,0.2); }
 
 .ac-footer__inner {
   display: flex;
@@ -153,35 +153,43 @@
 }
 
 .ac-price__label {
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--c-text-3);
-  margin-bottom: 4px;
+  color: rgba(245,247,250,0.25);
+  margin-bottom: 5px;
 }
 
 .ac-price__value {
-  font-family: var(--font-serif);
-  font-size: 1.5rem;
-  font-weight: 400;
-  color: var(--c-text);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #F5F7FA;
   line-height: 1;
 }
 
 .ac-price__value span {
-  font-size: 1rem;
-  color: var(--c-gold);
-  margin-left: 3px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #D4AF37;
+  margin-left: 5px;
+  letter-spacing: 0.04em;
 }
 
+/* Arrow button */
 .ac-arrow {
-  font-size: 1.1rem;
-  color: var(--c-text-3);
-  transition: color 0.3s, transform 0.3s;
-  display: inline-block;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 0.9rem;
+  transition: color 0.22s, border-color 0.22s, background 0.22s, transform 0.22s;
 }
-
 .ac:hover .ac-arrow {
-  color: var(--c-gold);
-  transform: translateX(4px);
+  color: #D4AF37;
+  border-color: rgba(212,175,55,0.4);
+  background: rgba(212,175,55,0.1);
+  transform: translateX(3px);
 }

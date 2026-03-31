@@ -1,5 +1,6 @@
 package com.bidrive.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -11,21 +12,20 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Кому отправляем уведомление
+    // Связь с пользователем
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // Тип уведомления (BID_OUTBID, AUCTION_WON и т.д.)
-    @Column(name = "type", nullable = false, length = 50)
+    @Column(name = "type", length = 50)
     private String type;
 
     @Column(name = "message", nullable = false, columnDefinition = "TEXT")
     private String message;
 
-    // К какому аукциону относится
     @ManyToOne
     @JoinColumn(name = "auction_id")
+    @JsonIgnore
     private Auction auction;
 
     @Column(name = "is_read")
@@ -34,7 +34,6 @@ public class Notification {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    // Конструктор
     public Notification() {}
 
     // Геттеры и сеттеры

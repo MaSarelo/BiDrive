@@ -3,6 +3,7 @@ package com.bidrive.backend.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "bids")
@@ -12,12 +13,12 @@ public class Bid {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Связь с аукционом
+    // === ИСПРАВЛЕНО: Игнорируем auction при сериализации ===
     @ManyToOne
     @JoinColumn(name = "auction_id", nullable = false)
+    @JsonIgnore // <--- Чтобы не было цикла Bid -> Auction -> Bids
     private Auction auction;
 
-    // Связь с пользователем, кто сделал ставку
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -25,13 +26,11 @@ public class Bid {
     @Column(name = "amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    // Конструктор
     public Bid() {}
 
-    // Геттеры и сеттеры
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

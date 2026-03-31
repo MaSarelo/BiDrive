@@ -11,68 +11,68 @@ const STATUS_MAP = {
 
 function AuctionCard({ auction }) {
   const imageUrl = auction.mainImageUrl
-    ? `http://localhost:8080${auction.mainImageUrl}`
-    : null;
+      ? `http://localhost:8080${auction.mainImageUrl}`
+      : null;
 
   const status = STATUS_MAP[auction.status] ?? { label: auction.status, cls: '' };
 
   return (
-    <Link to={`/auction/${auction.id}`} className="ac-link">
-      <article className="ac">
+      <Link to={`/auction/${auction.id}`} className="ac-link">
+        <article className="ac">
 
-        {/* Photo */}
-        <div className="ac-photo">
-          {imageUrl
-            ? <img src={imageUrl} alt={`${auction.brand?.name} ${auction.model?.name}`} />
-            : <div className="ac-photo__empty">Фото не загружено</div>
-          }
-          <span className={`ac-status ${status.cls}`}>{status.label}</span>
-        </div>
+          {/* Photo */}
+          <div className="ac-photo">
+            {imageUrl
+                ? <img src={imageUrl} alt={`${auction.brand?.name} ${auction.model?.name}`} loading="lazy" />
+                : <div className="ac-photo__empty">Фото не загружено</div>
+            }
+            <span className={`ac-status ${status.cls}`}>{status.label}</span>
+          </div>
 
-        {/* Body */}
-        <div className="ac-body">
-          <h2 className="ac-title">
-            {auction.brand?.name} {auction.model?.name}
-          </h2>
+          {/* Body */}
+          <div className="ac-body">
+            <h2 className="ac-title">
+              {auction.brand?.name} {auction.model?.name}
+            </h2>
 
-          <div className="ac-specs">
-            <div className="ac-spec">
-              <span className="ac-spec__label">Год</span>
-              <span className="ac-spec__value">{auction.year ?? '—'}</span>
-            </div>
-            <div className="ac-spec">
-              <span className="ac-spec__label">Пробег</span>
-              <span className="ac-spec__value">
+            <div className="ac-specs">
+              <div className="ac-spec">
+                <span className="ac-spec__label">Год </span>
+                <span className="ac-spec__value">{auction.year ?? '—'}</span>
+              </div>
+              <div className="ac-spec">
+                <span className="ac-spec__label">Пробег </span>
+                <span className="ac-spec__value">
                 {auction.mileage ? `${auction.mileage.toLocaleString()} км` : '—'}
               </span>
-            </div>
-            <div className="ac-spec">
-              <span className="ac-spec__label">КПП</span>
-              <span className="ac-spec__value">{auction.transmission?.name ?? '—'}</span>
-            </div>
-            <div className="ac-spec">
-              <span className="ac-spec__label">Топливо</span>
-              <span className="ac-spec__value">{auction.fuelType?.name ?? '—'}</span>
+              </div>
+              <div className="ac-spec">
+                <span className="ac-spec__label">КПП </span>
+                <span className="ac-spec__value">{auction.transmission?.name ?? '—'}</span>
+              </div>
+              <div className="ac-spec">
+                <span className="ac-spec__label">Топливо </span>
+                <span className="ac-spec__value">{auction.fuelType?.name ?? '—'}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="ac-footer">
-          <div className="ac-footer__divider" aria-hidden="true" />
-          <div className="ac-footer__inner">
-            <div>
-              <p className="ac-price__label">Текущая цена</p>
-              <p className="ac-price__value">
-                {auction.currentPrice?.toLocaleString()} <span>BYN</span>
-              </p>
+          {/* Footer */}
+          <div className="ac-footer">
+            <div className="ac-footer__divider" aria-hidden="true" />
+            <div className="ac-footer__inner">
+              <div>
+                <p className="ac-price__label">Текущая цена</p>
+                <p className="ac-price__value">
+                  {auction.currentPrice?.toLocaleString()} <span>BYN</span>
+                </p>
+              </div>
+              <span className="ac-arrow">→</span>
             </div>
-            <span className="ac-arrow">→</span>
           </div>
-        </div>
 
-      </article>
-    </Link>
+        </article>
+      </Link>
   );
 }
 

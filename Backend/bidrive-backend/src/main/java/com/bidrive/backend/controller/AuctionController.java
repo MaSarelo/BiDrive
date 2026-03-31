@@ -5,6 +5,7 @@ import com.bidrive.backend.repository.AuctionRepository;
 import com.bidrive.backend.service.AuctionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import com.bidrive.backend.dto.BidHistoryDTO;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -77,6 +78,11 @@ public class AuctionController {
                 .orElseThrow(() -> new RuntimeException("Аукцион не найден"));
     }
 
+    @GetMapping("/{id}/bids-history")
+    public List<BidHistoryDTO> getBidsHistory(@PathVariable Long id) {
+        return auctionService.getBidHistory(id);
+    }
+
     // === НОВЫЙ МЕТОД СОЗДАНИЯ (ПРИНИМАЕТ JSON) ===
     @PostMapping
     public Auction createAuction(@RequestBody CreateAuctionRequest request) {
@@ -110,32 +116,47 @@ public class AuctionController {
         private BigDecimal minBidStep;
         private Integer cityId;
         private List<String> imageUrls;
+        private String endTime;
 
         // Геттеры и сеттеры
         public Long getSellerId() { return sellerId; }
         public void setSellerId(Long sellerId) { this.sellerId = sellerId; }
+
         public Long getBrandId() { return brandId; }
         public void setBrandId(Long brandId) { this.brandId = brandId; }
+
         public Long getModelId() { return modelId; }
         public void setModelId(Long modelId) { this.modelId = modelId; }
+
         public Integer getYear() { return year; }
         public void setYear(Integer year) { this.year = year; }
+
         public Integer getMileage() { return mileage; }
         public void setMileage(Integer mileage) { this.mileage = mileage; }
+
         public Integer getTransmissionId() { return transmissionId; }
         public void setTransmissionId(Integer transmissionId) { this.transmissionId = transmissionId; }
+
         public Integer getFuelTypeId() { return fuelTypeId; }
         public void setFuelTypeId(Integer fuelTypeId) { this.fuelTypeId = fuelTypeId; }
+
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }
+
         public BigDecimal getStartingPrice() { return startingPrice; }
         public void setStartingPrice(BigDecimal startingPrice) { this.startingPrice = startingPrice; }
+
         public BigDecimal getMinBidStep() { return minBidStep; }
         public void setMinBidStep(BigDecimal minBidStep) { this.minBidStep = minBidStep; }
+
         public Integer getCityId() { return cityId; }
         public void setCityId(Integer cityId) { this.cityId = cityId; }
+
         public List<String> getImageUrls() { return imageUrls; }
         public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
+
+        public String getEndTime() { return endTime; }
+        public void setEndTime(String endTime) { this.endTime = endTime; }
     }
     // ==========================================
 
