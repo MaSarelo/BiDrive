@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import './Notifications.css';
-
+import { NotifContext } from '../../components/Layout';
 export function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const userId = localStorage.getItem('userId');
+
+  // Получаем функцию setNotifCount из Layout
+  const { setNotifCount } = useContext(NotifContext);
 
   useEffect(() => {
     if (!userId) return;
@@ -16,7 +19,13 @@ export function Notifications() {
   const handleMarkAllRead = async () => {
     try {
       await axios.put(`http://localhost:8080/api/notifications/user/${userId}/read-all`);
+
+      // 1. Обновляем локальный список
       setNotifications(p => p.map(n => ({ ...n, isRead: true })));
+
+      // 2. Сбрасываем счетчик в шапке (Layout)
+      setNotifCount(0);
+
     } catch (err) { console.error(err); }
   };
 

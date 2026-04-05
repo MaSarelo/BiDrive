@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import './AuctionCard.css';
+import BynIcon from './BynIcon';
 
 const STATUS_MAP = {
   ACTIVE:   { label: 'Активен',     cls: 'ac-status--active'   },
@@ -43,8 +44,8 @@ function AuctionCard({ auction }) {
               <div className="ac-spec">
                 <span className="ac-spec__label">Пробег </span>
                 <span className="ac-spec__value">
-                {auction.mileage ? `${auction.mileage.toLocaleString()} км` : '—'}
-              </span>
+                  {auction.mileage ? `${auction.mileage.toLocaleString()} км` : '—'}
+                </span>
               </div>
               <div className="ac-spec">
                 <span className="ac-spec__label">КПП </span>
@@ -64,8 +65,18 @@ function AuctionCard({ auction }) {
               <div>
                 <p className="ac-price__label">Текущая цена</p>
                 <p className="ac-price__value">
-                  {auction.currentPrice?.toLocaleString()} <span>BYN</span>
+                  {auction.currentPrice?.toLocaleString()}
+                  {/* Заменили текст BYN на картинку */}
+                  <BynIcon className="ac-currency-icon" />
                 </p>
+                {auction.status === 'ACTIVE' && auction.endTime && (
+                    <p className="ac-end-time">
+                      {new Date(auction.endTime).toLocaleString('ru-RU', {
+                        day: 'numeric', month: 'short',
+                        hour: '2-digit', minute: '2-digit'
+                      })}
+                    </p>
+                )}
               </div>
               <span className="ac-arrow">→</span>
             </div>

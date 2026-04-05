@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './AuctionDetails.css';
+import BynIcon from '../../components/BynIcon';
 
 const STATUS_MAP = {
   ACTIVE:   { label: 'Активен',     cls: 'ad-status--active'   },
@@ -22,6 +23,7 @@ function AuctionDetails() {
   const [bidAmount,    setBidAmount]    = useState('');
   const [bidMsg,       setBidMsg]       = useState({ text: '', ok: true });
   const [bidHistory,   setBidHistory]   = useState([]);
+  const [timeLeft,     setTimeLeft]     = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
     const email = localStorage.getItem('userEmail');
@@ -49,6 +51,31 @@ function AuctionDetails() {
     loadAuction().catch(console.error).finally(() => setLoading(false));
     loadBidHistory();
   }, [id]);
+
+  /* ── Таймер ── */
+  useEffect(() => {
+    if (!auction?.endTime || auction.status !== 'ACTIVE') return;
+
+    const calc = () => {
+      const diff = +new Date(auction.endTime) - Date.now();
+      if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+      return {
+        days:    Math.floor(diff / 86_400_000),
+        hours:   Math.floor(diff /  3_600_000) % 24,
+        minutes: Math.floor(diff /     60_000) % 60,
+        seconds: Math.floor(diff /      1_000) % 60,
+      };
+    };
+
+    setTimeLeft(calc());
+    const id = setInterval(() => {
+      const t = calc();
+      setTimeLeft(t);
+      if (!t.days && !t.hours && !t.minutes && !t.seconds) clearInterval(id);
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [auction]);
 
   const handlePlaceBid = () => {
     if (!bidAmount) { setBidMsg({ text: 'Введите сумму ставки', ok: false }); return; }
@@ -78,11 +105,17 @@ function AuctionDetails() {
   );
   if (!auction) return <div className="ad-loading"><p>Лот не найден.</p></div>;
 
-  const status    = STATUS_MAP[auction.status] ?? { label: auction.status, cls: '' };
-  const isActive  = auction.status === 'ACTIVE';
-  const showContact = auction.status === 'FINISHED'
+  const status   = STATUS_MAP[auction.status] ?? { label: auction.status, cls: '' };
+  const isActive = auction.status === 'ACTIVE';
+
+  const isWinner = auction.status === 'FINISHED'
       && auction.winner && currentUser
       && currentUser.id === auction.winner.id;
+
+  const isSeller = auction.status === 'FINISHED'
+      && auction.seller && currentUser
+      && currentUser.id === auction.seller.id
+      && auction.winner;
 
   return (
       <div className="ad">
@@ -119,6 +152,49 @@ function AuctionDetails() {
               <div className="ad-title-block__divider" />
             </div>
 
+            {/* Deal cards */}
+            {isWinner && (
+                <div className="ad-deal-card ad-deal-card--winner">
+                  <h3 className="ad-deal-card__title">Поздравляем! Вы выиграли этот лот</h3>
+                  <p className="ad-deal-card__price">
+                    Итоговая цена: <strong>{auction.currentPrice?.toLocaleString()} <BynIcon className="ad-currency-icon" /></strong>
+                  </p>
+                  <div className="ad-deal-card__contacts">
+                    <p>Свяжитесь с продавцом для оформления сделки</p>
+                    <div className="ad-deal-card__info">
+                      <span>Email</span>
+                      <a href={`mailto:${auction.seller?.email}`}>{auction.seller?.email}</a>
+                    </div>
+                    {auction.seller?.phone && (
+                        <div className="ad-deal-card__info">
+                          <span>Телефон</span>
+                          <a href={`tel:${auction.seller?.phone}`}>{auction.seller?.phone}</a>
+                        </div>
+                    )}
+                  </div>
+                </div>
+            )}
+
+            {isSeller && (
+                <div className="ad-deal-card ad-deal-card--seller">
+                  <h3 className="ad-deal-card__title">Лот продан</h3>
+                  <p className="ad-deal-card__price">
+                    Сумма сделки: <strong>{auction.currentPrice?.toLocaleString()} <BynIcon className="ad-currency-icon" /></strong>
+                  </p>
+                  <div className="ad-deal-card__contacts">
+                    <p>Победитель торгов</p>
+                    <div className="ad-deal-card__info">
+                      <span>Имя</span>
+                      <span>{auction.winner?.firstName} {auction.winner?.lastName}</span>
+                    </div>
+                    <div className="ad-deal-card__info">
+                      <span>Email</span>
+                      <a href={`mailto:${auction.winner?.email}`}>{auction.winner?.email}</a>
+                    </div>
+                  </div>
+                </div>
+            )}
+
             {/* Gallery */}
             <div className="ad-gallery">
               <div className="ad-gallery__main">
@@ -149,8 +225,8 @@ function AuctionDetails() {
                 {[
                   { label: 'Год выпуска', value: auction.year ?? '—' },
                   { label: 'Пробег',      value: auction.mileage ? `${auction.mileage.toLocaleString()} км` : '—' },
-                  { label: 'КПП',         value: auction.transmission?.name  || '—' },
-                  { label: 'Топливо',     value: auction.fuelType?.name       || '—' },
+                  { label: 'КПП',         value: auction.transmission?.name || '—' },
+                  { label: 'Топливо',     value: auction.fuelType?.name     || '—' },
                 ].map(s => (
                     <div key={s.label} className="ad-spec">
                       <span className="ad-spec__label">{s.label}</span>
@@ -166,7 +242,7 @@ function AuctionDetails() {
               <p className="ad-seller__name">
                 {auction.seller?.firstName} {auction.seller?.lastName}
               </p>
-              {showContact && (
+              {isWinner && auction.seller?.email && (
                   <p className="ad-seller__email">{auction.seller.email}</p>
               )}
             </div>
@@ -196,7 +272,7 @@ function AuctionDetails() {
                       </span>
                           </div>
                           <span className="ad-history__amount">
-                      {bid.amount.toLocaleString()} BYN
+                      {bid.amount.toLocaleString()} <BynIcon className="ad-currency-icon" />
                     </span>
                         </li>
                     ))}
@@ -213,7 +289,8 @@ function AuctionDetails() {
                 <p className="ad-price-card__eyebrow">Текущая цена</p>
                 <p className="ad-price-card__price">
                   {auction.currentPrice?.toLocaleString()}
-                  <span>BYN</span>
+                  {/* Заменили span на иконку */}
+                  <BynIcon className="ad-currency-icon" />
                 </p>
               </div>
 
@@ -222,21 +299,24 @@ function AuctionDetails() {
               <div className="ad-price-card__meta">
                 <div className="ad-meta-row">
                   <span>Стартовая цена</span>
-                  <span>{auction.startingPrice?.toLocaleString()} BYN</span>
+                  {/* Иконка внутри span, чтобы сохранить размер текста */}
+                  <span>{auction.startingPrice?.toLocaleString()} <BynIcon className="ad-currency-icon" /></span>
                 </div>
                 <div className="ad-meta-row">
                   <span>Минимальный шаг</span>
-                  <span>{auction.minBidStep} BYN</span>
+                  <span>{auction.minBidStep} <BynIcon className="ad-currency-icon" /></span>
                 </div>
-                {auction.endTime && isActive && (
+                {auction.status === 'ACTIVE' && (
                     <div className="ad-timer-row">
-                      <span>⏱ Торги до</span>
-                      <span>
-                    {new Date(auction.endTime).toLocaleString('ru-RU', {
-                      day: 'numeric', month: 'short',
-                      hour: '2-digit', minute: '2-digit'
-                    })}
-                  </span>
+                      <span>До окончания</span>
+                      <div className="ad-timer-values">
+                        {timeLeft.days > 0 && (
+                            <span>{timeLeft.days}<em>д</em></span>
+                        )}
+                        <span>{String(timeLeft.hours).padStart(2, '0')}<em>ч</em></span>
+                        <span>{String(timeLeft.minutes).padStart(2, '0')}<em>м</em></span>
+                        <span>{String(timeLeft.seconds).padStart(2, '0')}<em>с</em></span>
+                      </div>
                     </div>
                 )}
               </div>

@@ -1,5 +1,5 @@
 /* ============================================================
-   TOKENS — единая палитра с Catalog и Layout
+   TOKENS
    ============================================================ */
 :root {
   --bg:        #0B0F19;
@@ -10,12 +10,13 @@
   --border-2:  rgba(255,255,255,0.13);
 
   --gold:      #D4AF37;
+  --gold-h:    #E5C43F;
   --gold-dim:  rgba(212,175,55,0.14);
   --gold-glow: rgba(212,175,55,0.22);
 
-  --text:      #F5F7FA;          /* заголовки, цены */
-  --text-2:    rgba(245,247,250,0.72); /* основной текст */
-  --text-3:    rgba(245,247,250,0.38); /* лейблы, хинты */
+  --text:      #F5F7FA;
+  --text-2:    rgba(245,247,250,0.72);
+  --text-3:    rgba(245,247,250,0.38);
 
   --green:     #4ADE80;
   --green-dim: rgba(74,222,128,0.12);
@@ -47,9 +48,9 @@
 }
 
 .ad-container {
-  max-width: 1240px;
+  max-width: 77.5rem;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 2rem;
 }
 
 /* ============================================================
@@ -61,14 +62,15 @@
   align-items: center;
   justify-content: center;
   min-height: 60vh;
-  gap: 18px;
+  gap: 1.125rem;
   color: var(--text-3);
   font-size: 0.85rem;
   letter-spacing: 0.1em;
 }
 .ad-loading__line {
   display: block;
-  width: 56px; height: 1px;
+  width: 3.5rem;
+  height: 1px;
   background: var(--gold);
   animation: loadPulse 1.5s ease-in-out infinite;
   opacity: 0.5;
@@ -81,15 +83,13 @@
 /* ============================================================
    BREADCRUMB
    ============================================================ */
-.ad-breadcrumb {
-  border-bottom: 1px solid var(--border);
-}
+.ad-breadcrumb { border-bottom: 1px solid var(--border); }
 .ad-breadcrumb .ad-container {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding-top: 14px;
-  padding-bottom: 14px;
+  gap: 0.625rem;
+  padding-top: 0.875rem;
+  padding-bottom: 0.875rem;
 }
 .ad-breadcrumb__link {
   font-size: 0.7rem;
@@ -115,38 +115,35 @@
    ============================================================ */
 .ad-body {
   display: grid;
-  grid-template-columns: 1fr 348px;
-  gap: 48px;
-  padding-top: 48px;
-  padding-bottom: 88px;
+  grid-template-columns: 1fr 21.75rem;
+  gap: 3rem;
+  padding-top: 3rem;
+  padding-bottom: 5.5rem;
   align-items: start;
 }
 
 /* ============================================================
    TITLE BLOCK
    ============================================================ */
-.ad-title-block {
-  margin-bottom: 32px;
-}
+.ad-title-block { margin-bottom: 2rem; }
 .ad-title-block__top {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: 0.75rem;
+  margin-bottom: 1.125rem;
   flex-wrap: wrap;
 }
-
 .ad-title {
   font-size: clamp(1.75rem, 3vw, 2.6rem);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.1;
   color: var(--text);
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
 }
-
 .ad-title-block__divider {
-  width: 40px; height: 1px;
+  width: 2.5rem;
+  height: 1px;
   background: var(--gold);
   opacity: 0.7;
 }
@@ -159,8 +156,8 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  padding: 4px 11px;
-  border-radius: 100px;
+  padding: 0.25rem 0.6875rem;
+  border-radius: 6.25rem;
   border: 1px solid;
 }
 .ad-status--active   { color: var(--green); border-color: rgba(74,222,128,0.3);  background: var(--green-dim); }
@@ -177,29 +174,111 @@
 }
 
 /* ============================================================
+   DEAL CARDS — WIN / SOLD
+   ============================================================ */
+.ad-deal-card {
+  border-radius: 0.625rem;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 2rem;
+  border: 1px solid;
+}
+.ad-deal-card--winner {
+  background: rgba(74,222,128,0.07);
+  border-color: rgba(74,222,128,0.25);
+}
+.ad-deal-card--seller {
+  background: rgba(96,165,250,0.07);
+  border-color: rgba(96,165,250,0.25);
+}
+.ad-deal-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-bottom: 0.625rem;
+}
+.ad-deal-card--winner .ad-deal-card__title { color: var(--green); }
+.ad-deal-card--seller .ad-deal-card__title { color: var(--blue);  }
+
+.ad-deal-card__price {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  margin-bottom: 1.125rem;
+  font-weight: 500;
+}
+.ad-deal-card__price strong {
+  color: var(--gold);
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.ad-deal-card__contacts {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
+  padding: 0.875rem 1rem;
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ad-deal-card__contacts > p {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 0.25rem;
+}
+.ad-deal-card__info {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.85rem;
+}
+.ad-deal-card__info span {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  width: 4.5rem;
+  flex-shrink: 0;
+}
+.ad-deal-card__info a {
+  color: var(--gold);
+  font-weight: 600;
+  transition: color var(--t);
+}
+.ad-deal-card__info a:hover { color: var(--gold-h); }
+.ad-deal-card__info > *:last-child:not(a) {
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+/* ============================================================
    GALLERY
    ============================================================ */
-.ad-gallery { margin-bottom: 44px; }
-
+.ad-gallery { margin-bottom: 2.75rem; }
 .ad-gallery__main {
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   background: var(--bg-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  margin-bottom: 10px;
+  border-radius: 0.625rem;
+  margin-bottom: 0.625rem;
 }
 .ad-gallery__main img {
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   display: block;
   transition: transform 0.6s var(--ease);
 }
 .ad-gallery__main:hover img { transform: scale(1.025); }
-
 .ad-gallery__empty {
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -209,28 +288,27 @@
   text-transform: uppercase;
   color: var(--text-3);
 }
-
 .ad-gallery__thumbs {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-  gap: 7px;
+  grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr));
+  gap: 0.4375rem;
 }
 .ad-thumb {
   aspect-ratio: 4/3;
   overflow: hidden;
   background: var(--bg-2);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   cursor: pointer;
   padding: 0;
   transition: border-color var(--t);
 }
 .ad-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ad-thumb:hover     { border-color: var(--border-2); }
-.ad-thumb--active   { border-color: var(--gold); }
+.ad-thumb:hover   { border-color: var(--border-2); }
+.ad-thumb--active { border-color: var(--gold); }
 
 /* ============================================================
-   SECTION HEADING (общий стиль)
+   SECTION HEADING
    ============================================================ */
 .ad-section-heading {
   font-size: 0.62rem;
@@ -238,15 +316,16 @@
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--gold);
-  margin-bottom: 18px;
+  margin-bottom: 1.125rem;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
 }
 .ad-section-heading::before {
   content: '';
   display: block;
-  width: 18px; height: 1px;
+  width: 1.125rem;
+  height: 1px;
   background: var(--gold);
   opacity: 0.6;
   flex-shrink: 0;
@@ -255,28 +334,25 @@
 /* ============================================================
    SPECS
    ============================================================ */
-.ad-specs { margin-bottom: 36px; }
-
+.ad-specs { margin-bottom: 2.25rem; }
 .ad-specs__grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 0.625rem;
   overflow: hidden;
 }
-
 .ad-spec {
   background: var(--bg-2);
-  padding: 20px 22px;
+  padding: 1.25rem 1.375rem;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
   border-right: 1px solid var(--border);
   transition: background var(--t);
 }
 .ad-spec:last-child { border-right: none; }
 .ad-spec:hover { background: var(--bg-3); }
-
 .ad-spec__label {
   font-size: 0.6rem;
   font-weight: 700;
@@ -297,15 +373,15 @@
 .ad-seller {
   background: var(--bg-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 22px 26px;
-  margin-bottom: 36px;
+  border-radius: 0.625rem;
+  padding: 1.375rem 1.625rem;
+  margin-bottom: 2.25rem;
 }
 .ad-seller__name {
   font-size: 1rem;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 6px;
+  margin-bottom: 0.375rem;
 }
 .ad-seller__email {
   font-size: 0.83rem;
@@ -317,8 +393,7 @@
 /* ============================================================
    DESCRIPTION
    ============================================================ */
-.ad-description { margin-bottom: 40px; }
-
+.ad-description { margin-bottom: 2.5rem; }
 .ad-description__text {
   font-size: 0.9rem;
   line-height: 1.8;
@@ -331,33 +406,19 @@
    ============================================================ */
 .ad-history {
   border-top: 1px solid var(--border);
-  padding-top: 36px;
+  padding-top: 2.25rem;
 }
-
-.ad-history__list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-}
+.ad-history__list { list-style: none; display: flex; flex-direction: column; }
 .ad-history__item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 0;
+  padding: 0.8125rem 0;
   border-bottom: 1px solid var(--border);
 }
 .ad-history__item:last-child { border-bottom: none; }
-
-.ad-history__who {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.ad-history__name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text);
-}
+.ad-history__who { display: flex; flex-direction: column; gap: 0.1875rem; }
+.ad-history__name { font-size: 0.875rem; font-weight: 600; color: var(--text); }
 .ad-history__time {
   font-size: 0.7rem;
   font-weight: 500;
@@ -374,31 +435,24 @@
 /* ============================================================
    SIDEBAR — PRICE CARD
    ============================================================ */
-.ad-sidebar {
-  position: sticky;
-  top: 84px;
-}
-
+.ad-sidebar { position: sticky; top: 5.25rem; }
 .ad-price-card {
   background: var(--bg-2);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 0.75rem;
   overflow: hidden;
 }
-
-.ad-price-card__top {
-  padding: 28px 26px 22px;
-}
+.ad-price-card__top { padding: 1.75rem 1.625rem 1.375rem; }
 .ad-price-card__eyebrow {
   font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--text-3);
-  margin-bottom: 10px;
+  margin-bottom: 0.625rem;
 }
 .ad-price-card__price {
-  font-size: 2.8rem;
+  font-size: clamp(2rem, 4vw, 2.8rem);
   font-weight: 800;
   letter-spacing: -0.04em;
   color: var(--text);
@@ -408,20 +462,16 @@
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--gold);
-  margin-left: 6px;
+  margin-left: 0.375rem;
   letter-spacing: 0.04em;
 }
-
-.ad-price-card__divider {
-  height: 1px;
-  background: var(--border);
-}
+.ad-price-card__divider { height: 1px; background: var(--border); }
 
 .ad-price-card__meta {
-  padding: 18px 26px;
+  padding: 1.125rem 1.625rem;
   display: flex;
   flex-direction: column;
-  gap: 11px;
+  gap: 0.6875rem;
 }
 .ad-meta-row {
   display: flex;
@@ -441,34 +491,66 @@
 }
 .ad-meta-row strong { color: var(--gold); }
 
-/* Timer row */
+/* Timer */
 .ad-timer-row {
   border-top: 1px solid var(--border);
-  margin-top: 4px;
-  padding-top: 14px;
+  margin-top: 0.5rem;
+  padding-top: 0.875rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
 }
-.ad-timer-row span:first-child {
-  font-size: 0.7rem;
+.ad-timer-row > span:first-child {
+  font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--red);
+  flex-shrink: 0;
 }
-.ad-timer-row span:last-child {
-  font-size: 0.88rem;
-  font-weight: 700;
+.ad-timer-values { display: flex; gap: 0.25rem; }
+.ad-timer-values span {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  border-radius: 0.3125rem;
+  padding: 0.3125rem 0.4375rem 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
   color: var(--text);
+  line-height: 1;
+  min-width: 2.125rem;
+  text-align: center;
+}
+.ad-timer-values span em {
+  font-style: normal;
+  font-size: 0.48rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  margin-top: 0.1875rem;
+  text-transform: uppercase;
+}
+.ad-timer-values span:last-child {
+  border-color: rgba(239,68,68,0.25);
+  animation: tickPulse 1s ease-in-out infinite;
+}
+@keyframes tickPulse {
+  0%,100% { border-color: rgba(239,68,68,0.15); }
+  50%      { border-color: rgba(239,68,68,0.45); }
 }
 
 /* Bid form */
 .ad-bid-form {
-  padding: 20px 26px 26px;
+  padding: 1.25rem 1.625rem 1.625rem;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.75rem;
 }
 .ad-bid-form__label {
   font-size: 0.6rem;
@@ -480,12 +562,12 @@
 .ad-bid-form__input {
   background: var(--bg-3);
   border: 1px solid var(--border-2);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   color: var(--text);
   font-family: var(--font);
   font-size: 1rem;
   font-weight: 600;
-  padding: 11px 14px;
+  padding: 0.6875rem 0.875rem;
   outline: none;
   width: 100%;
   text-align: center;
@@ -510,8 +592,8 @@
   font-weight: 500;
   letter-spacing: 0.04em;
   text-align: center;
-  padding: 9px 14px;
-  border-radius: 6px;
+  padding: 0.5625rem 0.875rem;
+  border-radius: 0.375rem;
   border-left: 2px solid;
 }
 .ad-bid-msg--ok  { color: var(--green); border-color: var(--green); background: var(--green-dim); }
@@ -524,8 +606,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 22px;
-  border-radius: 8px;
+  padding: 0.625rem 1.375rem;
+  border-radius: 0.5rem;
   font-family: var(--font);
   font-size: 0.78rem;
   font-weight: 700;
@@ -538,18 +620,17 @@
   white-space: nowrap;
 }
 .ad-btn:active { transform: scale(0.97); }
-
 .ad-btn--gold {
   background: var(--gold);
   color: #0B0F19;
   border-color: var(--gold);
 }
 .ad-btn--gold:hover:not(.ad-btn--disabled) {
-  background: #E5C43F;
-  border-color: #E5C43F;
-  box-shadow: 0 4px 16px var(--gold-glow);
+  background: var(--gold-h);
+  border-color: var(--gold-h);
+  box-shadow: 0 0.25rem 1rem var(--gold-glow);
 }
-.ad-btn--full { width: 100%; padding-top: 13px; padding-bottom: 13px; }
+.ad-btn--full { width: 100%; padding-top: 0.8125rem; padding-bottom: 0.8125rem; }
 .ad-btn--disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
 
 /* ============================================================
@@ -563,21 +644,21 @@
 .ad-footer__grid {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
-  gap: 60px;
-  padding: 56px 32px 44px;
+  gap: 3.75rem;
+  padding: 3.5rem 2rem 2.75rem;
 }
 .ad-footer__wordmark {
   font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--gold);
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
 }
 .ad-footer__desc {
   font-size: 0.8rem;
   color: var(--text-3);
   line-height: 1.75;
-  max-width: 240px;
+  max-width: 15rem;
 }
 .ad-footer__col-title {
   font-size: 0.58rem;
@@ -585,9 +666,9 @@
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--text-3);
-  margin-bottom: 18px;
+  margin-bottom: 1.125rem;
 }
-.ad-footer__list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.ad-footer__list { list-style: none; display: flex; flex-direction: column; gap: 0.625rem; }
 .ad-footer__list li,
 .ad-footer__list a {
   font-size: 0.82rem;
@@ -598,7 +679,7 @@
 .ad-footer__list a:hover { color: var(--gold); }
 .ad-footer__bottom {
   border-top: 1px solid var(--border);
-  padding: 20px 32px;
+  padding: 1.25rem 2rem;
   text-align: center;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
@@ -608,17 +689,38 @@
 /* ============================================================
    RESPONSIVE
    ============================================================ */
-@media (max-width: 1024px) {
+@media (max-width: 64rem) {
   .ad-body { grid-template-columns: 1fr; }
   .ad-sidebar { position: static; order: -1; }
   .ad-specs__grid { grid-template-columns: repeat(2, 1fr); }
   .ad-spec { border-right: none; border-bottom: 1px solid var(--border); }
-  .ad-spec:nth-child(2n) { border-right: none; }
-  .ad-footer__grid { grid-template-columns: 1fr 1fr; gap: 36px; }
+  .ad-footer__grid { grid-template-columns: 1fr 1fr; gap: 2.25rem; }
 }
-@media (max-width: 640px) {
-  .ad-container { padding: 0 20px; }
+@media (max-width: 40rem) {
+  .ad-container { padding: 0 1.25rem; }
   .ad-specs__grid { grid-template-columns: 1fr 1fr; }
-  .ad-footer__grid { grid-template-columns: 1fr; gap: 28px; }
+  .ad-footer__grid { grid-template-columns: 1fr; gap: 1.75rem; }
   .ad-gallery__thumbs { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* ============================================================
+   CURRENCY ICON
+   ============================================================ */
+.ad-currency-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
+  margin-left: 0.375rem;
+  color: var(--gold);
+}
+.ad-price-card__price .ad-currency-icon {
+  font-size: 1.2rem;
+  color: var(--gold);
+}
+.ad-meta-row .ad-currency-icon {
+  color: var(--text);
+  margin-left: 0.25rem;
+}
+.ad-history__amount .ad-currency-icon { margin-left: 0.25rem; }
+.ad-deal-card__price strong .ad-currency-icon { vertical-align: baseline; }

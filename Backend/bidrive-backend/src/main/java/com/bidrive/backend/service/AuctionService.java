@@ -89,7 +89,8 @@ public class AuctionService {
             BigDecimal startingPrice,
             BigDecimal minBidStep,
             Integer cityId,
-            List<String> imageUrls
+            List<String> imageUrls,
+            LocalDateTime endTime
     ) {
         User seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
@@ -115,6 +116,7 @@ public class AuctionService {
         auction.setFuelType(fuelType);
         auction.setCity(city);
         auction.setDescription(description);
+        auction.setEndTime(endTime);
 
         auction.setStartingPrice(startingPrice);
         auction.setCurrentPrice(startingPrice);

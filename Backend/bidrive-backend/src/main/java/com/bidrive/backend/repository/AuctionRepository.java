@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -16,16 +17,19 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     List<Auction> findByBrandIdAndStatus(Long brandId, String status);
     List<Auction> findByModerationStatus(String moderationStatus);
 
-    // === ОБНОВЛЕННЫЙ ЗАПРОС ===
-    // Используем LEFT JOIN, чтобы не терять лоты, где город/топливо могут быть NULL
+    // === НОВЫЙ МЕТОД для планировщика ===
+    // Находит активные лоты, у которых время окончания меньше указанного
+    List<Auction> findByStatusAndEndTimeBefore(String status, LocalDateTime time);
+
+    // Твой поиск (оставляю без изменений)
     @Query("SELECT DISTINCT a FROM Auction a " +
-            "LEFT JOIN a.city c " + // Присоединяем город (если есть)
+            "LEFT JOIN a.city c " +
             "WHERE a.status = 'ACTIVE' AND " +
             "(:brandId IS NULL OR a.brand.id = :brandId) AND " +
             "(:modelId IS NULL OR a.model.id = :modelId) AND " +
             "(:fuelTypeId IS NULL OR a.fuelType.id = :fuelTypeId) AND " +
             "(:transmissionId IS NULL OR a.transmission.id = :transmissionId) AND " +
-            "(:regionId IS NULL OR (c IS NOT NULL AND c.region.id = :regionId)) AND " + // Проверка на NULL
+            "(:regionId IS NULL OR (c IS NOT NULL AND c.region.id = :regionId)) AND " +
             "(:cityId IS NULL OR a.city.id = :cityId) AND " +
             "(:yearFrom IS NULL OR a.year >= :yearFrom) AND " +
             "(:yearTo IS NULL OR a.year <= :yearTo) AND " +

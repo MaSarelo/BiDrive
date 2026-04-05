@@ -6,6 +6,7 @@ import com.bidrive.backend.service.AuctionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.bidrive.backend.dto.BidHistoryDTO;
+import java.time.LocalDateTime;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -27,7 +28,7 @@ public class AuctionController {
         return auctionRepository.findByStatus("ACTIVE");
     }
 
-    // GET: Расширенный поиск (с безопасной конвертацией)
+    // GET: Расширенный поиск
     @GetMapping("/search")
     public List<Auction> searchAuctions(
             @RequestParam(required = false) String brandId,
@@ -42,6 +43,7 @@ public class AuctionController {
             @RequestParam(required = false) String priceTo,
             @RequestParam(required = false) String mileageFrom,
             @RequestParam(required = false) String mileageTo
+            // endTime убрал из поиска, так как в Repository его нет
     ) {
         Long bId = toLong(brandId);
         Long mId = toLong(modelId);
@@ -83,7 +85,7 @@ public class AuctionController {
         return auctionService.getBidHistory(id);
     }
 
-    // === НОВЫЙ МЕТОД СОЗДАНИЯ (ПРИНИМАЕТ JSON) ===
+    // === ИСПРАВЛЕННЫЙ МЕТОД СОЗДАНИЯ ===
     @PostMapping
     public Auction createAuction(@RequestBody CreateAuctionRequest request) {
         return auctionService.createAuction(
@@ -98,7 +100,8 @@ public class AuctionController {
                 request.getStartingPrice(),
                 request.getMinBidStep(),
                 request.getCityId(),
-                request.getImageUrls()
+                request.getImageUrls(),
+                request.getEndTime() // <--- ДОБАВИЛ ПЕРЕДАЧУ ВРЕМЕНИ
         );
     }
 
@@ -116,7 +119,7 @@ public class AuctionController {
         private BigDecimal minBidStep;
         private Integer cityId;
         private List<String> imageUrls;
-        private String endTime;
+        private LocalDateTime endTime; // <--- ТИП LocalDateTime (Spring сам распарсит строку)
 
         // Геттеры и сеттеры
         public Long getSellerId() { return sellerId; }
@@ -155,10 +158,9 @@ public class AuctionController {
         public List<String> getImageUrls() { return imageUrls; }
         public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
 
-        public String getEndTime() { return endTime; }
-        public void setEndTime(String endTime) { this.endTime = endTime; }
+        public LocalDateTime getEndTime() { return endTime; }
+        public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
     }
-    // ==========================================
 
     @PutMapping("/{id}/approve")
     public void approveAuction(@PathVariable Long id) {
