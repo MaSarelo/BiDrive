@@ -34,6 +34,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/files/**").permitAll() // Разрешаем загрузку файлов
                         .requestMatchers("/api/admin/**").permitAll()
                         .requestMatchers("/api/notifications/**").permitAll()
+                        .requestMatchers("/api/currency/rate").permitAll()
 
                         .anyRequest().authenticated()
                 );

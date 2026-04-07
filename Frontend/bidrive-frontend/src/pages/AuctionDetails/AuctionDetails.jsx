@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './AuctionDetails.css';
 import BynIcon from '../../components/BynIcon';
+import { useRate } from '../../context/RateContext';
 
 const STATUS_MAP = {
   ACTIVE:   { label: 'Активен',     cls: 'ad-status--active'   },
@@ -24,6 +25,9 @@ function AuctionDetails() {
   const [bidMsg,       setBidMsg]       = useState({ text: '', ok: true });
   const [bidHistory,   setBidHistory]   = useState([]);
   const [timeLeft,     setTimeLeft]     = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  // Получаем курс доллара
+  const rate = useRate();
 
   useEffect(() => {
     const email = localStorage.getItem('userEmail');
@@ -158,6 +162,7 @@ function AuctionDetails() {
                   <h3 className="ad-deal-card__title">Поздравляем! Вы выиграли этот лот</h3>
                   <p className="ad-deal-card__price">
                     Итоговая цена: <strong>{auction.currentPrice?.toLocaleString()} <BynIcon className="ad-currency-icon" /></strong>
+                    {rate && <span className="ad-price__usd">(~ ${Math.round(auction.currentPrice / rate).toLocaleString()})</span>}
                   </p>
                   <div className="ad-deal-card__contacts">
                     <p>Свяжитесь с продавцом для оформления сделки</p>
@@ -180,6 +185,7 @@ function AuctionDetails() {
                   <h3 className="ad-deal-card__title">Лот продан</h3>
                   <p className="ad-deal-card__price">
                     Сумма сделки: <strong>{auction.currentPrice?.toLocaleString()} <BynIcon className="ad-currency-icon" /></strong>
+                    {rate && <span className="ad-price__usd">(~ ${Math.round(auction.currentPrice / rate).toLocaleString()})</span>}
                   </p>
                   <div className="ad-deal-card__contacts">
                     <p>Победитель торгов</p>
@@ -289,9 +295,14 @@ function AuctionDetails() {
                 <p className="ad-price-card__eyebrow">Текущая цена</p>
                 <p className="ad-price-card__price">
                   {auction.currentPrice?.toLocaleString()}
-                  {/* Заменили span на иконку */}
                   <BynIcon className="ad-currency-icon" />
                 </p>
+                {/* Вывод цены в USD в сайдбаре */}
+                {rate && (
+                    <p className="ad-price__usd">
+                      ≈ {Math.round(auction.currentPrice / rate).toLocaleString()} $
+                    </p>
+                )}
               </div>
 
               <div className="ad-price-card__divider" />
@@ -299,7 +310,6 @@ function AuctionDetails() {
               <div className="ad-price-card__meta">
                 <div className="ad-meta-row">
                   <span>Стартовая цена</span>
-                  {/* Иконка внутри span, чтобы сохранить размер текста */}
                   <span>{auction.startingPrice?.toLocaleString()} <BynIcon className="ad-currency-icon" /></span>
                 </div>
                 <div className="ad-meta-row">

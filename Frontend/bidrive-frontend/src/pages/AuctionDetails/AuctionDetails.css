@@ -724,3 +724,11 @@
 }
 .ad-history__amount .ad-currency-icon { margin-left: 0.25rem; }
 .ad-deal-card__price strong .ad-currency-icon { vertical-align: baseline; }
+
+.ad-price__usd {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-3);
+  margin-top: 6px;
+  letter-spacing: 0.02em;
+}

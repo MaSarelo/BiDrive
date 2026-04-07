@@ -226,3 +226,10 @@
   vertical-align: middle;
   color: #F5F7FA;
 }
+
+.ac-price__usd {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-3);
+  margin-top: 4px;
+}

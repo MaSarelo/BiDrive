@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import './AuctionCard.css';
 import BynIcon from './BynIcon';
+import { useRate } from '../context/RateContext';
 
 const STATUS_MAP = {
   ACTIVE:   { label: 'Активен',     cls: 'ac-status--active'   },
@@ -16,6 +17,12 @@ function AuctionCard({ auction }) {
       : null;
 
   const status = STATUS_MAP[auction.status] ?? { label: auction.status, cls: '' };
+
+  // Получаем курс и считаем цену в USD
+  const rate = useRate();
+  const priceUsd = rate && auction.currentPrice
+      ? Math.round(auction.currentPrice / rate).toLocaleString()
+      : '...';
 
   return (
       <Link to={`/auction/${auction.id}`} className="ac-link">
@@ -66,9 +73,16 @@ function AuctionCard({ auction }) {
                 <p className="ac-price__label">Текущая цена</p>
                 <p className="ac-price__value">
                   {auction.currentPrice?.toLocaleString()}
-                  {/* Заменили текст BYN на картинку */}
                   <BynIcon className="ac-currency-icon" />
                 </p>
+
+                {/* Вывод цены в USD */}
+                {rate && (
+                    <p className="ac-price__usd">
+                      ≈ {priceUsd} $
+                    </p>
+                )}
+
                 {auction.status === 'ACTIVE' && auction.endTime && (
                     <p className="ac-end-time">
                       {new Date(auction.endTime).toLocaleString('ru-RU', {
