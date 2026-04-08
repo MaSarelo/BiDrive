@@ -233,3 +233,63 @@
   color: var(--text-3);
   margin-top: 4px;
 }
+
+/* ============================================================
+   SKELETON (LOADING STATE)
+   ============================================================ */
+
+/* Анимация мерцания */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-2) 25%, var(--bg-3) 50%, var(--bg-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  display: block;
+  color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Скелетон для фото */
+.skeleton--photo {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+}
+
+/* Скелетон для заголовка */
+.skeleton--title {
+  height: 1.4rem;
+  width: 70%;
+  margin-bottom: 0.8rem;
+}
+
+/* Скелетон для спецификаций */
+.skeleton--spec {
+  height: 0.8rem;
+  width: 45%;
+  margin-bottom: 0.5rem;
+}
+
+/* Скелетон для цены */
+.skeleton--price {
+  height: 1.6rem;
+  width: 40%;
+  margin-bottom: 0.5rem;
+}
+
+/* Скелетон для времени */
+.skeleton--time {
+  height: 0.7rem;
+  width: 30%;
+}
+
+/* Скрываем реальный контент внутри скелетона */
+.skeleton * {
+  visibility: hidden;
+}

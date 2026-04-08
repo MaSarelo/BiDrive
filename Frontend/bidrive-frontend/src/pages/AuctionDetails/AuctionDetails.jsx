@@ -4,13 +4,15 @@ import axios from 'axios';
 import './AuctionDetails.css';
 import BynIcon from '../../components/BynIcon';
 import { useRate } from '../../context/RateContext';
+import AuctionDetailsSkeleton from './AuctionDetailsSkeleton';
 
 const STATUS_MAP = {
   ACTIVE:   { label: 'Активен',     cls: 'ad-status--active'   },
   DRAFT:    { label: 'Черновик',    cls: 'ad-status--draft'    },
   PENDING:  { label: 'На проверке', cls: 'ad-status--pending'  },
-  FINISHED: { label: 'Завершён',    cls: 'ad-status--finished' },
   APPROVED: { label: 'Одобрен',     cls: 'ad-status--approved' },
+  REJECTED: { label: 'Отклонён',    cls: 'ad-status--rejected' }, // Добавлен статус
+  FINISHED: { label: 'Завершён',    cls: 'ad-status--finished' },
 };
 
 function AuctionDetails() {
@@ -26,7 +28,6 @@ function AuctionDetails() {
   const [bidHistory,   setBidHistory]   = useState([]);
   const [timeLeft,     setTimeLeft]     = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  // Получаем курс доллара
   const rate = useRate();
 
   useEffect(() => {
@@ -56,7 +57,6 @@ function AuctionDetails() {
     loadBidHistory();
   }, [id]);
 
-  /* ── Таймер ── */
   useEffect(() => {
     if (!auction?.endTime || auction.status !== 'ACTIVE') return;
 
@@ -101,12 +101,9 @@ function AuctionDetails() {
         .catch(err => setBidMsg({ text: err.response?.data || 'Ошибка', ok: false }));
   };
 
-  if (loading) return (
-      <div className="ad-loading">
-        <span className="ad-loading__line" />
-        <p>Загрузка</p>
-      </div>
-  );
+  // --- Скелетон при загрузке ---
+  if (loading) return <AuctionDetailsSkeleton />;
+
   if (!auction) return <div className="ad-loading"><p>Лот не найден.</p></div>;
 
   const status   = STATUS_MAP[auction.status] ?? { label: auction.status, cls: '' };
@@ -155,6 +152,18 @@ function AuctionDetails() {
               </h1>
               <div className="ad-title-block__divider" />
             </div>
+
+            {/* --- БЛОК ОТКЛОНЕНИЯ --- */}
+            {auction.status === 'REJECTED' && auction.rejectionReason && (
+                <div className="ad-deal-card ad-deal-card--seller" style={{background: 'rgba(239,68,68,0.07)', borderColor: 'rgba(239,68,68,0.25)', marginBottom: '32px'}}>
+                  <h3 className="ad-deal-card__title" style={{color: 'var(--red)'}}>Лот отклонён модератором</h3>
+                  <div className="ad-deal-card__contacts">
+                    <p style={{color: 'var(--text-2)', fontSize: '0.9rem', marginBottom: 0}}>
+                      <strong>Причина:</strong> {auction.rejectionReason}
+                    </p>
+                  </div>
+                </div>
+            )}
 
             {/* Deal cards */}
             {isWinner && (
@@ -297,10 +306,9 @@ function AuctionDetails() {
                   {auction.currentPrice?.toLocaleString()}
                   <BynIcon className="ad-currency-icon" />
                 </p>
-                {/* Вывод цены в USD в сайдбаре */}
                 {rate && (
                     <p className="ad-price__usd">
-                      ≈ {Math.round(auction.currentPrice / rate).toLocaleString()} $
+                      ~ ${Math.round(auction.currentPrice / rate).toLocaleString()}
                     </p>
                 )}
               </div>
@@ -371,7 +379,7 @@ function AuctionDetails() {
           </aside>
         </main>
 
-        {/* ── Footer ── */}
+        {/* Footer */}
         <footer className="ad-footer">
           <div className="ad-container ad-footer__grid">
             <div>

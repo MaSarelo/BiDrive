@@ -37,6 +37,18 @@ public class AuctionScheduler {
         }
     }
 
+    @Scheduled(fixedRate = 10000)
+    @Transactional
+    public void startScheduledAuctions() {
+        List<Auction> toStart = auctionRepository.findByStatusAndStartTimeBefore("APPROVED", LocalDateTime.now());
+
+        for (Auction auction : toStart) {
+            System.out.println(">>> Старт аукциона ID: " + auction.getId());
+            auction.setStatus("ACTIVE");
+            auctionRepository.save(auction);
+        }
+    }
+
     private void finishAuction(Auction auction) {
         System.out.println(">>> Завершение аукциона ID: " + auction.getId());
 
@@ -49,24 +61,20 @@ public class AuctionScheduler {
             auction.setWinner(winner);
             auction.setCurrentPrice(lastBid.getAmount());
 
-            // 3. УВЕДОМЛЯЕМ ПОБЕДИТЕЛЯ
             Notification notifWinner = new Notification();
             notifWinner.setUser(winner);
             notifWinner.setMessage("🎉 Вы выиграли лот: " + auction.getBrand().getName() + " " + auction.getModel().getName() +
                     "! Свяжитесь с продавцом: " + seller.getFirstName() + " (" + seller.getEmail() + ")");
             notifWinner.setCreatedAt(LocalDateTime.now());
-            // ИСПРАВЛЕНО: используем AUCTION_WON
             notifWinner.setType("AUCTION_WON");
 
             notificationRepository.save(notifWinner);
 
-            // 4. УВЕДОМЛЯЕМ ПРОДАВЦА
             Notification notifSeller = new Notification();
             notifSeller.setUser(seller);
             notifSeller.setMessage("✅ Ваш лот продан: " + auction.getBrand().getName() + " " + auction.getModel().getName() +
                     ". Победитель: " + winner.getFirstName() + " (" + winner.getEmail() + ")");
             notifSeller.setCreatedAt(LocalDateTime.now());
-            // Это значение есть в базе
             notifSeller.setType("AUCTION_SOLD");
 
             notificationRepository.save(notifSeller);
@@ -75,12 +83,10 @@ public class AuctionScheduler {
         } else {
             System.out.println(">>> Ставок не было. Лот закрыт без продажи.");
 
-            // Уведомляем продавца, что лот не продался
             Notification notifSeller = new Notification();
             notifSeller.setUser(auction.getSeller());
             notifSeller.setMessage("⚠️ Время аукциона истекло, но ставок не было: " + auction.getBrand().getName());
             notifSeller.setCreatedAt(LocalDateTime.now());
-            // Используем новое значение, которое добавили в SQL выше
             notifSeller.setType("AUCTION_UNSOLD");
 
             notificationRepository.save(notifSeller);

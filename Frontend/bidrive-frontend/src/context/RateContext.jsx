@@ -13,7 +13,7 @@ export const RateProvider = ({ children }) => {
                 setRate(res.data.rate);
             } catch (err) {
                 console.error('Ошибка загрузки курса:', err);
-                setRate(3.2); // Заглушка, если сервер не отвечает
+                setRate(3); // Заглушка, если сервер не отвечает
             }
         };
         fetchRate();

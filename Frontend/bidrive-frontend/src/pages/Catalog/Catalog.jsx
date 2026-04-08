@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import AuctionCard from '../../components/AuctionCard';
+import AuctionCardSkeleton from '../../components/AuctionCardSkeleton'; // Импорт скелетона
 import './Catalog.css';
 
 const EMPTY = {
@@ -225,8 +226,9 @@ function Catalog() {
             </div>
 
             {loading ? (
-                <div className="ct-skel-grid">
-                  {Array.from({ length: 6 }).map((_, i) => <div key={i} className="ct-skel" />)}
+                // Используем ct-grid для правильной сетки и выводим скелетоны
+                <div className="ct-grid">
+                  {Array.from({ length: 6 }).map((_, i) => <AuctionCardSkeleton key={i} />)}
                 </div>
             ) : auctions.length > 0 ? (
                 <div className="ct-grid">

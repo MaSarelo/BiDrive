@@ -1,22 +1,34 @@
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
-import { useState, useEffect, useMemo, useRef, createContext } from 'react'; // 1. Добавили createContext
+import { useState, useEffect, useMemo, useRef, createContext } from 'react';
 import axios from 'axios';
 import './Layout.css';
 
-// 2. Создаем контекст для уведомлений
 export const NotifContext = createContext();
 
 function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [userEmail, setUserEmail] = useState(null);
-  const [userRole, setUserRole] = useState(null);
+  // --- ИСПРАВЛЕНИЕ: Инициализируем состояние сразу из localStorage ---
+  // Используем функцию инициализации, чтобы код выполнился один раз при старте
+  const [userEmail, setUserEmail] = useState(() => localStorage.getItem('userEmail'));
+  const [userRole, setUserRole] = useState(() => {
+    const r = localStorage.getItem('userRole');
+    return r ? parseInt(r) : null;
+  });
+  // ----------------------------------------------------------------
+
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [notifCount, setNotifCount] = useState(0); // Это состояние будет глобальным
+  const [notifCount, setNotifCount] = useState(0);
   const drawerRef = useRef(null);
 
+  // Глобальный скролл вверх при смене страницы
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  // Синхронизация при смене страницы (на случай изменений в другой вкладке и т.д.)
   useEffect(() => {
     const email = localStorage.getItem('userEmail');
     const role = localStorage.getItem('userRole');
@@ -32,7 +44,6 @@ function Layout() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Эффект для загрузки количества уведомлений
   useEffect(() => {
     const userId = localStorage.getItem('userId');
     if (!userId) { setNotifCount(0); return; }
@@ -61,7 +72,6 @@ function Layout() {
   const isActive = path => location.pathname === path;
 
   return (
-      // 3. Оборачиваем всё в Provider и передаем state и функцию setter
       <NotifContext.Provider value={{ notifCount, setNotifCount }}>
         <div className="ly">
           <div

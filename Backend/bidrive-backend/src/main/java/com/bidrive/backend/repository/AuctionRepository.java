@@ -16,6 +16,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     List<Auction> findBySellerId(Long sellerId);
     List<Auction> findByBrandIdAndStatus(Long brandId, String status);
     List<Auction> findByModerationStatus(String moderationStatus);
+    List<Auction> findByStatusAndStartTimeBefore(String status, LocalDateTime startTime);
 
     // === НОВЫЙ МЕТОД для планировщика ===
     // Находит активные лоты, у которых время окончания меньше указанного

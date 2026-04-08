@@ -732,3 +732,41 @@
   margin-top: 6px;
   letter-spacing: 0.02em;
 }
+
+/* ============================================================
+   SKELETON (AuctionDetails) - UPDATED SIZES
+   ============================================================ */
+
+@keyframes adShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.ad-skel {
+  background: linear-gradient(90deg, var(--bg-2) 25%, var(--bg-3) 50%, var(--bg-2) 75%);
+  background-size: 200% 100%;
+  animation: adShimmer 1.5s infinite;
+  border-radius: 4px;
+  display: block;
+  color: transparent !important;
+}
+
+.ad-skel--text { height: 1em; }
+.ad-skel--title { height: 2.6rem; width: 65%; margin-bottom: 1.5rem; } /* Увеличили */
+.ad-skel--status { height: 1.8rem; width: 100px; border-radius: 20px; margin-bottom: 1rem; } /* Увеличили */
+.ad-skel--price { height: 3.5rem; width: 60%; margin-bottom: 0.5rem; } /* Увеличили */
+.ad-skel--meta { height: 1rem; width: 80%; margin-bottom: 1rem; } /* Увеличили */
+.ad-skel--btn { height: 52px; width: 100%; border-radius: 8px; }
+
+.ad-skel--gallery {
+  width: 100%;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  height: 100%;
+  border-radius: 10px;
+}
+.ad-skel--thumb {
+  width: 100%;
+  height: 70px; /* Увеличили миниатюры */
+  border-radius: 6px;
+}

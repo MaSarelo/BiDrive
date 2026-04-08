@@ -92,6 +92,18 @@ public class Auction {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
+
+    // Геттер и сеттер
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
+    }
+
     // Конструктор
     public Auction() {}
 

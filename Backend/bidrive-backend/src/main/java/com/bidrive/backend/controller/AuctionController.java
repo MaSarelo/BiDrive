@@ -4,6 +4,7 @@ import com.bidrive.backend.entity.Auction;
 import com.bidrive.backend.repository.AuctionRepository;
 import com.bidrive.backend.service.AuctionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.bidrive.backend.dto.BidHistoryDTO;
 import java.time.LocalDateTime;
@@ -190,5 +191,17 @@ public class AuctionController {
     @GetMapping("/pending")
     public List<Auction> getPendingAuctions() {
         return auctionRepository.findByModerationStatus("PENDING");
+    }
+
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<?> rejectAuction(@PathVariable Long id, @RequestParam String reason) {
+        Auction auction = auctionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Auction not found"));
+
+        auction.setStatus("REJECTED");
+        auction.setRejectionReason(reason);
+
+        auctionRepository.save(auction);
+        return ResponseEntity.ok().build();
     }
 }
