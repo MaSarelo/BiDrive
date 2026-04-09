@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom'; // 1. Добавлен useSearchParams
 import axios from 'axios';
 import AuctionCard from '../../components/AuctionCard';
-import AuctionCardSkeleton from '../../components/AuctionCardSkeleton'; // Импорт скелетона
+import AuctionCardSkeleton from '../../components/AuctionCardSkeleton';
 import './Catalog.css';
 
 const EMPTY = {
@@ -12,6 +12,8 @@ const EMPTY = {
 };
 
 function Catalog() {
+  // 2. Инициализация состояния из URL
+  const [searchParams, setSearchParams] = useSearchParams();
   const [auctions,      setAuctions]      = useState([]);
   const [loading,       setLoading]       = useState(false);
 
@@ -22,26 +24,57 @@ function Catalog() {
   const [regions,       setRegions]       = useState([]);
   const [cities,        setCities]        = useState([]);
 
-  const [filters, setFilters] = useState(EMPTY);
+  // Инициализируем фильтры: берем из URL, если нет - дефолт
+  const getInitialFilters = () => {
+    const initial = { ...EMPTY };
+    for (let key in EMPTY) {
+      const param = searchParams.get(key);
+      if (param) initial[key] = param;
+    }
+    return initial;
+  };
 
+  const [filters, setFilters] = useState(getInitialFilters);
+
+  // 3. Эффект при первом рендере (загрузка справочников и данных)
   useEffect(() => {
+    // Загрузка справочников (бренды, типы топлива и т.д.)
     axios.get('http://localhost:8080/api/brands').then(r => setBrands(r.data)).catch(console.error);
     axios.get('http://localhost:8080/api/fuel-types').then(r => setFuelTypes(r.data)).catch(console.error);
     axios.get('http://localhost:8080/api/transmissions').then(r => setTransmissions(r.data)).catch(console.error);
     axios.get('http://localhost:8080/api/regions').then(r => setRegions(r.data)).catch(console.error);
-    fetchAuctions(EMPTY);
+
+    // Если в фильтрах есть brandId (из URL), загружаем модели
+    const initialBrand = searchParams.get('brandId');
+    if (initialBrand) {
+      axios.get(`http://localhost:8080/api/models/by-brand?brandId=${initialBrand}`)
+          .then(r => setModels(r.data)).catch(console.error);
+    }
+
+    // Если есть regionId (из URL), загружаем города
+    const initialRegion = searchParams.get('regionId');
+    if (initialRegion) {
+      axios.get(`http://localhost:8080/api/cities/by-region?regionId=${initialRegion}`)
+          .then(r => setCities(r.data)).catch(console.error);
+    }
+
+    // Загружаем аукционы с текущими фильтрами
+    fetchAuctions(getInitialFilters());
   }, []);
 
+  // 4. Подгрузка моделей при смене бренда
   useEffect(() => {
     if (filters.brandId) {
       axios.get(`http://localhost:8080/api/models/by-brand?brandId=${filters.brandId}`)
           .then(r => setModels(r.data)).catch(() => setModels([]));
     } else {
       setModels([]);
+      // Если бренд сбросили, сбрасываем и модель в стейте
       setFilters(p => ({ ...p, modelId: '' }));
     }
   }, [filters.brandId]);
 
+  // 5. Подгрузка городов при смене региона
   useEffect(() => {
     if (filters.regionId) {
       axios.get(`http://localhost:8080/api/cities/by-region?regionId=${filters.regionId}`)
@@ -52,10 +85,17 @@ function Catalog() {
     }
   }, [filters.regionId]);
 
+  // 6. Функция запроса на сервер + обновление URL
   const fetchAuctions = (f = filters) => {
     setLoading(true);
-    const params = Object.fromEntries(Object.entries(f).filter(([, v]) => v !== ''));
-    axios.get('http://localhost:8080/api/auctions/search', { params })
+
+    // Очищаем пустые значения
+    const cleanParams = Object.fromEntries(Object.entries(f).filter(([, v]) => v !== ''));
+
+    // Обновляем URL (перезаписываем историю)
+    setSearchParams(cleanParams);
+
+    axios.get('http://localhost:8080/api/auctions/search', { params: cleanParams })
         .then(r => { setAuctions(r.data); setLoading(false); })
         .catch(() => setLoading(false));
   };
@@ -65,11 +105,13 @@ function Catalog() {
     setFilters(p => ({ ...p, [name]: value }));
   };
 
+  // 7. Сброс фильтров
   const reset = () => {
-    setFilters(EMPTY);
+    setFilters(EMPTY);      // Сброс стейта
+    setSearchParams({});    // Очистка URL
     setModels([]);
     setCities([]);
-    fetchAuctions(EMPTY);
+    fetchAuctions(EMPTY);   // Запрос с пустыми параметрами
   };
 
   const activeCount = Object.values(filters).filter(Boolean).length;
@@ -226,7 +268,6 @@ function Catalog() {
             </div>
 
             {loading ? (
-                // Используем ct-grid для правильной сетки и выводим скелетоны
                 <div className="ct-grid">
                   {Array.from({ length: 6 }).map((_, i) => <AuctionCardSkeleton key={i} />)}
                 </div>

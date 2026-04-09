@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './AuctionDetails.css';
@@ -11,7 +11,7 @@ const STATUS_MAP = {
   DRAFT:    { label: 'Черновик',    cls: 'ad-status--draft'    },
   PENDING:  { label: 'На проверке', cls: 'ad-status--pending'  },
   APPROVED: { label: 'Одобрен',     cls: 'ad-status--approved' },
-  REJECTED: { label: 'Отклонён',    cls: 'ad-status--rejected' }, // Добавлен статус
+  REJECTED: { label: 'Отклонён',    cls: 'ad-status--rejected' },
   FINISHED: { label: 'Завершён',    cls: 'ad-status--finished' },
 };
 
@@ -27,6 +27,10 @@ function AuctionDetails() {
   const [bidMsg,       setBidMsg]       = useState({ text: '', ok: true });
   const [bidHistory,   setBidHistory]   = useState([]);
   const [timeLeft,     setTimeLeft]     = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  // --- LIGHTBOX STATE ---
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const rate = useRate();
 
@@ -101,9 +105,46 @@ function AuctionDetails() {
         .catch(err => setBidMsg({ text: err.response?.data || 'Ошибка', ok: false }));
   };
 
-  // --- Скелетон при загрузке ---
-  if (loading) return <AuctionDetailsSkeleton />;
+  // --- LIGHTBOX LOGIC ---
 
+  const openLightbox = (index) => {
+    setLightboxIndex(index);
+    setIsLightboxOpen(true);
+    document.body.style.overflow = 'hidden'; // Блокируем скролл страницы
+  };
+
+  const closeLightbox = useCallback(() => {
+    setIsLightboxOpen(false);
+    document.body.style.overflow = 'auto'; // Разблокируем скролл
+  }, []);
+
+  const goToNext = useCallback(() => {
+    if (!auction?.images) return;
+    setLightboxIndex(prev => (prev + 1) % auction.images.length);
+  }, [auction]);
+
+  const goToPrev = useCallback(() => {
+    if (!auction?.images) return;
+    setLightboxIndex(prev => (prev - 1 + auction.images.length) % auction.images.length);
+  }, [auction]);
+
+  // Обработка клавиатуры
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') goToNext();
+      if (e.key === 'ArrowLeft') goToPrev();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLightboxOpen, closeLightbox, goToNext, goToPrev]);
+
+  // ----------------------
+
+  if (loading) return <AuctionDetailsSkeleton />;
   if (!auction) return <div className="ad-loading"><p>Лот не найден.</p></div>;
 
   const status   = STATUS_MAP[auction.status] ?? { label: auction.status, cls: '' };
@@ -153,7 +194,7 @@ function AuctionDetails() {
               <div className="ad-title-block__divider" />
             </div>
 
-            {/* --- БЛОК ОТКЛОНЕНИЯ --- */}
+            {/* REJECTED BLOCK */}
             {auction.status === 'REJECTED' && auction.rejectionReason && (
                 <div className="ad-deal-card ad-deal-card--seller" style={{background: 'rgba(239,68,68,0.07)', borderColor: 'rgba(239,68,68,0.25)', marginBottom: '32px'}}>
                   <h3 className="ad-deal-card__title" style={{color: 'var(--red)'}}>Лот отклонён модератором</h3>
@@ -213,14 +254,23 @@ function AuctionDetails() {
             {/* Gallery */}
             <div className="ad-gallery">
               <div className="ad-gallery__main">
-                {currentImage
-                    ? <img src={`http://localhost:8080${currentImage.imageUrl}`} alt="Фото лота" />
-                    : <div className="ad-gallery__empty">Фото не загружено</div>
-                }
+                {currentImage ? (
+                    // Оборачиваем фото в контейнер для обработки клика
+                    <div onClick={() => {
+                      if(auction.images?.length > 0) {
+                        const idx = auction.images.findIndex(i => i.id === currentImage.id);
+                        openLightbox(idx >= 0 ? idx : 0);
+                      }
+                    }}>
+                      <img src={`http://localhost:8080${currentImage.imageUrl}`} alt="Фото лота" />
+                    </div>
+                ) : (
+                    <div className="ad-gallery__empty">Фото не загружено</div>
+                )}
               </div>
               {auction.images?.length > 0 && (
                   <div className="ad-gallery__thumbs">
-                    {auction.images.map(img => (
+                    {auction.images.map((img, index) => (
                         <button
                             key={img.id}
                             className={`ad-thumb${currentImage?.id === img.id ? ' ad-thumb--active' : ''}`}
@@ -406,6 +456,42 @@ function AuctionDetails() {
             <p>© 2026 BiDrive. Дипломный проект. Все права защищены.</p>
           </div>
         </footer>
+
+        {/* --- LIGHTBOX COMPONENT --- */}
+        {isLightboxOpen && auction.images && (
+            <div className={`ad-lightbox ${isLightboxOpen ? 'ad-lightbox--open' : ''}`} onClick={closeLightbox}>
+
+              {/* Кнопка закрытия */}
+              <button className="ad-lightbox__close" onClick={closeLightbox}>×</button>
+
+              {/* Кнопка назад */}
+              {auction.images.length > 1 && (
+                  <button className="ad-lightbox__nav ad-lightbox__nav--prev" onClick={(e) => { e.stopPropagation(); goToPrev(); }}>
+                    ‹
+                  </button>
+              )}
+
+              {/* Изображение */}
+              <img
+                  src={`http://localhost:8080${auction.images[lightboxIndex]?.imageUrl}`}
+                  alt="Просмотр фото"
+                  className="ad-lightbox__img"
+                  onClick={(e) => e.stopPropagation()}
+              />
+
+              {/* Кнопка вперед */}
+              {auction.images.length > 1 && (
+                  <button className="ad-lightbox__nav ad-lightbox__nav--next" onClick={(e) => { e.stopPropagation(); goToNext(); }}>
+                    ›
+                  </button>
+              )}
+
+              {/* Счетчик */}
+              <div className="ad-lightbox__counter">
+                {lightboxIndex + 1} / {auction.images.length}
+              </div>
+            </div>
+        )}
 
       </div>
   );
