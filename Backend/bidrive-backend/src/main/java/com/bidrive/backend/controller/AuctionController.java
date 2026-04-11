@@ -7,9 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.bidrive.backend.dto.BidHistoryDTO;
-import java.time.LocalDateTime;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:5173")
@@ -23,7 +23,9 @@ public class AuctionController {
     @Autowired
     private AuctionService auctionService;
 
-    // GET: Список всех
+    // TelegramService здесь больше не нужен - логика внутри AuctionService
+
+    // GET: Список всех активных аукционов
     @GetMapping
     public List<Auction> getAllAuctions() {
         return auctionRepository.findByStatus("ACTIVE");
@@ -44,7 +46,6 @@ public class AuctionController {
             @RequestParam(required = false) String priceTo,
             @RequestParam(required = false) String mileageFrom,
             @RequestParam(required = false) String mileageTo
-            // endTime убрал из поиска, так как в Repository его нет
     ) {
         Long bId = toLong(brandId);
         Long mId = toLong(modelId);
@@ -61,7 +62,7 @@ public class AuctionController {
         );
     }
 
-    // Вспомогательные методы
+    // Вспомогательные методы конвертации
     private Long toLong(String val) {
         if (val == null || val.isEmpty()) return null;
         try { return Long.parseLong(val); } catch (Exception e) { return null; }
@@ -86,7 +87,7 @@ public class AuctionController {
         return auctionService.getBidHistory(id);
     }
 
-    // === ИСПРАВЛЕННЫЙ МЕТОД СОЗДАНИЯ ===
+    // === СОЗДАНИЕ АУКЦИОНА ===
     @PostMapping
     public Auction createAuction(@RequestBody CreateAuctionRequest request) {
         return auctionService.createAuction(
@@ -102,11 +103,11 @@ public class AuctionController {
                 request.getMinBidStep(),
                 request.getCityId(),
                 request.getImageUrls(),
-                request.getEndTime() // <--- ДОБАВИЛ ПЕРЕДАЧУ ВРЕМЕНИ
+                request.getEndTime()
         );
     }
 
-    // Вспомогательный класс для приема JSON
+    // Вспомогательный класс
     public static class CreateAuctionRequest {
         private Long sellerId;
         private Long brandId;
@@ -120,51 +121,41 @@ public class AuctionController {
         private BigDecimal minBidStep;
         private Integer cityId;
         private List<String> imageUrls;
-        private LocalDateTime endTime; // <--- ТИП LocalDateTime (Spring сам распарсит строку)
+        private LocalDateTime endTime;
 
         // Геттеры и сеттеры
         public Long getSellerId() { return sellerId; }
         public void setSellerId(Long sellerId) { this.sellerId = sellerId; }
-
         public Long getBrandId() { return brandId; }
         public void setBrandId(Long brandId) { this.brandId = brandId; }
-
         public Long getModelId() { return modelId; }
         public void setModelId(Long modelId) { this.modelId = modelId; }
-
         public Integer getYear() { return year; }
         public void setYear(Integer year) { this.year = year; }
-
         public Integer getMileage() { return mileage; }
         public void setMileage(Integer mileage) { this.mileage = mileage; }
-
         public Integer getTransmissionId() { return transmissionId; }
         public void setTransmissionId(Integer transmissionId) { this.transmissionId = transmissionId; }
-
         public Integer getFuelTypeId() { return fuelTypeId; }
         public void setFuelTypeId(Integer fuelTypeId) { this.fuelTypeId = fuelTypeId; }
-
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }
-
         public BigDecimal getStartingPrice() { return startingPrice; }
         public void setStartingPrice(BigDecimal startingPrice) { this.startingPrice = startingPrice; }
-
         public BigDecimal getMinBidStep() { return minBidStep; }
         public void setMinBidStep(BigDecimal minBidStep) { this.minBidStep = minBidStep; }
-
         public Integer getCityId() { return cityId; }
         public void setCityId(Integer cityId) { this.cityId = cityId; }
-
         public List<String> getImageUrls() { return imageUrls; }
         public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
-
         public LocalDateTime getEndTime() { return endTime; }
         public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
     }
 
+    // === ОДОБРЕНИЕ АУКЦИОНА ===
     @PutMapping("/{id}/approve")
     public void approveAuction(@PathVariable Long id) {
+        // Просто вызываем сервис. Отправка в Telegram происходит внутри сервиса.
         auctionService.approveAuction(id);
     }
 
@@ -188,11 +179,13 @@ public class AuctionController {
         auctionService.finishAuction(id, userId);
     }
 
+    // Получение списка лотов на модерации
     @GetMapping("/pending")
     public List<Auction> getPendingAuctions() {
-        return auctionRepository.findByModerationStatus("PENDING");
+        return auctionRepository.findByStatus("PENDING");
     }
 
+    // === ОТКЛОНЕНИЕ АУКЦИОНА ===
     @PostMapping("/{id}/reject")
     public ResponseEntity<?> rejectAuction(@PathVariable Long id, @RequestParam String reason) {
         Auction auction = auctionRepository.findById(id)
@@ -200,8 +193,8 @@ public class AuctionController {
 
         auction.setStatus("REJECTED");
         auction.setRejectionReason(reason);
-
         auctionRepository.save(auction);
+
         return ResponseEntity.ok().build();
     }
 }

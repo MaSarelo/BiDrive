@@ -1,292 +1,236 @@
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root {
+  --bg:        #0B0F19;
+  --bg-2:      #111624;
+  --bg-3:      #161C2D;
+  --border:    rgba(255,255,255,0.07);
+  --gold:      #D4AF37;
+  --text:      #F5F7FA;
+  --text-2:    rgba(245,247,250,0.7);
+  --text-3:    rgba(245,247,250,0.4);
+  --green:     #4ADE80;
+  --red:       #EF4444;
+  --blue:      #60A5FA;
+}
+
+/* ============================================================
+   BASE & LAYOUT
+   ============================================================ */
 .ap {
   font-family: 'Inter', system-ui, sans-serif;
-  background: var(--bg, #0B0F19);
-  color: var(--text, #F5F7FA);
+  background: var(--bg);
+  color: var(--text);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
-.ap-wrap {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 32px;
+.ap-header {
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-/* Hero */
-.ap-hero {
-  padding: 52px 0 36px;
-  border-bottom: 1px solid var(--border, rgba(255,255,255,0.07));
-  position: relative;
-}
-.ap-hero::after {
-  content: '';
-  position: absolute;
-  bottom: -1px; left: 32px;
-  width: 48px; height: 1px;
-  background: var(--gold, #D4AF37);
-}
-.ap-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--gold, #D4AF37);
-  margin-bottom: 14px;
-}
-.ap-eyebrow::before {
-  content: '';
-  display: block;
-  width: 18px; height: 1px;
-  background: var(--gold, #D4AF37);
-  opacity: 0.6;
-}
 .ap-title {
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-size: 1.4rem;
   font-weight: 800;
-  letter-spacing: -0.04em;
-  color: var(--text, #F5F7FA);
-}
-
-/* Body */
-.ap-body { padding: 44px 0 88px; }
-
-/* Section */
-.ap-section {
-  margin-bottom: 44px;
-}
-.ap-section-heading {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--gold, #D4AF37);
-  margin-bottom: 20px;
-}
-.ap-section-heading::before {
-  content: '';
-  display: block;
-  width: 18px; height: 1px;
-  background: var(--gold, #D4AF37);
-  opacity: 0.6;
-}
-
-/* Stats grid */
-.ap-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--border, rgba(255,255,255,0.07));
-  border: 1px solid var(--border, rgba(255,255,255,0.07));
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 44px;
-}
-.ap-stat {
-  background: var(--bg-2, #111624);
-  padding: 24px 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  transition: background 0.18s;
-}
-.ap-stat:hover { background: var(--bg-3, #161C2D); }
-.ap-stat__num {
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  color: var(--gold, #D4AF37);
-  line-height: 1;
-}
-.ap-stat__label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-3, rgba(245,247,250,0.32));
-}
-
-/* Cards grid (moderation) */
-.ap-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
-}
-
-.ap-card {
-  background: var(--bg-2, #111624);
-  border: 1px solid var(--border, rgba(255,255,255,0.07));
-  border-radius: 12px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: border-color 0.2s;
-}
-.ap-card:hover { border-color: rgba(212,175,55,0.2); }
-
-.ap-card__body {
-  padding: 18px 18px 14px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.ap-card__name {
-  font-size: 0.95rem;
-  font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--text, #F5F7FA);
+  margin: 0;
 }
-.ap-card__row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.ap-card__label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-3, rgba(245,247,250,0.32));
-}
-.ap-card__val {
-  font-size: 0.82rem;
+
+.ap-back {
+  font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-2, rgba(245,247,250,0.68));
+  color: var(--text-3);
+  text-decoration: none;
+  transition: color 0.2s;
 }
-.ap-card__desc {
-  font-size: 0.78rem;
-  color: var(--text-3, rgba(245,247,250,0.32));
-  line-height: 1.55;
-  font-style: italic;
-  border-top: 1px solid var(--border, rgba(255,255,255,0.07));
-  padding-top: 8px;
-  margin-top: 4px;
-}
-.ap-card__actions {
-  padding: 0 18px 18px;
-  display: flex;
-  gap: 8px;
+.ap-back:hover { color: var(--gold); }
+
+.ap-main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px 20px;
 }
 
-/* User list */
-.ap-users {
-  background: var(--bg-2, #111624);
-  border: 1px solid var(--border, rgba(255,255,255,0.07));
-  border-radius: 12px;
-  overflow: hidden;
-}
-.ap-user {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border, rgba(255,255,255,0.07));
-  transition: background 0.18s;
-}
-.ap-user:last-child { border-bottom: none; }
-.ap-user:hover { background: var(--bg-3, #161C2D); }
+/* ============================================================
+   LIST & CARDS
+   ============================================================ */
 
-.ap-user__info {
+/* Контейнер списка */
+.ap-list {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  min-width: 0;
+  gap: 16px;
 }
-.ap-user__name {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--text, #F5F7FA);
+
+/* Карточка - Горизонтальный Flex контейнер */
+.ap-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex; /* Выстраиваем фото, тело и кнопки в ряд */
+  align-items: stretch;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
 }
-.ap-user__email {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-3, rgba(245,247,250,0.32));
-  letter-spacing: 0.02em;
+
+.ap-card:hover {
+  border-color: rgba(212, 175, 55, 0.3);
+  transform: translateY(-2px);
 }
-.ap-user__tags {
+
+/* Блок с фото слева */
+.ap-card__left {
+  width: 240px; /* Фиксированная ширина фото */
+  flex-shrink: 0;
+  background: #000;
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 2px;
+  justify-content: center;
 }
-.ap-tag {
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: 100px;
-  border: 1px solid;
-}
-.ap-tag--blocked { color: #EF4444; border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.1); }
-.ap-tag--admin   { color: #D4AF37; border-color: rgba(212,175,55,0.3); background: rgba(212,175,55,0.1); }
 
-/* Buttons */
+.ap-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Чтобы фото заполняло блок красиво */
+}
+
+.ap-card__img--empty {
+  color: var(--text-3);
+  font-size: 0.8rem;
+}
+
+/* Тело карточки (центр) */
+.ap-card__body {
+  flex: 1; /* Занимает всё оставшееся место */
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.ap-card__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+}
+
+.ap-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+
+.ap-card__price {
+  margin: 4px 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+/* Кнопки справа */
+.ap-card__actions {
+  border-left: 1px solid var(--border);
+  padding: 16px;
+  background: rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-width: 140px;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
 .ap-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 7px;
+  padding: 8px 12px;
+  border-radius: 6px;
   font-family: inherit;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-decoration: none;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: background 0.18s, border-color 0.18s, transform 0.1s;
-  white-space: nowrap;
+  transition: background 0.2s, transform 0.1s;
 }
 .ap-btn:active { transform: scale(0.97); }
 
-.ap-btn--approve {
-  background: rgba(74,222,128,0.12);
-  color: #4ADE80;
-  border-color: rgba(74,222,128,0.25);
-  flex: 1;
+/* Кнопка Одобрить */
+.ap-btn--green {
+  background: rgba(74, 222, 128, 0.15);
+  color: var(--green);
 }
-.ap-btn--approve:hover { background: rgba(74,222,128,0.2); border-color: rgba(74,222,128,0.4); }
+.ap-btn--green:hover { background: rgba(74, 222, 128, 0.25); }
 
-.ap-btn--block {
-  background: rgba(239,68,68,0.1);
-  color: #EF4444;
-  border-color: rgba(239,68,68,0.2);
+/* Кнопка Отклонить */
+.ap-btn--red {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--red);
 }
-.ap-btn--block:hover { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.35); }
+.ap-btn--red:hover { background: rgba(239, 68, 68, 0.25); }
 
-.ap-btn--unblock {
-  background: rgba(96,165,250,0.1);
-  color: #60A5FA;
-  border-color: rgba(96,165,250,0.2);
+/* Кнопка Смотреть */
+.ap-btn--ghost {
+  background: transparent;
+  color: var(--text-3);
+  border: 1px solid var(--border);
 }
-.ap-btn--unblock:hover { background: rgba(96,165,250,0.18); border-color: rgba(96,165,250,0.35); }
+.ap-btn--ghost:hover { color: var(--text); border-color: var(--text-3); }
 
-/* Empty */
+/* ============================================================
+   OTHER
+   ============================================================ */
 .ap-empty {
-  padding: 40px;
   text-align: center;
-  font-size: 0.85rem;
-  color: var(--text-3, rgba(245,247,250,0.32));
-  background: var(--bg-2, #111624);
-  border: 1px solid var(--border, rgba(255,255,255,0.07));
-  border-radius: 10px;
+  padding: 60px 20px;
+  color: var(--text-3);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.ap-empty__icon { font-size: 2rem; margin-bottom: 16px; opacity: 0.5; }
+
+.ap-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  color: var(--text-3);
+  font-size: 0.9rem;
 }
 
-@media (max-width: 900px) {
-  .ap-stats { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 640px) {
-  .ap-wrap { padding: 0 20px; }
-  .ap-stats { grid-template-columns: 1fr 1fr; }
-  .ap-grid  { grid-template-columns: 1fr; }
-  .ap-user  { flex-direction: column; align-items: flex-start; }
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .ap-card {
+    flex-direction: column; /* В столбик на мобильных */
+  }
+  .ap-card__left {
+    width: 100%;
+    height: 180px; /* Фиксированная высота для фото */
+  }
+  .ap-card__actions {
+    flex-direction: row; /* Кнопки в ряд */
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding: 12px;
+  }
+  .ap-card__actions .ap-btn {
+    flex: 1; /* Кнопки равной ширины */
+  }
 }

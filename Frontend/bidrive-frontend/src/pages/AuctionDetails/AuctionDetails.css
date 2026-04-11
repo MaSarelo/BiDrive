@@ -259,23 +259,42 @@
    GALLERY
    ============================================================ */
 .ad-gallery { margin-bottom: 2.75rem; }
+
+/* Обёртка главного фото */
 .ad-gallery__main {
+  position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  /* Фиксированная высота вместо aspect-ratio — фото не обрезается */
+  height: 26rem;
   overflow: hidden;
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 0.625rem;
   margin-bottom: 0.625rem;
+  cursor: zoom-in;
 }
+
+/* Основное изображение — contain, чтобы не обрезалось */
+.ad-gallery__main > div {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
 .ad-gallery__main img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* contain — показывает фото целиком, не обрезает */
+  object-fit: contain;
   display: block;
-  transition: transform 0.6s var(--ease);
+  transition: transform 0.5s var(--ease);
 }
-.ad-gallery__main:hover img { transform: scale(1.025); }
+
+/* Лёгкий зум при наведении — только если не мешает просмотру */
+.ad-gallery__main:hover img {
+  transform: scale(1.02);
+}
+
 .ad-gallery__empty {
   width: 100%;
   height: 100%;
@@ -288,6 +307,8 @@
   text-transform: uppercase;
   color: var(--text-3);
 }
+
+/* Миниатюры */
 .ad-gallery__thumbs {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr));
@@ -303,9 +324,52 @@
   padding: 0;
   transition: border-color var(--t);
 }
-.ad-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ad-thumb:hover   { border-color: var(--border-2); }
-.ad-thumb--active { border-color: var(--gold); }
+/* Миниатюры — cover, т.к. маленькие и нужно заполнение */
+.ad-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s var(--ease);
+}
+.ad-thumb:hover img    { transform: scale(1.06); }
+.ad-thumb:hover        { border-color: var(--border-2); }
+.ad-thumb--active      { border-color: var(--gold); }
+
+/* Кнопки навигации по галерее */
+.ad-gallery__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.75rem;
+  height: 2.75rem;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.25s, background 0.2s, transform 0.2s;
+  z-index: 10;
+  user-select: none;
+  line-height: 1;
+}
+.ad-gallery__nav--prev { left: 0.75rem; }
+.ad-gallery__nav--next { right: 0.75rem; }
+.ad-gallery__nav:hover {
+  background: rgba(0,0,0,0.65);
+  transform: translateY(-50%) scale(1.08);
+}
+.ad-gallery__main:hover .ad-gallery__nav { opacity: 1; }
+
+@media (max-width: 48rem) {
+  .ad-gallery__nav { opacity: 0.75; width: 2.25rem; height: 2.25rem; font-size: 1rem; }
+}
 
 /* ============================================================
    SECTION HEADING
@@ -695,12 +759,14 @@
   .ad-specs__grid { grid-template-columns: repeat(2, 1fr); }
   .ad-spec { border-right: none; border-bottom: 1px solid var(--border); }
   .ad-footer__grid { grid-template-columns: 1fr 1fr; gap: 2.25rem; }
+  .ad-gallery__main { height: 22rem; }
 }
 @media (max-width: 40rem) {
   .ad-container { padding: 0 1.25rem; }
   .ad-specs__grid { grid-template-columns: 1fr 1fr; }
   .ad-footer__grid { grid-template-columns: 1fr; gap: 1.75rem; }
   .ad-gallery__thumbs { grid-template-columns: repeat(4, 1fr); }
+  .ad-gallery__main { height: 16rem; }
 }
 
 /* ============================================================
@@ -734,14 +800,12 @@
 }
 
 /* ============================================================
-   SKELETON (AuctionDetails) - UPDATED SIZES
+   SKELETON
    ============================================================ */
-
 @keyframes adShimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
 }
-
 .ad-skel {
   background: linear-gradient(90deg, var(--bg-2) 25%, var(--bg-3) 50%, var(--bg-2) 75%);
   background-size: 200% 100%;
@@ -750,75 +814,58 @@
   display: block;
   color: transparent !important;
 }
-
-.ad-skel--text { height: 1em; }
-.ad-skel--title { height: 2.6rem; width: 65%; margin-bottom: 1.5rem; } /* Увеличили */
-.ad-skel--status { height: 1.8rem; width: 100px; border-radius: 20px; margin-bottom: 1rem; } /* Увеличили */
-.ad-skel--price { height: 3.5rem; width: 60%; margin-bottom: 0.5rem; } /* Увеличили */
-.ad-skel--meta { height: 1rem; width: 80%; margin-bottom: 1rem; } /* Увеличили */
-.ad-skel--btn { height: 52px; width: 100%; border-radius: 8px; }
-
+.ad-skel--text    { height: 1em; }
+.ad-skel--title   { height: 2.6rem;  width: 65%;  margin-bottom: 1.5rem; }
+.ad-skel--status  { height: 1.8rem;  width: 100px; border-radius: 20px; margin-bottom: 1rem; }
+.ad-skel--price   { height: 3.5rem;  width: 60%;  margin-bottom: 0.5rem; }
+.ad-skel--meta    { height: 1rem;    width: 80%;  margin-bottom: 1rem; }
+.ad-skel--btn     { height: 52px;    width: 100%; border-radius: 8px; }
 .ad-skel--gallery {
-  width: 100%;
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  height: 100%;
+  width: 100%; height: 100%;
   border-radius: 10px;
 }
-.ad-skel--thumb {
-  width: 100%;
-  height: 70px; /* Увеличили миниатюры */
-  border-radius: 6px;
-}
+.ad-skel--thumb   { width: 100%; height: 70px; border-radius: 6px; }
 
 /* ============================================================
-   LIGHTBOX (FULLSCREEN GALLERY)
+   LIGHTBOX
    ============================================================ */
-
 .ad-lightbox {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.92);
+  inset: 0;
+  background: rgba(0,0,0,0.93);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
-  cursor: zoom-out; /* Курсор показывает, что можно закрыть */
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+  cursor: zoom-out;
 }
-
-.ad-lightbox--open {
-  opacity: 1;
-  visibility: visible;
-}
+.ad-lightbox--open { opacity: 1; visibility: visible; }
 
 .ad-lightbox__img {
   max-width: 90vw;
   max-height: 90vh;
   object-fit: contain;
-  border-radius: 4px;
-  box-shadow: 0 0 40px rgba(0,0,0,0.5);
+  border-radius: 6px;
+  box-shadow: 0 0 60px rgba(0,0,0,0.6);
   user-select: none;
-  cursor: default; /* Чтобы при клике на фото оно не закрывалось */
+  cursor: default;
 }
 
-/* Кнопка закрытия */
 .ad-lightbox__close {
   position: absolute;
-  top: 30px;
-  right: 30px;
-  width: 40px;
-  height: 40px;
+  top: 1.5rem; right: 1.5rem;
+  width: 2.5rem; height: 2.5rem;
   background: rgba(255,255,255,0.1);
   border: 1px solid rgba(255,255,255,0.2);
   border-radius: 50%;
   color: #fff;
-  font-size: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 1.4rem;
+  display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   transition: background 0.2s, transform 0.2s;
   z-index: 10;
@@ -828,42 +875,34 @@
   transform: rotate(90deg);
 }
 
-/* Кнопки навигации */
 .ad-lightbox__nav {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 50px;
-  height: 50px;
+  width: 3rem; height: 3rem;
   background: rgba(0,0,0,0.4);
   border: 1px solid rgba(255,255,255,0.2);
   border-radius: 50%;
   color: #fff;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 1.3rem;
+  display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.2s;
 }
 .ad-lightbox__nav:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.15);
+  transform: translateY(-50%) scale(1.08);
 }
-.ad-lightbox__nav--prev { left: 20px; }
-.ad-lightbox__nav--next { right: 20px; }
+.ad-lightbox__nav--prev { left: 1.25rem; }
+.ad-lightbox__nav--next { right: 1.25rem; }
 
-/* Счетчик (1 / 5) */
 .ad-lightbox__counter {
   position: absolute;
-  bottom: 30px;
+  bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
-  color: rgba(255,255,255,0.7);
-  font-size: 0.85rem;
-  letter-spacing: 0.05em;
-}
-
-/* Курсор зум для главного фото */
-.ad-gallery__main img {
-  cursor: zoom-in;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
 }

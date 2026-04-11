@@ -74,13 +74,13 @@ ul  { list-style: none; }
   transform: translateY(-1px);
 }
 
-/* Контурная на тёмном */
-.hp-btn--outline {
+/* Ghost — вторичная, тихая */
+.hp-btn--ghost {
   background: transparent;
   color: var(--text-2);
   border-color: var(--border-2);
 }
-.hp-btn--outline:hover {
+.hp-btn--ghost:hover {
   color: var(--text);
   border-color: rgba(255,255,255,0.25);
   background: rgba(255,255,255,0.05);
@@ -121,7 +121,7 @@ ul  { list-style: none; }
 }
 
 /* ═══════════════════════════════════════════
-   REVEAL
+   REVEAL ANIMATION
 ═══════════════════════════════════════════ */
 .hp-reveal {
   opacity: 0;
@@ -143,7 +143,6 @@ ul  { list-style: none; }
   overflow: hidden;
 }
 
-/* Золотистое свечение справа */
 .hp-hero::before {
   content: '';
   position: absolute;
@@ -154,7 +153,6 @@ ul  { list-style: none; }
   pointer-events: none;
 }
 
-/* Сетка линий */
 .hp-hero::after {
   content: '';
   position: absolute;
@@ -221,8 +219,6 @@ ul  { list-style: none; }
   color: var(--text);
   margin-bottom: 1.375rem;
 }
-
-/* Акцент золотом на последнем слове */
 .hp-hero__h1 em {
   font-style: normal;
   color: var(--gold);
@@ -244,7 +240,6 @@ ul  { list-style: none; }
   margin-bottom: 2.5rem;
 }
 
-/* Trust items */
 .hp-hero__trust { display: flex; gap: 1.25rem; flex-wrap: wrap; }
 .hp-hero__trust-item {
   display: flex;
@@ -265,31 +260,19 @@ ul  { list-style: none; }
   flex-shrink: 0;
 }
 
-/* ── Правая колонка (карточки-статистика) ── */
+/* ── Правая колонка (карточки) ── */
 .hp-hero__visual {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.hp-hero__watermark {
-  position: absolute;
-  font-size: clamp(6rem, 13vw, 11rem);
-  font-weight: 800;
-  letter-spacing: -0.06em;
-  color: rgba(212,175,55,0.05);
-  line-height: 1;
-  user-select: none;
-  white-space: nowrap;
-}
+/* Убрали watermark — визуальный шум */
 
 .hp-hero__cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.875rem;
-  position: relative;
-  z-index: 1;
   width: 100%;
   max-width: 25rem;
 }
@@ -306,20 +289,19 @@ ul  { list-style: none; }
   box-shadow: 0 12px 32px rgba(0,0,0,0.4);
   border-color: rgba(212,175,55,0.25);
 }
-.hp-hero__card:nth-child(2) { margin-top: 1.5rem; }
-.hp-hero__card:nth-child(4) { margin-top: -1.5rem; }
+
+/* Убрали margin-top на чётных карточках — теперь сетка ровная */
 
 .hp-hero__card-icon {
   font-size: 1.25rem;
   margin-bottom: 0.625rem;
   display: block;
-  filter: grayscale(0.2);
 }
 .hp-hero__card-val {
   font-size: 1.45rem;
   font-weight: 800;
   letter-spacing: -0.04em;
-  color: var(--text);
+  color: var(--gold);      /* ← золотой акцент на числе */
   line-height: 1;
   margin-bottom: 0.25rem;
 }
@@ -331,55 +313,10 @@ ul  { list-style: none; }
 }
 
 /* ═══════════════════════════════════════════
-   STATS BAR
-═══════════════════════════════════════════ */
-.hp-stats {
-  background: var(--bg-2);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-.hp-stats__row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-}
-.hp-stat {
-  padding: 2.5rem 2rem;
-  text-align: center;
-  border-right: 1px solid var(--border);
-  transition: background 0.18s;
-}
-.hp-stat:last-child { border-right: none; }
-.hp-stat:hover      { background: var(--bg-3); }
-
-.hp-stat__num {
-  display: block;
-  font-size: clamp(1.6rem, 3vw, 2.3rem);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  color: var(--gold);
-  line-height: 1;
-  margin-bottom: 0.375rem;
-}
-.hp-stat__label {
-  display: block;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--text);
-  margin-bottom: 0.25rem;
-}
-.hp-stat__sub {
-  display: block;
-  font-size: 0.7rem;
-  color: var(--text-3);
-}
-
-/* ═══════════════════════════════════════════
    LOTS SECTION
 ═══════════════════════════════════════════ */
 .hp-lots {
-  padding: 3rem 0;
+  padding: 5rem 0;
   background: var(--bg);
 }
 .hp-section-head {
@@ -400,13 +337,33 @@ ul  { list-style: none; }
 }
 .hp-more:hover { color: var(--gold); gap: 10px; }
 
+/* Базовая сетка — 3 колонки */
 .hp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
-/* Скелетон */
+/* При 1 лоте — занимает треть ширины слева, не растягивается */
+.hp-grid--1 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* При 2 лотах — 2 колонки */
+.hp-grid--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* При 3+ — стандартные 3 */
+.hp-grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Скелетон — всегда 3 колонки */
+.hp-grid:not([class*="hp-grid--"]) {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
 .hp-skel {
   height: 22.5rem;
   background: var(--bg-2);
@@ -441,7 +398,7 @@ ul  { list-style: none; }
    FEATURES
 ═══════════════════════════════════════════ */
 .hp-features-section {
-  padding: 2rem 0;
+  padding: 5rem 0;
   background: var(--bg-2);
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
@@ -489,7 +446,7 @@ ul  { list-style: none; }
    HOW IT WORKS
 ═══════════════════════════════════════════ */
 .hp-how-section {
-  padding: 2rem 0;
+  padding: 5rem 0;
   background: var(--bg);
 }
 .hp-steps-grid {
@@ -535,6 +492,7 @@ ul  { list-style: none; }
   display: flex; align-items: center; justify-content: center;
   color: var(--text-2);
   margin-bottom: 1.25rem;
+  transition: color 0.22s, border-color 0.22s, background 0.22s;
 }
 .hp-step:hover .hp-step__icon {
   color: var(--gold);
@@ -558,31 +516,49 @@ ul  { list-style: none; }
    CTA
 ═══════════════════════════════════════════ */
 .hp-cta {
-  padding: 6rem 0;
+  padding: 5rem 0;
   background: var(--bg-2);
   border-top: 1px solid var(--border);
 }
 .hp-cta__inner {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 2.5rem;
   padding: 3.25rem 3.75rem;
   background: var(--bg-3);
-  border: 1px solid var(--border-2);
+  /* Градиентная рамка через pseudo-element */
   border-radius: 1rem;
   position: relative;
   overflow: hidden;
+  /* Яркая обводка с золотым градиентом */
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  box-shadow:
+          0 0 0 1px rgba(212,175,55,0.25),
+          0 20px 60px rgba(0,0,0,0.35),
+          inset 0 1px 0 rgba(255,255,255,0.06);
 }
-/* Декоративное свечение */
+
+/* Декоративные свечения */
 .hp-cta__inner::before {
   content: '';
   position: absolute;
-  top: -3.75rem; right: -3.75rem;
-  width: 17.5rem; height: 17.5rem;
-  background: radial-gradient(circle, rgba(212,175,55,0.07) 0%, transparent 70%);
+  top: -4rem; right: -4rem;
+  width: 22rem; height: 22rem;
+  background: radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 65%);
   pointer-events: none;
 }
+.hp-cta__inner::after {
+  content: '';
+  position: absolute;
+  bottom: -3rem; left: -2rem;
+  width: 14rem; height: 14rem;
+  background: radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hp-cta__body { position: relative; z-index: 1; }
 
 .hp-cta__label {
   font-size: 0.62rem;
@@ -613,6 +589,11 @@ ul  { list-style: none; }
 .hp-cta__sub {
   font-size: 0.88rem;
   color: var(--text-2);
+}
+.hp-cta__btn {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
 }
 
 /* ═══════════════════════════════════════════
@@ -668,17 +649,18 @@ ul  { list-style: none; }
    RESPONSIVE
 ═══════════════════════════════════════════ */
 @media (max-width: 64rem) {
-  .hp-steps-grid    { grid-template-columns: repeat(2,1fr); }
-  .hp-features-grid { grid-template-columns: repeat(2,1fr); }
+  .hp-steps-grid    { grid-template-columns: repeat(2, 1fr); }
+  .hp-features-grid { grid-template-columns: repeat(2, 1fr); }
   .hp-step::after   { display: none; }
+  .hp-grid,
+  .hp-grid--3       { grid-template-columns: repeat(2, 1fr); }
 }
+
 @media (max-width: 56.25rem) {
   .hp-hero__content { grid-template-columns: 1fr; gap: 2.5rem; padding: 2.5rem 1.25rem 3.5rem; }
   .hp-hero__cards   { max-width: 100%; }
-  .hp-hero__card:nth-child(2),
-  .hp-hero__card:nth-child(4) { margin-top: 0; }
-  .hp-hero__watermark { display: none; }
 }
+
 @media (max-width: 48rem) {
   .hp-wrap              { padding: 0 1.25rem; }
   .hp-hero__h1          { font-size: 2.3rem; }
@@ -692,6 +674,10 @@ ul  { list-style: none; }
   .hp-section-head      { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
   .hp-steps-grid        { grid-template-columns: 1fr; }
   .hp-features-grid     { grid-template-columns: 1fr; }
-  .hp-cta__inner        { grid-template-columns: 1fr; padding: 2.25rem 1.75rem; }
+  .hp-cta__inner        { flex-direction: column; align-items: flex-start; padding: 2.25rem 1.75rem; }
   .hp-footer__grid      { grid-template-columns: 1fr; gap: 2.25rem; }
+  .hp-grid,
+  .hp-grid--1,
+  .hp-grid--2,
+  .hp-grid--3           { grid-template-columns: 1fr; }
 }

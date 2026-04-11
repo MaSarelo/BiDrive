@@ -53,13 +53,12 @@ public class AuctionService {
     @Autowired
     private EntityManager entityManager;
 
-    // === 1. ИСТОРИЯ СТАВОК (Функция БД) ===
+    // === 1. ИСТОРИЯ СТАВОК ===
     public List<BidHistoryDTO> getBidHistory(Long auctionId) {
         List<BidHistoryDTO> history = new ArrayList<>();
         try {
             Query query = entityManager.createNativeQuery("SELECT * FROM get_bid_history(:auctionId)");
             query.setParameter("auctionId", auctionId);
-
             List<Object[]> results = query.getResultList();
             for (Object[] row : results) {
                 BidHistoryDTO dto = new BidHistoryDTO();
@@ -122,8 +121,10 @@ public class AuctionService {
         auction.setCurrentPrice(startingPrice);
         auction.setMinBidStep(minBidStep != null ? minBidStep : BigDecimal.valueOf(100));
 
-        auction.setStatus("DRAFT");
+        // --- ВАЖНО: Ставим статус PENDING (На модерации) ---
+        auction.setStatus("PENDING");
         auction.setModerationStatus("PENDING");
+
         auction.setCreatedAt(LocalDateTime.now());
         auction.setUpdatedAt(LocalDateTime.now());
 
@@ -142,43 +143,45 @@ public class AuctionService {
             auctionRepository.save(savedAuction);
         }
 
-        try {
-            telegramService.sendNewLotNotification(savedAuction);
-        } catch (Exception e) {
-            System.out.println("Ошибка Telegram: " + e.getMessage());
-        }
+        // --- УБРАНО: Отправка в Telegram при создании ---
+        // telegramService.sendNewLotNotification(savedAuction);
 
         return savedAuction;
     }
 
-    // === 3. Одобрение аукциона ===
+    // === 3. ОДОБРЕНИЕ АУКЦИОНА ===
     @Transactional
     public void approveAuction(Long auctionId) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new RuntimeException("Аукцион не найден"));
+
         if ("APPROVED".equals(auction.getModerationStatus())) {
             throw new RuntimeException("Аукцион уже одобрен");
         }
+
         auction.setModerationStatus("APPROVED");
-        auction.setStatus("ACTIVE");
+        auction.setStatus("APPROVED");
         auction.setUpdatedAt(LocalDateTime.now());
         auctionRepository.save(auction);
+
+        // --- ДОБАВЛЕНО: Отправка в Telegram ПОСЛЕ одобрения ---
+        try {
+            telegramService.sendNewLotNotification(auction);
+        } catch (Exception e) {
+            System.out.println("Ошибка отправки в Telegram: " + e.getMessage());
+        }
     }
 
-    // === 4. СТАВКА (МЕТОД С ПРОВЕРКОЙ) ===
+    // === 4. СТАВКА ===
     @Transactional
     public Bid placeBid(Long auctionId, Long userId, BigDecimal amount) {
-
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new RuntimeException("Аукцион не найден"));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
 
-        // === ПРОВЕРКА ПРОДАВЦА ===
         Long sellerId = auction.getSeller().getId();
-
         if (sellerId.equals(userId)) {
-            System.out.println(">>> ОТКАЗ: Продавец пытается сделать ставку на свой лот!");
             throw new RuntimeException("Нельзя делать ставки на свой лот.");
         }
 
@@ -192,12 +195,8 @@ public class AuctionService {
         if (amount.compareTo(currentPrice) <= 0) {
             throw new RuntimeException("Ставка должна быть выше текущей цены!");
         }
-
         if (amount.subtract(currentPrice).compareTo(minStep) < 0) {
-            throw new RuntimeException(String.format(
-                    "Минимальный шаг ставки: %s BYN.",
-                    minStep
-            ));
+            throw new RuntimeException(String.format("Минимальный шаг ставки: %s BYN.", minStep));
         }
 
         Bid bid = new Bid();
@@ -228,7 +227,7 @@ public class AuctionService {
         auctionRepository.delete(auction);
     }
 
-    // === 6. Публикация ===
+    // === 6. Публикация (из Профиля пользователя) ===
     @Transactional
     public void publishAuction(Long auctionId, Long requestingUserId) {
         Auction auction = auctionRepository.findById(auctionId)
@@ -236,8 +235,12 @@ public class AuctionService {
         if (!auction.getSeller().getId().equals(requestingUserId)) {
             throw new RuntimeException("Вы не можете публиковать чужой лот");
         }
-        auction.setStatus("ACTIVE");
-        auction.setModerationStatus("APPROVED");
+
+        // --- ИСПРАВЛЕНО: Ставим PENDING вместо ACTIVE ---
+        // Лот должен пройти модерацию, а не сразу попадать в каталог
+        auction.setStatus("PENDING");
+        auction.setModerationStatus("PENDING");
+
         auction.setUpdatedAt(LocalDateTime.now());
         auctionRepository.save(auction);
     }

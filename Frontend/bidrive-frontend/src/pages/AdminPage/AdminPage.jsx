@@ -13,14 +13,14 @@ function AdminPage() {
 
   const fetchAuctions = () => {
     setLoading(true);
-    axios.get('http://localhost:8080/api/admin/auctions/pending')
-        .then(r => { setAuctions(r.data); setLoading(false); })
+      axios.get('http://localhost:8080/api/auctions/pending')
+          .then(r => { setAuctions(r.data); setLoading(false); })
         .catch(err => { console.error(err); setLoading(false); });
   };
 
   const handleApprove = (id) => {
-    axios.post(`http://localhost:8080/api/admin/auctions/${id}/approve`)
-        .then(() => setAuctions(prev => prev.filter(a => a.id !== id)))
+      axios.put(`http://localhost:8080/api/auctions/${id}/approve`)
+          .then(() => setAuctions(prev => prev.filter(a => a.id !== id)))
         .catch(err => console.error(err));
   };
 
@@ -30,8 +30,8 @@ function AdminPage() {
 
     // Если пользователь ввел текст и нажал OK
     if (reason !== null && reason.trim() !== "") {
-      axios.post(`http://localhost:8080/api/admin/auctions/${id}/reject`, null, {
-        params: { reason: reason }
+        axios.post(`http://localhost:8080/api/auctions/${id}/reject`, null, {
+            params: { reason: reason }
       })
           .then(() => {
             setAuctions(prev => prev.filter(a => a.id !== id));

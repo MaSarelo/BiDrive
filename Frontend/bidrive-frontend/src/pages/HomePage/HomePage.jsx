@@ -71,10 +71,10 @@ export default function HomePage() {
 
             {/* Левая: текст */}
             <div className="hp-hero__text">
-            <span className="hp-hero__badge">
-              <span className="hp-hero__badge-dot" />
-              Онлайн-аукцион · Беларусь
-            </span>
+              <span className="hp-hero__badge">
+                <span className="hp-hero__badge-dot" />
+                Онлайн-аукцион · Беларусь
+              </span>
 
               <h1 className="hp-hero__h1">
                 Найдите свой<br />
@@ -92,7 +92,7 @@ export default function HomePage() {
                   Смотреть лоты <ArrowRight />
                 </Link>
                 {!userEmail && (
-                    <Link to="/register" className="hp-btn hp-btn--outline hp-btn--lg">
+                    <Link to="/register" className="hp-btn hp-btn--ghost hp-btn--lg">
                       Регистрация
                     </Link>
                 )}
@@ -101,16 +101,15 @@ export default function HomePage() {
               <div className="hp-hero__trust">
                 {['Бесплатная регистрация', 'Проверенные лоты', 'Безопасные сделки'].map(t => (
                     <span className="hp-hero__trust-item" key={t}>
-                  <span className="hp-hero__trust-check">✓</span>
+                      <span className="hp-hero__trust-check">✓</span>
                       {t}
-                </span>
+                    </span>
                 ))}
               </div>
             </div>
 
             {/* Правая: карточки-статистика */}
             <div className="hp-hero__visual">
-              <span className="hp-hero__watermark">500+</span>
               <div className="hp-hero__cards">
                 {[
                   { icon: '🚗', val: '500+',    label: 'Активных лотов' },
@@ -130,23 +129,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ════ STATS ════ */}
-        <div className="hp-stats">
-          <div className="hp-wrap hp-stats__row">
-            {[
-              { v: '500+',   l: 'Аукционов',    s: 'Активных прямо сейчас' },
-              { v: '1 200+', l: 'Участников',   s: 'Зарегистрировано' },
-              { v: '100%',   l: 'Безопасность', s: 'Гарантия каждой сделки' },
-            ].map(({ v, l, s }) => (
-                <div className="hp-stat" key={l}>
-                  <strong className="hp-stat__num">{v}</strong>
-                  <span className="hp-stat__label">{l}</span>
-                  <span className="hp-stat__sub">{s}</span>
-                </div>
-            ))}
-          </div>
-        </div>
-
         {/* ════ LOTS ════ */}
         <section className="hp-lots">
           <div className="hp-wrap">
@@ -165,7 +147,7 @@ export default function HomePage() {
             ) : loading ? (
                 <div className="hp-grid">{[1,2,3,4,5,6].map(i => <div key={i} className="hp-skel" />)}</div>
             ) : lots.length ? (
-                <div className="hp-grid">
+                <div className={`hp-grid hp-grid--${Math.min(lots.length, 3)}`}>
                   {lots.map((a, i) => (
                       <div key={a.id} className="hp-card-enter" style={{ animationDelay: `${i * 0.07}s` }}>
                         <AuctionCard auction={a} />
@@ -217,17 +199,17 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ════ CTA ════ */}
+        {/* ════ CTA (только для незалогиненных) ════ */}
         {!userEmail && (
             <section className="hp-cta">
               <div className="hp-wrap">
                 <div className="hp-cta__inner hp-reveal" ref={r}>
-                  <div>
+                  <div className="hp-cta__body">
                     <p className="hp-cta__label">Бесплатно</p>
                     <h2 className="hp-cta__title">Готовы найти свой автомобиль?</h2>
                     <p className="hp-cta__sub">Присоединяйтесь к тысячам покупателей на BiDrive.</p>
                   </div>
-                  <Link to="/register" className="hp-btn hp-btn--primary hp-btn--lg">
+                  <Link to="/register" className="hp-btn hp-btn--primary hp-btn--lg hp-cta__btn">
                     Создать аккаунт <ArrowRight />
                   </Link>
                 </div>

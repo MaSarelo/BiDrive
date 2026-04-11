@@ -43,6 +43,9 @@ function AuctionDetails() {
   const loadAuction = () =>
       axios.get(`http://localhost:8080/api/auctions/${id}`).then(r => {
         const data = r.data;
+        if (data.images?.length > 0) {
+          data.images.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+        }
         setAuction(data);
         if (data.images?.length > 0) {
           setCurrentImage(data.images.find(i => i.isMain) ?? data.images[0]);
@@ -105,92 +108,94 @@ function AuctionDetails() {
         .catch(err => setBidMsg({ text: err.response?.data || 'Ошибка', ok: false }));
   };
 
-  // --- LIGHTBOX LOGIC ---
+  // --- GALLERY & LIGHTBOX LOGIC ---
 
+  // Открытие лайтбокса
   const openLightbox = (index) => {
     setLightboxIndex(index);
     setIsLightboxOpen(true);
-    document.body.style.overflow = 'hidden'; // Блокируем скролл страницы
+    document.body.style.overflow = 'hidden';
   };
 
   const closeLightbox = useCallback(() => {
     setIsLightboxOpen(false);
-    document.body.style.overflow = 'auto'; // Разблокируем скролл
+    document.body.style.overflow = 'auto';
   }, []);
 
-  const goToNext = useCallback(() => {
+  // Навигация в Лайтбоксе
+  const goToNextLightbox = useCallback(() => {
     if (!auction?.images) return;
     setLightboxIndex(prev => (prev + 1) % auction.images.length);
   }, [auction]);
 
-  const goToPrev = useCallback(() => {
+  const goToPrevLightbox = useCallback(() => {
     if (!auction?.images) return;
     setLightboxIndex(prev => (prev - 1 + auction.images.length) % auction.images.length);
   }, [auction]);
 
+  // --- НОВОЕ: Навигация в основном блоке (Carousel) ---
+  const currentIndex = auction?.images?.findIndex(img => img.id === currentImage?.id) ?? -1;
+
+  const handleNextImage = (e) => {
+    e.stopPropagation(); // Чтобы не открылся лайтбокс при клике на стрелку
+    if (!auction?.images) return;
+    const nextIndex = (currentIndex + 1) % auction.images.length;
+    setCurrentImage(auction.images[nextIndex]);
+  };
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    if (!auction?.images) return;
+    const prevIndex = (currentIndex - 1 + auction.images.length) % auction.images.length;
+    setCurrentImage(auction.images[prevIndex]);
+  };
+
   // Обработка клавиатуры
   useEffect(() => {
-    if (!isLightboxOpen) return;
-
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowRight') goToNext();
-      if (e.key === 'ArrowLeft') goToPrev();
+      if (isLightboxOpen) {
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowRight') goToNextLightbox();
+        if (e.key === 'ArrowLeft') goToPrevLightbox();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isLightboxOpen, closeLightbox, goToNext, goToPrev]);
+  }, [isLightboxOpen, closeLightbox, goToNextLightbox, goToPrevLightbox]);
 
-  // ----------------------
+  // ------------------------------------------------------
 
   if (loading) return <AuctionDetailsSkeleton />;
   if (!auction) return <div className="ad-loading"><p>Лот не найден.</p></div>;
 
   const status   = STATUS_MAP[auction.status] ?? { label: auction.status, cls: '' };
   const isActive = auction.status === 'ACTIVE';
-
-  const isWinner = auction.status === 'FINISHED'
-      && auction.winner && currentUser
-      && currentUser.id === auction.winner.id;
-
-  const isSeller = auction.status === 'FINISHED'
-      && auction.seller && currentUser
-      && currentUser.id === auction.seller.id
-      && auction.winner;
+  const isWinner = auction.status === 'FINISHED' && auction.winner && currentUser && currentUser.id === auction.winner.id;
+  const isSeller = auction.status === 'FINISHED' && auction.seller && currentUser && currentUser.id === auction.seller.id && auction.winner;
 
   return (
       <div className="ad">
 
-        {/* ── Breadcrumb ── */}
+        {/* Breadcrumb */}
         <div className="ad-breadcrumb">
           <div className="ad-container">
             <Link to="/catalog" className="ad-breadcrumb__link">Каталог</Link>
             <span className="ad-breadcrumb__sep">›</span>
-            <span className="ad-breadcrumb__current">
-            {auction.brand?.name} {auction.model?.name}
-          </span>
+            <span className="ad-breadcrumb__current">{auction.brand?.name} {auction.model?.name}</span>
           </div>
         </div>
 
         <main className="ad-container ad-body">
-
-          {/* ══ LEFT ══ */}
           <div className="ad-left">
 
             {/* Title */}
             <div className="ad-title-block">
               <div className="ad-title-block__top">
                 <span className={`ad-status ${status.cls}`}>{status.label}</span>
-                {auction.city && (
-                    <span className="ad-location">
-                  {auction.city.name}, {auction.city.region?.name}
-                </span>
-                )}
+                {auction.city && <span className="ad-location">{auction.city.name}, {auction.city.region?.name}</span>}
               </div>
-              <h1 className="ad-title">
-                {auction.brand?.name} {auction.model?.name}
-              </h1>
+              <h1 className="ad-title">{auction.brand?.name} {auction.model?.name}</h1>
               <div className="ad-title-block__divider" />
             </div>
 
@@ -199,14 +204,12 @@ function AuctionDetails() {
                 <div className="ad-deal-card ad-deal-card--seller" style={{background: 'rgba(239,68,68,0.07)', borderColor: 'rgba(239,68,68,0.25)', marginBottom: '32px'}}>
                   <h3 className="ad-deal-card__title" style={{color: 'var(--red)'}}>Лот отклонён модератором</h3>
                   <div className="ad-deal-card__contacts">
-                    <p style={{color: 'var(--text-2)', fontSize: '0.9rem', marginBottom: 0}}>
-                      <strong>Причина:</strong> {auction.rejectionReason}
-                    </p>
+                    <p style={{color: 'var(--text-2)', fontSize: '0.9rem', marginBottom: 0}}><strong>Причина:</strong> {auction.rejectionReason}</p>
                   </div>
                 </div>
             )}
 
-            {/* Deal cards */}
+            {/* Winner/Seller Cards */}
             {isWinner && (
                 <div className="ad-deal-card ad-deal-card--winner">
                   <h3 className="ad-deal-card__title">Поздравляем! Вы выиграли этот лот</h3>
@@ -216,20 +219,11 @@ function AuctionDetails() {
                   </p>
                   <div className="ad-deal-card__contacts">
                     <p>Свяжитесь с продавцом для оформления сделки</p>
-                    <div className="ad-deal-card__info">
-                      <span>Email</span>
-                      <a href={`mailto:${auction.seller?.email}`}>{auction.seller?.email}</a>
-                    </div>
-                    {auction.seller?.phone && (
-                        <div className="ad-deal-card__info">
-                          <span>Телефон</span>
-                          <a href={`tel:${auction.seller?.phone}`}>{auction.seller?.phone}</a>
-                        </div>
-                    )}
+                    <div className="ad-deal-card__info"><span>Email</span><a href={`mailto:${auction.seller?.email}`}>{auction.seller?.email}</a></div>
+                    {auction.seller?.phone && <div className="ad-deal-card__info"><span>Телефон</span><a href={`tel:${auction.seller?.phone}`}>{auction.seller?.phone}</a></div>}
                   </div>
                 </div>
             )}
-
             {isSeller && (
                 <div className="ad-deal-card ad-deal-card--seller">
                   <h3 className="ad-deal-card__title">Лот продан</h3>
@@ -239,14 +233,8 @@ function AuctionDetails() {
                   </p>
                   <div className="ad-deal-card__contacts">
                     <p>Победитель торгов</p>
-                    <div className="ad-deal-card__info">
-                      <span>Имя</span>
-                      <span>{auction.winner?.firstName} {auction.winner?.lastName}</span>
-                    </div>
-                    <div className="ad-deal-card__info">
-                      <span>Email</span>
-                      <a href={`mailto:${auction.winner?.email}`}>{auction.winner?.email}</a>
-                    </div>
+                    <div className="ad-deal-card__info"><span>Имя</span><span>{auction.winner?.firstName} {auction.winner?.lastName}</span></div>
+                    <div className="ad-deal-card__info"><span>Email</span><a href={`mailto:${auction.winner?.email}`}>{auction.winner?.email}</a></div>
                   </div>
                 </div>
             )}
@@ -255,14 +243,17 @@ function AuctionDetails() {
             <div className="ad-gallery">
               <div className="ad-gallery__main">
                 {currentImage ? (
-                    // Оборачиваем фото в контейнер для обработки клика
-                    <div onClick={() => {
-                      if(auction.images?.length > 0) {
-                        const idx = auction.images.findIndex(i => i.id === currentImage.id);
-                        openLightbox(idx >= 0 ? idx : 0);
-                      }
-                    }}>
+                    // Обертка для клика (зум)
+                    <div onClick={() => { if(auction.images?.length > 0) openLightbox(currentIndex >= 0 ? currentIndex : 0); }}>
                       <img src={`http://localhost:8080${currentImage.imageUrl}`} alt="Фото лота" />
+
+                      {/* --- НАВИГАЦИЯ ВНУТРИ ФОТО (СТРЕЛКИ) --- */}
+                      {auction.images?.length > 1 && (
+                          <>
+                            <button className="ad-gallery__nav ad-gallery__nav--prev" onClick={handlePrevImage}>‹</button>
+                            <button className="ad-gallery__nav ad-gallery__nav--next" onClick={handleNextImage}>›</button>
+                          </>
+                      )}
                     </div>
                 ) : (
                     <div className="ad-gallery__empty">Фото не загружено</div>
@@ -270,7 +261,7 @@ function AuctionDetails() {
               </div>
               {auction.images?.length > 0 && (
                   <div className="ad-gallery__thumbs">
-                    {auction.images.map((img, index) => (
+                    {auction.images.map((img) => (
                         <button
                             key={img.id}
                             className={`ad-thumb${currentImage?.id === img.id ? ' ad-thumb--active' : ''}`}
@@ -304,20 +295,14 @@ function AuctionDetails() {
             {/* Seller */}
             <div className="ad-seller">
               <p className="ad-section-heading">Продавец</p>
-              <p className="ad-seller__name">
-                {auction.seller?.firstName} {auction.seller?.lastName}
-              </p>
-              {isWinner && auction.seller?.email && (
-                  <p className="ad-seller__email">{auction.seller.email}</p>
-              )}
+              <p className="ad-seller__name">{auction.seller?.firstName} {auction.seller?.lastName}</p>
+              {isWinner && auction.seller?.email && (<p className="ad-seller__email">{auction.seller.email}</p>)}
             </div>
 
             {/* Description */}
             <div className="ad-description">
               <p className="ad-section-heading">Описание</p>
-              <p className="ad-description__text">
-                {auction.description || 'Описание отсутствует.'}
-              </p>
+              <p className="ad-description__text">{auction.description || 'Описание отсутствует.'}</p>
             </div>
 
             {/* Bid history */}
@@ -329,16 +314,9 @@ function AuctionDetails() {
                         <li key={bid.bidId} className="ad-history__item">
                           <div className="ad-history__who">
                             <span className="ad-history__name">{bid.userName}</span>
-                            <span className="ad-history__time">
-                        {new Date(bid.createdAt).toLocaleString('ru-RU', {
-                          day: '2-digit', month: '2-digit',
-                          hour: '2-digit', minute: '2-digit'
-                        })}
-                      </span>
+                            <span className="ad-history__time">{new Date(bid.createdAt).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
-                          <span className="ad-history__amount">
-                      {bid.amount.toLocaleString()} <BynIcon className="ad-currency-icon" />
-                    </span>
+                          <span className="ad-history__amount">{bid.amount.toLocaleString()} <BynIcon className="ad-currency-icon" /></span>
                         </li>
                     ))}
                   </ul>
@@ -346,41 +324,26 @@ function AuctionDetails() {
             )}
           </div>
 
-          {/* ══ SIDEBAR ══ */}
+          {/* SIDEBAR */}
           <aside className="ad-sidebar">
             <div className="ad-price-card">
-
               <div className="ad-price-card__top">
                 <p className="ad-price-card__eyebrow">Текущая цена</p>
                 <p className="ad-price-card__price">
                   {auction.currentPrice?.toLocaleString()}
                   <BynIcon className="ad-currency-icon" />
                 </p>
-                {rate && (
-                    <p className="ad-price__usd">
-                      ~ ${Math.round(auction.currentPrice / rate).toLocaleString()}
-                    </p>
-                )}
+                {rate && (<p className="ad-price__usd">~ ${Math.round(auction.currentPrice / rate).toLocaleString()}</p>)}
               </div>
-
               <div className="ad-price-card__divider" />
-
               <div className="ad-price-card__meta">
-                <div className="ad-meta-row">
-                  <span>Стартовая цена</span>
-                  <span>{auction.startingPrice?.toLocaleString()} <BynIcon className="ad-currency-icon" /></span>
-                </div>
-                <div className="ad-meta-row">
-                  <span>Минимальный шаг</span>
-                  <span>{auction.minBidStep} <BynIcon className="ad-currency-icon" /></span>
-                </div>
+                <div className="ad-meta-row"><span>Стартовая цена</span><span>{auction.startingPrice?.toLocaleString()} <BynIcon className="ad-currency-icon" /></span></div>
+                <div className="ad-meta-row"><span>Минимальный шаг</span><span>{auction.minBidStep} <BynIcon className="ad-currency-icon" /></span></div>
                 {auction.status === 'ACTIVE' && (
                     <div className="ad-timer-row">
                       <span>До окончания</span>
                       <div className="ad-timer-values">
-                        {timeLeft.days > 0 && (
-                            <span>{timeLeft.days}<em>д</em></span>
-                        )}
+                        {timeLeft.days > 0 && (<span>{timeLeft.days}<em>д</em></span>)}
                         <span>{String(timeLeft.hours).padStart(2, '0')}<em>ч</em></span>
                         <span>{String(timeLeft.minutes).padStart(2, '0')}<em>м</em></span>
                         <span>{String(timeLeft.seconds).padStart(2, '0')}<em>с</em></span>
@@ -388,41 +351,20 @@ function AuctionDetails() {
                     </div>
                 )}
               </div>
-
               <div className="ad-price-card__divider" />
-
               {currentUser ? (
                   <div className="ad-bid-form">
                     <label className="ad-bid-form__label">Ваша ставка</label>
-                    <input
-                        className="ad-bid-form__input"
-                        type="number"
-                        placeholder="Сумма в BYN"
-                        value={bidAmount}
-                        onChange={e => setBidAmount(e.target.value)}
-                        disabled={!isActive}
-                    />
-                    <button
-                        className={`ad-btn ad-btn--gold ad-btn--full${!isActive ? ' ad-btn--disabled' : ''}`}
-                        onClick={handlePlaceBid}
-                        disabled={!isActive}
-                    >
+                    <input className="ad-bid-form__input" type="number" placeholder="Сумма в BYN" value={bidAmount} onChange={e => setBidAmount(e.target.value)} disabled={!isActive} />
+                    <button className={`ad-btn ad-btn--gold ad-btn--full${!isActive ? ' ad-btn--disabled' : ''}`} onClick={handlePlaceBid} disabled={!isActive}>
                       {isActive ? 'Сделать ставку' : 'Торги завершены'}
                     </button>
-                    {bidMsg.text && (
-                        <p className={`ad-bid-msg${bidMsg.ok ? ' ad-bid-msg--ok' : ' ad-bid-msg--err'}`}>
-                          {bidMsg.text}
-                        </p>
-                    )}
+                    {bidMsg.text && (<p className={`ad-bid-msg${bidMsg.ok ? ' ad-bid-msg--ok' : ' ad-bid-msg--err'}`}>{bidMsg.text}</p>)}
                   </div>
               ) : (
                   <div className="ad-bid-form" style={{ textAlign: 'center' }}>
-                    <p style={{ fontSize: '0.83rem', color: 'var(--text-3)', marginBottom: '14px' }}>
-                      Войдите, чтобы делать ставки
-                    </p>
-                    <Link to="/login" className="ad-btn ad-btn--gold ad-btn--full">
-                      Войти
-                    </Link>
+                    <p style={{ fontSize: '0.83rem', color: 'var(--text-3)', marginBottom: '14px' }}>Войдите, чтобы делать ставки</p>
+                    <Link to="/login" className="ad-btn ad-btn--gold ad-btn--full">Войти</Link>
                   </div>
               )}
             </div>
@@ -432,64 +374,21 @@ function AuctionDetails() {
         {/* Footer */}
         <footer className="ad-footer">
           <div className="ad-container ad-footer__grid">
-            <div>
-              <p className="ad-footer__wordmark">BiDrive</p>
-              <p className="ad-footer__desc">Платформа онлайн-аукционов автомобилей. Прозрачно и безопасно.</p>
-            </div>
-            <div>
-              <p className="ad-footer__col-title">Навигация</p>
-              <ul className="ad-footer__list">
-                <li><Link to="/catalog">Каталог</Link></li>
-                <li><Link to="/register">Регистрация</Link></li>
-              </ul>
-            </div>
-            <div>
-              <p className="ad-footer__col-title">Контакты</p>
-              <ul className="ad-footer__list">
-                <li><a href="mailto:support@bidrive.by">support@bidrive.by</a></li>
-                <li><a href="https://t.me/bidrive_bot" target="_blank" rel="noopener noreferrer">Telegram</a></li>
-                <li>+375 (29) 123-45-67</li>
-              </ul>
-            </div>
+            <div><p className="ad-footer__wordmark">BiDrive</p><p className="ad-footer__desc">Платформа онлайн-аукционов автомобилей.</p></div>
+            <div><p className="ad-footer__col-title">Навигация</p><ul className="ad-footer__list"><li><Link to="/catalog">Каталог</Link></li><li><Link to="/register">Регистрация</Link></li></ul></div>
+            <div><p className="ad-footer__col-title">Контакты</p><ul className="ad-footer__list"><li><a href="mailto:support@bidrive.by">support@bidrive.by</a></li><li><a href="https://t.me/bidrive_bot">Telegram</a></li><li>+375 (29) 123-45-67</li></ul></div>
           </div>
-          <div className="ad-footer__bottom">
-            <p>© 2026 BiDrive. Дипломный проект. Все права защищены.</p>
-          </div>
+          <div className="ad-footer__bottom"><p>© 2026 BiDrive. Дипломный проект.</p></div>
         </footer>
 
-        {/* --- LIGHTBOX COMPONENT --- */}
+        {/* LIGHTBOX */}
         {isLightboxOpen && auction.images && (
             <div className={`ad-lightbox ${isLightboxOpen ? 'ad-lightbox--open' : ''}`} onClick={closeLightbox}>
-
-              {/* Кнопка закрытия */}
               <button className="ad-lightbox__close" onClick={closeLightbox}>×</button>
-
-              {/* Кнопка назад */}
-              {auction.images.length > 1 && (
-                  <button className="ad-lightbox__nav ad-lightbox__nav--prev" onClick={(e) => { e.stopPropagation(); goToPrev(); }}>
-                    ‹
-                  </button>
-              )}
-
-              {/* Изображение */}
-              <img
-                  src={`http://localhost:8080${auction.images[lightboxIndex]?.imageUrl}`}
-                  alt="Просмотр фото"
-                  className="ad-lightbox__img"
-                  onClick={(e) => e.stopPropagation()}
-              />
-
-              {/* Кнопка вперед */}
-              {auction.images.length > 1 && (
-                  <button className="ad-lightbox__nav ad-lightbox__nav--next" onClick={(e) => { e.stopPropagation(); goToNext(); }}>
-                    ›
-                  </button>
-              )}
-
-              {/* Счетчик */}
-              <div className="ad-lightbox__counter">
-                {lightboxIndex + 1} / {auction.images.length}
-              </div>
+              {auction.images.length > 1 && <button className="ad-lightbox__nav ad-lightbox__nav--prev" onClick={(e) => { e.stopPropagation(); goToPrevLightbox(); }}>‹</button>}
+              <img src={`http://localhost:8080${auction.images[lightboxIndex]?.imageUrl}`} alt="Просмотр" className="ad-lightbox__img" onClick={(e) => e.stopPropagation()} />
+              {auction.images.length > 1 && <button className="ad-lightbox__nav ad-lightbox__nav--next" onClick={(e) => { e.stopPropagation(); goToNextLightbox(); }}>›</button>}
+              <div className="ad-lightbox__counter">{lightboxIndex + 1} / {auction.images.length}</div>
             </div>
         )}
 
