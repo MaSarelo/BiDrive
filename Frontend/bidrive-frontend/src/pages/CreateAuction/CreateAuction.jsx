@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './CreateAuction.css';
+import BynIcon from '../../components/BynIcon.jsx';
 
-const Field = ({ label, children }) => (
+const Field = ({ label, required, children }) => (
     <div className="ca-field">
-      <label className="ca-label">{label}</label>
+      <label className={`ca-label${required ? ' required' : ''}`}>{label}</label>
       {children}
     </div>
 );
@@ -59,15 +60,22 @@ function CreateAuction() {
   }, [selectedRegion]);
 
   const handleChange = e => {
-    setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
-    // Автовысота textarea
+    const { name, value } = e.target;
+    setFormData(p => ({ ...p, [name]: value }));
     if (e.target.tagName === 'TEXTAREA') {
       e.target.style.height = 'auto';
       e.target.style.height = e.target.scrollHeight + 'px';
     }
   };
 
-  // Минимальная дата/время — текущий момент в формате datetime-local
+  // Обработчик для числовых полей (очистка от не-цифр)
+  const handleNumericChange = e => {
+    const { name, value } = e.target;
+    const raw = value.replace(/\D/g, '');
+    setFormData(p => ({ ...p, [name]: raw }));
+  };
+
+  // Минимальная дата/время — текущий момент
   const minDateTime = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
       .toISOString().slice(0, 16);
 
@@ -82,22 +90,36 @@ function CreateAuction() {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    if (files.length === 0) {
-      setMsg({ text: 'Добавьте хотя бы одно фото', ok: false });
+
+    // --- FRONTEND VALIDATION ---
+    const newErrors = {};
+    if (files.length === 0) newErrors.files = 'Добавьте хотя бы одно фото';
+    if (!formData.brandId || !formData.modelId) newErrors.car = 'Выберите марку и модель';
+    if (!formData.year || formData.year < 1900 || formData.year > new Date().getFullYear() + 1) newErrors.year = 'Укажите корректный год';
+    if (!formData.mileage || formData.mileage < 0) newErrors.mileage = 'Укажите пробег';
+    if (!formData.startingPrice || formData.startingPrice <= 0) newErrors.price = 'Цена должна быть больше 0';
+    if (!formData.minBidStep || formData.minBidStep <= 0) newErrors.step = 'Шаг ставки должен быть больше 0';
+    if (!formData.endTime) newErrors.endTime = 'Укажите время окончания';
+
+    if (Object.keys(newErrors).length > 0) {
+      setMsg({ text: Object.values(newErrors).join('. '), ok: false });
       return;
     }
+    // ---------------------------
+
     setIsSubmitting(true);
-    setMsg({ text: 'Загрузка фотографий...', ok: true });
+    setMsg({ text: 'Загрузка фотографий (0/' + files.length + ')...', ok: true });
 
     try {
       const uploadedUrls = [];
-      for (const file of files) {
+      for (let i = 0; i < files.length; i++) {
         const fd = new FormData();
-        fd.append('file', file);
+        fd.append('file', files[i]);
         const res = await axios.post('http://localhost:8080/api/files/upload', fd, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         uploadedUrls.push(res.data.url);
+        setMsg({ text: `Загрузка фотографий (${i + 1}/${files.length})...`, ok: true });
       }
 
       setMsg({ text: 'Фото загружены. Отправка лота на модерацию...', ok: true });
@@ -110,7 +132,7 @@ function CreateAuction() {
 
       await axios.post('http://localhost:8080/api/auctions', { ...formData, imageUrls: sorted });
 
-      setMsg({ text: 'Лот отправлен на модерацию! Ожидайте проверки.', ok: true });
+      setMsg({ text: 'Лот успешно отправлен на модерацию!', ok: true });
       setTimeout(() => { window.location.href = '/profile'; }, 2000);
 
     } catch (err) {
@@ -118,6 +140,9 @@ function CreateAuction() {
       setIsSubmitting(false);
     }
   };
+
+  // Форматирование для отображения
+  const formatSpaces = v => v ? Number(v).toLocaleString('ru-RU') : '';
 
   return (
       <div className="ca">
@@ -132,7 +157,6 @@ function CreateAuction() {
 
         {/* Form */}
         <main className="ca-container ca-body">
-          {/* Ограничиваем ширину формы, но не контейнера */}
           <div className="ca-form-wrap">
             <form onSubmit={handleSubmit} className="ca-form">
 
@@ -140,7 +164,7 @@ function CreateAuction() {
               <section className="ca-section">
                 <p className="ca-section__title">Автомобиль</p>
                 <div className="ca-grid ca-grid--2">
-                  <Field label="Марка">
+                  <Field label="Марка" required>
                     <select className="ca-select" name="brandId" value={formData.brandId} required
                             onChange={e => { setSelectedBrand(e.target.value); handleChange(e); }}>
                       <option value="">Выберите марку...</option>
@@ -148,7 +172,7 @@ function CreateAuction() {
                     </select>
                   </Field>
 
-                  <Field label="Модель">
+                  <Field label="Модель" required>
                     <select className="ca-select" name="modelId" value={formData.modelId} required
                             onChange={handleChange} disabled={!selectedBrand}>
                       <option value="">Выберите модель...</option>
@@ -156,17 +180,17 @@ function CreateAuction() {
                     </select>
                   </Field>
 
-                  <Field label="Год выпуска">
+                  <Field label="Год выпуска" required>
                     <input className="ca-input" type="number" name="year"
                            placeholder="2022" value={formData.year} onChange={handleChange} required />
                   </Field>
 
-                  <Field label="Пробег (км)">
-                    <input className="ca-input" type="number" name="mileage"
-                           placeholder="50 000" value={formData.mileage} onChange={handleChange} required />
+                  <Field label="Пробег (км)" required>
+                    <input className="ca-input" type="text" inputMode="numeric" name="mileage"
+                           placeholder="50 000" value={formatSpaces(formData.mileage)} onChange={handleNumericChange} required />
                   </Field>
 
-                  <Field label="КПП">
+                  <Field label="КПП" required>
                     <select className="ca-select" name="transmissionId" value={formData.transmissionId}
                             onChange={handleChange} required>
                       <option value="">Выберите КПП...</option>
@@ -174,7 +198,7 @@ function CreateAuction() {
                     </select>
                   </Field>
 
-                  <Field label="Тип топлива">
+                  <Field label="Тип топлива" required>
                     <select className="ca-select" name="fuelTypeId" value={formData.fuelTypeId}
                             onChange={handleChange} required>
                       <option value="">Выберите топливо...</option>
@@ -188,14 +212,14 @@ function CreateAuction() {
               <section className="ca-section">
                 <p className="ca-section__title">Местоположение</p>
                 <div className="ca-grid ca-grid--2">
-                  <Field label="Область">
+                  <Field label="Область" required>
                     <select className="ca-select" value={selectedRegion}
                             onChange={e => setSelectedRegion(e.target.value)} required>
                       <option value="">Выберите область...</option>
                       {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                     </select>
                   </Field>
-                  <Field label="Город">
+                  <Field label="Город" required>
                     <select className="ca-select" name="cityId" value={formData.cityId}
                             onChange={handleChange} required disabled={!selectedRegion}>
                       <option value="">Выберите город...</option>
@@ -209,29 +233,19 @@ function CreateAuction() {
               <section className="ca-section">
                 <p className="ca-section__title">Параметры торгов</p>
                 <div className="ca-grid ca-grid--3">
-                  <Field label="Начальная цена (BYN)">
-                    <input className="ca-input" type="number" name="startingPrice"
-                           placeholder="10 000" value={formData.startingPrice} onChange={handleChange} required />
+                  <Field label={<>Начальная цена (<BynIcon className="ca-label-icon" />)</>} required>
+                    <input className="ca-input" type="text" inputMode="numeric" name="startingPrice"
+                           placeholder="10 000" value={formatSpaces(formData.startingPrice)} onChange={handleNumericChange} required />
                   </Field>
-                  <Field label="Минимальный шаг (BYN)">
-                    <input className="ca-input" type="number" name="minBidStep"
-                           placeholder="100" value={formData.minBidStep} onChange={handleChange} required />
+
+                  <Field label={<>Минимальный шаг (<BynIcon className="ca-label-icon" />)</>} required>
+                    <input className="ca-input" type="text" inputMode="numeric" name="minBidStep"
+                           placeholder="100" value={formatSpaces(formData.minBidStep)} onChange={handleNumericChange} required />
                   </Field>
-                  <Field label="Дата и время окончания">
+                  <Field label="Дата и время окончания" required>
                     <input className="ca-input" type="datetime-local" name="endTime"
                            value={formData.endTime} onChange={handleChange}
                            min={minDateTime} max="2099-12-31T23:59"
-                           onKeyDown={e => {
-                             // Блокируем ввод 5-й и 6-й цифры года
-                             const input = e.target;
-                             const val = input.value;
-                             const pos = input.selectionStart;
-                             // Год — первые 4 символа в значении "YYYY-MM-DDThh:mm"
-                             const isDigit = /^\d$/.test(e.key);
-                             if (isDigit && pos < 4 && val.slice(0, 4).replace(/-/g,'').length >= 4) {
-                               e.preventDefault();
-                             }
-                           }}
                            required />
                   </Field>
                 </div>
@@ -240,7 +254,7 @@ function CreateAuction() {
               {/* ── Описание ── */}
               <section className="ca-section">
                 <p className="ca-section__title">Описание</p>
-                <Field label="Подробно опишите состояние автомобиля">
+                <Field label="Подробно опишите состояние автомобиля" required>
                   <textarea className="ca-textarea" name="description" rows="4"
                             placeholder="Состояние кузова, салона, техническое обслуживание..."
                             value={formData.description} onChange={handleChange} required />

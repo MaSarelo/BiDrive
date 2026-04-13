@@ -257,7 +257,7 @@ public class AuctionService {
         if (topBid != null) {
             auction.setWinner(topBid.getUser());
         }
-        auction.setStatus("FINISHED");
+        auction.setStatus("COMPLETED");
         auction.setUpdatedAt(LocalDateTime.now());
         auctionRepository.save(auction);
     }

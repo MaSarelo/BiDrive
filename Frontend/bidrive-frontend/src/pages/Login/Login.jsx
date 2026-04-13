@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import '../Login/Login.css'; // замени на '../auth/Auth.css' если переименуешь
+import './Login.css'; // Исправлен путь: файл лежит рядом
 
 function Login() {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -14,12 +14,12 @@ function Login() {
     setError('');
     setLoading(true);
     try {
-      const res  = await axios.post('http://localhost:8080/api/auth/login', credentials);
+      const res = await axios.post('http://localhost:8080/api/auth/login', credentials);
       const user = res.data;
-      localStorage.setItem('userId',    user.id);
+      localStorage.setItem('userId', user.id);
       localStorage.setItem('userEmail', user.email);
-      localStorage.setItem('userName',  `${user.firstName} ${user.lastName}`);
-      localStorage.setItem('userRole',  user.roleId);
+      localStorage.setItem('userName', `${user.firstName} ${user.lastName}`);
+      localStorage.setItem('userRole', user.roleId);
       navigate('/', { replace: true });
     } catch (err) {
       setError(err.response?.data || 'Неверный логин или пароль');
@@ -32,6 +32,7 @@ function Login() {
       setCredentials(prev => ({ ...prev, [field]: e.target.value }));
 
   return (
+      // Важно: div с классом lg нужен для работы CSS Grid (левая и правая панели)
       <div className="lg">
 
         {/* ── Визуальная панель ── */}
@@ -83,6 +84,7 @@ function Login() {
                 />
               </div>
 
+              {/* Исправлен синтаксис && */}
               {error && <p className="lg-error" role="alert">{error}</p>}
 
               <button

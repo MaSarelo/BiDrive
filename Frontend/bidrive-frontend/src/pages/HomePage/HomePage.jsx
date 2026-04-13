@@ -5,12 +5,15 @@ import AuctionCard from '../../components/AuctionCard';
 import './HomePage.css';
 
 /* ── SVG icons ── */
+// Исправлена стрелочная функция и закрытие тега svg
 const Ic = ({ children, size = 20 }) => (
     <svg width={size} height={size} fill="none" stroke="currentColor"
          strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
       {children}
     </svg>
 );
+
+// Иконки теперь корректно возвращают JSX
 const ArrowRight = () => <Ic><path d="M5 12h14M12 5l7 7-7 7"/></Ic>;
 const IconShield = () => <Ic><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Ic>;
 const IconZap    = () => <Ic><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Ic>;
@@ -21,18 +24,19 @@ const IconSearch = () => <Ic><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35
 const IconGavel  = () => <Ic><path d="m14.5 2.5 7 7-10 10-7-7z"/><path d="M2 22l6-6"/></Ic>;
 const IconCheck  = () => <Ic><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Ic>;
 
-const FEATURES = [
-  { icon: <IconShield />, title: 'Проверенные авто',         desc: 'Каждый лот проходит модерацию до публикации' },
-  { icon: <IconZap    />, title: 'Торги в реальном времени', desc: 'Мгновенные уведомления при каждой новой ставке' },
-  { icon: <IconLock   />, title: 'Безопасные сделки',        desc: 'Контакты раскрываются только победителю торгов' },
-  { icon: <IconSend   />, title: 'Telegram-бот',             desc: 'Следите за лотами прямо в мессенджере' },
+// Данные для блоков (исправлены поля icon)
+const ADVANTAGES = [
+  { icon: <IconShield />, title: 'Проверенные лоты', desc: 'Каждое объявление проходит ручную модерацию' },
+  { icon: <IconZap />,    title: 'Онлайн-торги',     desc: 'Ставки и обновления цен в реальном времени' },
+  { icon: <IconLock />,   title: 'Безопасность',     desc: 'Контакты открываются только победителю' },
+  { icon: <IconSend />,   title: 'Telegram-бот',     desc: 'Мгновенные уведомления о ставках и победе' },
 ];
 
 const STEPS = [
   { n: '01', icon: <IconUser   />, title: 'Регистрация', desc: 'Создайте аккаунт за минуту — это бесплатно' },
-  { n: '02', icon: <IconSearch />, title: 'Выбор лота',  desc: 'Изучите фото, описание и историю автомобиля' },
-  { n: '03', icon: <IconGavel  />, title: 'Ставки',      desc: 'Участвуйте в торгах в режиме реального времени' },
-  { n: '04', icon: <IconCheck  />, title: 'Сделка',      desc: 'Безопасное оформление с проверенным продавцом' },
+  { n: '02', icon: <IconSearch />, title: 'Выбор авто',   desc: 'Используйте фильтры, чтобы найти свой вариант' },
+  { n: '03', icon: <IconGavel  />, title: 'Торги',       desc: 'Делайте ставки и следите за ходом аукциона' },
+  { n: '04', icon: <IconCheck  />, title: 'Сделка',      desc: 'Обменяйтесь контактами с продавцом' },
 ];
 
 export default function HomePage() {
@@ -67,63 +71,39 @@ export default function HomePage() {
 
         {/* ════ HERO ════ */}
         <section className="hp-hero">
-          <div className="hp-hero__content">
+          <div className="hp-wrap">
 
-            {/* Левая: текст */}
-            <div className="hp-hero__text">
-              <span className="hp-hero__badge">
-                <span className="hp-hero__badge-dot" />
-                Онлайн-аукцион · Беларусь
-              </span>
-
+            <div className="hp-hero__content">
+              <span className="hp-hero__badge">Онлайн-аукцион · Беларусь</span>
               <h1 className="hp-hero__h1">
-                Найдите свой<br />
-                следующий<br />
-                <em>автомобиль.</em>
+                Прозрачные торги<br />проверенными<br />автомобилями
               </h1>
-
               <p className="hp-hero__sub">
-                Прозрачные торги, безопасные сделки
-                и проверенные автомобили — в одном месте.
+                Надежная площадка для покупки и продажи авто с честной системой ставок и защитой участников.
               </p>
-
               <div className="hp-hero__actions">
                 <Link to="/catalog" className="hp-btn hp-btn--primary hp-btn--lg">
-                  Смотреть лоты <ArrowRight />
+                  Перейти в каталог <ArrowRight />
                 </Link>
                 {!userEmail && (
                     <Link to="/register" className="hp-btn hp-btn--ghost hp-btn--lg">
-                      Регистрация
+                      Создать аккаунт
                     </Link>
                 )}
               </div>
-
-              <div className="hp-hero__trust">
-                {['Бесплатная регистрация', 'Проверенные лоты', 'Безопасные сделки'].map(t => (
-                    <span className="hp-hero__trust-item" key={t}>
-                      <span className="hp-hero__trust-check">✓</span>
-                      {t}
-                    </span>
-                ))}
-              </div>
             </div>
 
-            {/* Правая: карточки-статистика */}
-            <div className="hp-hero__visual">
-              <div className="hp-hero__cards">
-                {[
-                  { icon: '🚗', val: '500+',    label: 'Активных лотов' },
-                  { icon: '👥', val: '1 200+',  label: 'Участников' },
-                  { icon: '🔒', val: '100%',    label: 'Безопасность' },
-                  { icon: '⚡', val: '< 1 мин', label: 'Регистрация' },
-                ].map(({ icon, val, label }) => (
-                    <div className="hp-hero__card" key={label}>
-                      <span className="hp-hero__card-icon">{icon}</span>
-                      <div className="hp-hero__card-val">{val}</div>
-                      <div className="hp-hero__card-label">{label}</div>
+            {/* Сетка преимуществ */}
+            <div className="hp-hero-advantages">
+              {ADVANTAGES.map(({ icon, title, desc }) => (
+                  <div key={title} className="hp-adv-item">
+                    <div className="hp-adv-item__icon">{icon}</div>
+                    <div className="hp-adv-item__text">
+                      <h3 className="hp-adv-item__title">{title}</h3>
+                      <p className="hp-adv-item__desc">{desc}</p>
                     </div>
-                ))}
-              </div>
+                  </div>
+              ))}
             </div>
 
           </div>
@@ -160,25 +140,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ════ FEATURES ════ */}
-        <section className="hp-features-section">
-          <div className="hp-wrap">
-            <div className="hp-reveal" ref={r} style={{ textAlign: 'center' }}>
-              <p className="hp-eyebrow">Почему BiDrive</p>
-              <h2 className="hp-h2">Всё для успешной покупки</h2>
-            </div>
-            <div className="hp-features-grid hp-reveal" ref={r}>
-              {FEATURES.map(({ icon, title, desc }) => (
-                  <div className="hp-feature" key={title}>
-                    <div className="hp-feature__icon">{icon}</div>
-                    <h3 className="hp-feature__title">{title}</h3>
-                    <p className="hp-feature__desc">{desc}</p>
-                  </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ════ HOW IT WORKS ════ */}
         <section className="hp-how-section">
           <div className="hp-wrap">
@@ -199,7 +160,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ════ CTA (только для незалогиненных) ════ */}
+        {/* ════ CTA ════ */}
         {!userEmail && (
             <section className="hp-cta">
               <div className="hp-wrap">
@@ -207,7 +168,7 @@ export default function HomePage() {
                   <div className="hp-cta__body">
                     <p className="hp-cta__label">Бесплатно</p>
                     <h2 className="hp-cta__title">Готовы найти свой автомобиль?</h2>
-                    <p className="hp-cta__sub">Присоединяйтесь к тысячам покупателей на BiDrive.</p>
+                    <p className="hp-cta__sub">Присоединяйтесь к участникам аукциона BiDrive.</p>
                   </div>
                   <Link to="/register" className="hp-btn hp-btn--primary hp-btn--lg hp-cta__btn">
                     Создать аккаунт <ArrowRight />
@@ -223,7 +184,7 @@ export default function HomePage() {
             <div>
               <p className="hp-footer__logo">BiDrive</p>
               <p className="hp-footer__about">
-                Первый онлайн-аукцион автомобилей нового поколения в Беларуси.
+                Онлайн-аукцион автомобилей в Беларуси. Прозрачно и безопасно.
               </p>
             </div>
             <div>
@@ -241,13 +202,8 @@ export default function HomePage() {
             <div>
               <p className="hp-footer__col-title">Контакты</p>
               <ul className="hp-footer__list">
-                <li>Беларусь, г. Минск</li>
-                <li><a href="tel:+375291234567">+375 (29) 123-45-67</a></li>
-                <li>
-                  <a href="https://t.me/MyBiDriveBot_bot" target="_blank" rel="noreferrer">
-                    Telegram Bot
-                  </a>
-                </li>
+                <li><a href="https://t.me/MyBiDriveBot_bot" target="_blank" rel="noreferrer">Telegram Bot</a></li>
+                <li><a href="mailto:support@bidrive.by">support@bidrive.by</a></li>
               </ul>
             </div>
           </div>

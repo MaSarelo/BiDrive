@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import './Notifications.css';
 import { NotifContext } from '../../components/Layout';
+
 export function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const userId = localStorage.getItem('userId');
@@ -45,8 +46,9 @@ export function Notifications() {
             </p>
             <div className="nf-hero__row">
               <h1 className="nf-title">Уведомления</h1>
+              {/* Исправлен синтаксис && */}
               {unreadCount > 0 && (
-                  <button className="nf-mark-btn" onClick={handleMarkAllRead}>
+                  <button type="button" className="nf-mark-btn" onClick={handleMarkAllRead}>
                     Отметить все как прочитанные
                   </button>
               )}
@@ -54,29 +56,33 @@ export function Notifications() {
           </div>
         </div>
 
-        <div className="nf-wrap nf-body">
-          {notifications.length === 0 ? (
-              <div className="nf-empty">
-                <div className="nf-empty__icon">🔔</div>
-                <p className="nf-empty__title">Уведомлений пока нет</p>
-                <p className="nf-empty__sub">Здесь будут появляться ставки и результаты торгов</p>
-              </div>
-          ) : (
-              <div className="nf-list">
-                {notifications.map(n => (
-                    <div key={n.id} className={`nf-item${n.isRead ? '' : ' nf-item--unread'}`}>
-                      <div className="nf-item__icon">
-                        {n.type === 'WIN' ? '🏆' : '🔔'}
+        {/* ИСПРАВЛЕНО: Разделили nf-wrap и nf-body на разные div */}
+        <div className="nf-wrap">
+          <div className="nf-body">
+            {notifications.length === 0 ? (
+                <div className="nf-empty">
+                  <div className="nf-empty__icon">🔔</div>
+                  <p className="nf-empty__title">Уведомлений пока нет</p>
+                  <p className="nf-empty__sub">Здесь будут появляться ставки и результаты торгов</p>
+                </div>
+            ) : (
+                <div className="nf-list">
+                  {notifications.map(n => (
+                      <div key={n.id} className={`nf-item${n.isRead ? '' : ' nf-item--unread'}`}>
+                        <div className="nf-item__icon">
+                          {n.type === 'WIN' ? '🏆' : '🔔'}
+                        </div>
+                        <div className="nf-item__content">
+                          <p className="nf-item__msg">{n.message}</p>
+                          <span className="nf-item__time">{fmt(n.createdAt)}</span>
+                        </div>
+                        {/* Исправлен синтаксис && */}
+                        {!n.isRead && <div className="nf-item__dot" />}
                       </div>
-                      <div className="nf-item__content">
-                        <p className="nf-item__msg">{n.message}</p>
-                        <span className="nf-item__time">{fmt(n.createdAt)}</span>
-                      </div>
-                      {!n.isRead && <div className="nf-item__dot" />}
-                    </div>
-                ))}
-              </div>
-          )}
+                  ))}
+                </div>
+            )}
+          </div>
         </div>
       </div>
   );

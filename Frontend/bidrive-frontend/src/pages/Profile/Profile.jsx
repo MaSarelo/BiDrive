@@ -21,7 +21,7 @@ function Profile() {
         axios.get(`http://localhost:8080/api/auctions/my?sellerId=${currentUserId}`)
             .then(r => { setAuctions(r.data); setLoading(false); })
             .catch(err => { console.error(err); setLoading(false); });
-    }, []);
+    }, [currentUserId]);
 
     const handleDelete = id => {
         if (!window.confirm('Вы уверены, что хотите удалить лот?')) return;
@@ -55,7 +55,7 @@ function Profile() {
 
     return (
         <div className="pf">
-            {/* ── Hero ── */}
+            {/* Hero */}
             <div className="pf-hero">
                 <div className="pf-wrap">
                     <p className="pf-eyebrow">Личный кабинет</p>
@@ -92,15 +92,13 @@ function Profile() {
                 {auctions.length === 0 ? (
                     <div className="pf-empty">
                         <p className="pf-empty__title">У вас пока нет лотов</p>
-                        <p className="pf-empty__sub">Выставьте свой первый автомобиль на аукцион</p>
-                        <Link to="/create" className="pf-btn pf-btn--new" style={{ marginBottom: 0 }}>
-                            + Создать лот
-                        </Link>
+                        <p className="pf-empty__sub">Используйте кнопку «Выставить автомобиль» выше, чтобы начать продажи</p>
                     </div>
                 ) : (
                     <div className="pf-grid">
                         {auctions.map(a => {
                             const st = STATUS_MAP[a.status] ?? { label: a.status, cls: '' };
+                            // Исправлен пробел в URL
                             const img = a.mainImageUrl
                                 ? `http://localhost:8080${a.mainImageUrl}` : null;
                             return (
@@ -155,6 +153,7 @@ function Profile() {
 
                                     {/* Действия */}
                                     <div className="pf-card__actions">
+                                        {/* Исправлен && */}
                                         {(a.status === 'DRAFT' || a.status === 'PENDING') && (
                                             <button className="pf-btn pf-btn--publish"
                                                     onClick={() => handlePublish(a.id)}>

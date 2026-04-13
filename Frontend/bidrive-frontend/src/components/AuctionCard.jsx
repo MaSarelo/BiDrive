@@ -21,7 +21,7 @@ function AuctionCard({ auction }) {
   // Получаем курс и считаем цену в USD
   const rate = useRate();
   const priceUsd = rate && auction.currentPrice
-      ? Math.round(auction.currentPrice / rate).toLocaleString()
+      ? Math.round(auction.currentPrice / rate).toLocaleString('ru-RU')
       : '...';
 
   return (
@@ -51,7 +51,7 @@ function AuctionCard({ auction }) {
               <div className="ac-spec">
                 <span className="ac-spec__label">Пробег </span>
                 <span className="ac-spec__value">
-                  {auction.mileage ? `${auction.mileage.toLocaleString()} км` : '—'}
+                  {auction.mileage ? `${auction.mileage.toLocaleString('ru-RU')} км` : '—'}
                 </span>
               </div>
               <div className="ac-spec">
@@ -72,7 +72,7 @@ function AuctionCard({ auction }) {
               <div>
                 <p className="ac-price__label">Текущая цена</p>
                 <p className="ac-price__value">
-                  {auction.currentPrice?.toLocaleString()}
+                  {auction.currentPrice?.toLocaleString('ru-RU')}
                   <BynIcon className="ac-currency-icon" />
                 </p>
 
