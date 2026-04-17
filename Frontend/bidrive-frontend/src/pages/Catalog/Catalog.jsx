@@ -7,6 +7,7 @@ import BynIcon from '../../components/BynIcon';
 import './Catalog.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const ITEMS_PER_PAGE = 12;
 
 const EMPTY = {
   brandId: '', modelId: '', fuelTypeId: '', transmissionId: '',
@@ -18,6 +19,7 @@ function Catalog() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [brands, setBrands] = useState([]);
   const [models, setModels] = useState([]);
@@ -35,20 +37,18 @@ function Catalog() {
     return initial;
   });
 
-  // === ИСПРАВЛЕНО: Добавляем filters в зависимости ===
   const fetchAuctions = useCallback((paramsToSend) => {
     setLoading(true);
+    setCurrentPage(1);
 
-    // Если параметры не переданы, берем текущий state (для надежности)
     const currentParams = paramsToSend || filters;
-
     const cleanParams = Object.fromEntries(Object.entries(currentParams).filter(([, v]) => v !== ''));
     setSearchParams(cleanParams);
 
     axios.get(`${API_URL}/api/auctions/search`, { params: cleanParams })
         .then(r => { setAuctions(r.data); setLoading(false); })
         .catch(() => setLoading(false));
-  }, [setSearchParams, filters]); // Зависимости обновлены
+  }, [setSearchParams, filters]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -77,9 +77,7 @@ function Catalog() {
           setCities(ct.data);
         }
 
-        // Загружаем аукционы с параметрами из URL
         const initialFilters = getInitialFilters();
-        // Вызываем fetchAuctions с явными параметрами
         fetchAuctions(initialFilters);
 
       } catch (err) {
@@ -88,7 +86,7 @@ function Catalog() {
     };
     fetchDictionaries();
     return () => controller.abort();
-  }, []); // Пустой массив зависимостей - запускаем 1 раз при монтировании
+  }, []);
 
   const getInitialFilters = () => {
     const initial = { ...EMPTY };
@@ -122,8 +120,24 @@ function Catalog() {
   const handleChange = e => {
     const { name, value } = e.target;
     const numericFields = ['priceFrom', 'priceTo', 'yearFrom', 'yearTo', 'mileageFrom', 'mileageTo'];
+
     if (numericFields.includes(name)) {
-      const raw = value.replace(/\D/g, '');
+      let raw = value.replace(/\D/g, '');
+
+      // === ЛОГИКА ОГРАНИЧЕНИЯ ГОДА ===
+      if (name === 'yearFrom' || name === 'yearTo') {
+        const currentYear = new Date().getFullYear();
+        // Если ввели что-то
+        if (raw.length > 0) {
+          const numVal = parseInt(raw, 10);
+          // Если число больше текущего года, ставим текущий
+          if (numVal > currentYear) {
+            raw = String(currentYear);
+          }
+        }
+      }
+      // ===============================
+
       setFilters(p => ({ ...p, [name]: raw }));
     } else {
       setFilters(p => ({ ...p, [name]: value }));
@@ -135,10 +149,27 @@ function Catalog() {
     setSearchParams({});
     setModels([]);
     setCities([]);
-    fetchAuctions(EMPTY); // Явно передаем EMPTY
+    fetchAuctions(EMPTY);
   };
 
   const activeCount = Object.values(filters).filter(Boolean).length;
+
+  // --- ПАГИНАЦИЯ ---
+  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+  const currentAuctions = auctions.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(auctions.length / ITEMS_PER_PAGE);
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
+  // -----------------
 
   const lotsWord = n => {
     if (n % 10 === 1 && n % 100 !== 11) return 'лот';
@@ -156,6 +187,7 @@ function Catalog() {
 
         <main className="ct-main">
           <aside className="ct-sidebar">
+            {/* ... фильтры ... */}
             <div className="ct-sidebar__header">
               <span className="ct-sidebar__title">Фильтры {activeCount > 0 && <span className="ct-badge">{activeCount}</span>}</span>
               {activeCount > 0 && <button type="button" className="ct-sidebar__reset" onClick={reset}>Сбросить</button>}
@@ -232,14 +264,17 @@ function Catalog() {
                     <input className="ct-input" type="text" inputMode="numeric" name="priceTo" id="priceTo" placeholder="До" value={filters.priceTo ? Number(filters.priceTo).toLocaleString('ru-RU') : ''} onChange={handleChange} />
                   </div>
                 </div>
+
+                {/* ИЗМЕНЕНО: value без toLocaleString */}
                 <div className="ct-field">
                   <label className="ct-label">Год выпуска</label>
                   <div className="ct-range">
-                    <input className="ct-input" type="text" inputMode="numeric" name="yearFrom" id="yearFrom" placeholder="От" value={filters.yearFrom ? Number(filters.yearFrom).toLocaleString('ru-RU') : ''} onChange={handleChange} />
+                    <input className="ct-input" type="text" inputMode="numeric" name="yearFrom" id="yearFrom" placeholder="От" value={filters.yearFrom} onChange={handleChange} />
                     <span className="ct-range__sep">—</span>
-                    <input className="ct-input" type="text" inputMode="numeric" name="yearTo" id="yearTo" placeholder="До" value={filters.yearTo ? Number(filters.yearTo).toLocaleString('ru-RU') : ''} onChange={handleChange} />
+                    <input className="ct-input" type="text" inputMode="numeric" name="yearTo" id="yearTo" placeholder="До" value={filters.yearTo} onChange={handleChange} />
                   </div>
                 </div>
+
                 <div className="ct-field">
                   <label className="ct-label">Пробег (км)</label>
                   <div className="ct-range">
@@ -252,7 +287,6 @@ function Catalog() {
             </div>
 
             <div className="ct-sidebar__actions">
-              {/* ИСПРАВЛЕНО: Явно передаем filters в функцию */}
               <button type="button" className="ct-btn ct-btn--primary ct-btn--full" onClick={() => fetchAuctions(filters)}>Найти</button>
               <button type="button" className="ct-btn ct-btn--ghost ct-btn--full" onClick={reset}>Сбросить всё</button>
             </div>
@@ -266,9 +300,23 @@ function Catalog() {
             </div>
 
             {loading ? (
-                <div className="ct-grid">{Array.from({ length: 6 }).map((_, i) => <AuctionCardSkeleton key={i} />)}</div>
+                <div className="ct-grid">{Array.from({ length: 12 }).map((_, i) => <AuctionCardSkeleton key={i} />)}</div>
             ) : auctions.length > 0 ? (
-                <div className="ct-grid">{auctions.map(a => <AuctionCard key={a.id} auction={a} />)}</div>
+                <>
+                  <div className="ct-grid">
+                    {currentAuctions.map(a => <AuctionCard key={a.id} auction={a} />)}
+                  </div>
+
+                  {totalPages > 1 && (
+                      <nav className="ct-pagination">
+                        <button className="ct-pagination__btn" onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>‹</button>
+                        {pageNumbers.map(number => (
+                            <button key={number} className={`ct-pagination__btn ${currentPage === number ? 'active' : ''}`} onClick={() => paginate(number)}>{number}</button>
+                        ))}
+                        <button className="ct-pagination__btn" onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages}>›</button>
+                      </nav>
+                  )}
+                </>
             ) : (
                 <div className="ct-empty">
                   <div className="ct-empty__icon">◎</div>

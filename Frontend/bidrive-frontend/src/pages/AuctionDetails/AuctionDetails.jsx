@@ -15,6 +15,7 @@ const STATUS_MAP = {
   APPROVED: { label: 'Одобрен',     cls: 'ad-status--approved' },
   REJECTED: { label: 'Отклонён',    cls: 'ad-status--rejected' },
   FINISHED: { label: 'Завершён',    cls: 'ad-status--finished' },
+  COMPLETED:{ label: 'Завершён',    cls: 'ad-status--finished' },
 };
 
 function AuctionDetails() {
@@ -25,7 +26,7 @@ function AuctionDetails() {
   const [loading,      setLoading]      = useState(true);
   const [currentUser,  setCurrentUser]  = useState(null);
   const [currentImage, setCurrentImage] = useState(null);
-  const [bidAmount,    setBidAmount]    = useState(''); // Храним чистое число
+  const [bidAmount,    setBidAmount]    = useState('');
   const [bidMsg,       setBidMsg]       = useState({ text: '', ok: true });
   const [bidHistory,   setBidHistory]   = useState([]);
   const [timeLeft,     setTimeLeft]     = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -91,7 +92,6 @@ function AuctionDetails() {
     return () => clearInterval(intervalId);
   }, [auction]);
 
-  // Обработчик ввода: оставляем только цифры
   const handleBidInput = (e) => {
     const raw = e.target.value.replace(/\D/g, '');
     setBidAmount(raw);
@@ -110,7 +110,7 @@ function AuctionDetails() {
     })
         .then(() => {
           setBidMsg({ text: 'Ставка принята', ok: true });
-          setBidAmount(''); // Сбрасываем поле
+          setBidAmount('');
           setTimeout(() => { loadAuction(true); loadBidHistory(true); }, 1000);
           setTimeout(() => setBidMsg({ text: '', ok: true }), 3500);
         })
@@ -222,7 +222,13 @@ function AuctionDetails() {
                   <div className="ad-deal-card__contacts">
                     <p>Свяжитесь с продавцом для оформления сделки</p>
                     <div className="ad-deal-card__info"><span>Email</span><a href={`mailto:${auction.seller?.email}`}>{auction.seller?.email}</a></div>
-                    {auction.seller?.phone && <div className="ad-deal-card__info"><span>Телефон</span><a href={`tel:${auction.seller?.phone}`}>{auction.seller?.phone}</a></div>}
+                    {/* Добавляем телефон продавца */}
+                    {auction.seller?.phone && (
+                        <div className="ad-deal-card__info">
+                          <span>Телефон</span>
+                          <a href={`tel:${auction.seller?.phone}`}>{auction.seller?.phone}</a>
+                        </div>
+                    )}
                   </div>
                 </div>
             )}
@@ -237,6 +243,13 @@ function AuctionDetails() {
                     <p>Победитель торгов</p>
                     <div className="ad-deal-card__info"><span>Имя</span><span>{auction.winner?.firstName} {auction.winner?.lastName}</span></div>
                     <div className="ad-deal-card__info"><span>Email</span><a href={`mailto:${auction.winner?.email}`}>{auction.winner?.email}</a></div>
+                    {/* Добавляем телефон победителя */}
+                    {auction.winner?.phone && (
+                        <div className="ad-deal-card__info">
+                          <span>Телефон</span>
+                          <a href={`tel:${auction.winner?.phone}`}>{auction.winner?.phone}</a>
+                        </div>
+                    )}
                   </div>
                 </div>
             )}
@@ -331,7 +344,7 @@ function AuctionDetails() {
                   {auction.currentPrice?.toLocaleString('ru-RU')}
                   <BynIcon className="ad-currency-icon" />
                 </p>
-                {rate && (<p className="ad-price__usd">~ ${Math.round(auction.currentPrice / rate).toLocaleString('ru-RU')}</p>)}
+                {rate && (<p className="ad-price__usd">≈ {Math.round(auction.currentPrice / rate).toLocaleString('ru-RU')} $</p>)}
               </div>
               <div className="ad-price-card__divider" />
               <div className="ad-price-card__meta">
@@ -352,13 +365,15 @@ function AuctionDetails() {
               <div className="ad-price-card__divider" />
               {currentUser ? (
                   <div className="ad-bid-form">
-                    <label className="ad-bid-form__label">Ваша ставка</label>
+                    {/* === ИЗМЕНЕНО: Иконка в Label === */}
+                    <label className="ad-bid-form__label">
+                      Ваша ставка (<BynIcon className="ad-currency-icon" />)
+                    </label>
                     <input
                         className="ad-bid-form__input"
                         type="text"
                         inputMode="numeric"
-                        placeholder="Сумма в BYN"
-                        // ФОРМАТИРОВАНИЕ НА ЛЕТУ
+                        placeholder="Сумма"
                         value={bidAmount ? Number(bidAmount).toLocaleString('ru-RU') : ''}
                         onChange={handleBidInput}
                         disabled={!isActive}

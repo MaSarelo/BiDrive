@@ -3,6 +3,8 @@ package com.bidrive.backend.service;
 import com.bidrive.backend.dto.BidHistoryDTO;
 import com.bidrive.backend.entity.*;
 import com.bidrive.backend.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,8 @@ import java.util.List;
 
 @Service
 public class AuctionService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuctionService.class);
 
     @Autowired
     private TelegramService telegramService;
@@ -54,6 +58,7 @@ public class AuctionService {
     private EntityManager entityManager;
 
     // === 1. ИСТОРИЯ СТАВОК ===
+    @SuppressWarnings("unchecked") // Убирает предупреждение о типах List
     public List<BidHistoryDTO> getBidHistory(Long auctionId) {
         List<BidHistoryDTO> history = new ArrayList<>();
         try {
@@ -69,7 +74,7 @@ public class AuctionService {
                 history.add(dto);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Ошибка при получении истории ставок для аукциона {}", auctionId, e);
         }
         return history;
     }
@@ -121,7 +126,6 @@ public class AuctionService {
         auction.setCurrentPrice(startingPrice);
         auction.setMinBidStep(minBidStep != null ? minBidStep : BigDecimal.valueOf(100));
 
-        // --- ВАЖНО: Ставим статус PENDING (На модерации) ---
         auction.setStatus("PENDING");
         auction.setModerationStatus("PENDING");
 
@@ -139,17 +143,14 @@ public class AuctionService {
                 img.setIsMain(i == 0);
                 carImageRepository.save(img);
             }
-            savedAuction.setMainImageUrl(imageUrls.get(0));
+            savedAuction.setMainImageUrl(imageUrls.get(0)); // Можно заменить на getFirst() если Java 21+
             auctionRepository.save(savedAuction);
         }
-
-        // --- УБРАНО: Отправка в Telegram при создании ---
-        // telegramService.sendNewLotNotification(savedAuction);
 
         return savedAuction;
     }
 
-    // === 3. ОДОБРЕНИЕ АУКЦИОНА ===
+    // === 3. ОДОБРЕНИЕ АУКЦИОНА (АДМИН) ===
     @Transactional
     public void approveAuction(Long auctionId) {
         Auction auction = auctionRepository.findById(auctionId)
@@ -160,15 +161,15 @@ public class AuctionService {
         }
 
         auction.setModerationStatus("APPROVED");
-        auction.setStatus("APPROVED");
+        auction.setStatus("ACTIVE");
+
         auction.setUpdatedAt(LocalDateTime.now());
         auctionRepository.save(auction);
 
-        // --- ДОБАВЛЕНО: Отправка в Telegram ПОСЛЕ одобрения ---
         try {
             telegramService.sendNewLotNotification(auction);
         } catch (Exception e) {
-            System.out.println("Ошибка отправки в Telegram: " + e.getMessage());
+            log.error("Ошибка отправки в Telegram для аукциона {}", auctionId, e);
         }
     }
 
@@ -236,8 +237,6 @@ public class AuctionService {
             throw new RuntimeException("Вы не можете публиковать чужой лот");
         }
 
-        // --- ИСПРАВЛЕНО: Ставим PENDING вместо ACTIVE ---
-        // Лот должен пройти модерацию, а не сразу попадать в каталог
         auction.setStatus("PENDING");
         auction.setModerationStatus("PENDING");
 
@@ -245,20 +244,70 @@ public class AuctionService {
         auctionRepository.save(auction);
     }
 
-    // === 7. Завершение вручную ===
+    // === 7. ЗАВЕРШЕНИЕ АУКЦИОНА ===
     @Transactional
     public void finishAuction(Long auctionId, Long requestingUserId) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new RuntimeException("Аукцион не найден"));
+
         if (!auction.getSeller().getId().equals(requestingUserId)) {
             throw new RuntimeException("Вы не можете завершить чужой аукцион");
         }
+
         Bid topBid = bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId).orElse(null);
+
         if (topBid != null) {
             auction.setWinner(topBid.getUser());
         }
-        auction.setStatus("COMPLETED");
+        auction.setStatus("FINISHED");
         auction.setUpdatedAt(LocalDateTime.now());
+
         auctionRepository.save(auction);
+
+        // === СОЗДАНИЕ УВЕДОМЛЕНИЙ ===
+        if (topBid != null) {
+            User winner = topBid.getUser();
+            User seller = auction.getSeller();
+            String carName = auction.getBrand().getName() + " " + auction.getModel().getName();
+            String price = auction.getCurrentPrice().toString();
+
+            // 1. Уведомление ПОБЕДИТЕЛЮ
+            String winnerMsg = String.format(
+                    "Вы выиграли лот %s (%s г.) за %s BYN. Свяжитесь с продавцом:\nEmail: %s\nТел: %s",
+                    carName, auction.getYear(), price,
+                    seller.getEmail(),
+                    seller.getPhone() != null ? seller.getPhone() : "не указан"
+            );
+
+            Notification notifWinner = new Notification();
+            notifWinner.setUser(winner);
+            notifWinner.setType("WIN");
+            notifWinner.setMessage(winnerMsg);
+            notifWinner.setAuctionId(auction.getId()); // Теперь это должно работать
+            notifWinner.setIsRead(false);
+            notifWinner.setCreatedAt(LocalDateTime.now());
+            notificationRepository.save(notifWinner);
+
+            // 2. Уведомление ПРОДАВЦУ
+            String sellerMsg = String.format(
+                    "Ваш лот %s (%s г.) продан за %s BYN. Свяжитесь с победителем:\nEmail: %s\nТел: %s",
+                    carName, auction.getYear(), price,
+                    winner.getEmail(),
+                    winner.getPhone() != null ? winner.getPhone() : "не указан"
+            );
+
+            Notification notifSeller = new Notification();
+            notifSeller.setUser(seller);
+            notifSeller.setType("SALE");
+            notifSeller.setMessage(sellerMsg);
+            notifSeller.setAuctionId(auction.getId()); // Теперь это должно работать
+            notifSeller.setIsRead(false);
+            notifSeller.setCreatedAt(LocalDateTime.now());
+            notificationRepository.save(notifSeller);
+
+            log.info("Аукцион {} завершен. Победитель: {}", auctionId, winner.getEmail());
+        } else {
+            log.info("Аукцион {} завершен без ставок.", auctionId);
+        }
     }
 }

@@ -1,6 +1,5 @@
 package com.bidrive.backend.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -12,21 +11,20 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Связь с пользователем
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    // === ОСТАВЛЯЕМ ТОЛЬКО ID ===
+    @Column(name = "auction_id")
+    private Long auctionId;
+    // ============================
 
     @Column(name = "type", length = 50)
     private String type;
 
     @Column(name = "message", nullable = false, columnDefinition = "TEXT")
     private String message;
-
-    @ManyToOne
-    @JoinColumn(name = "auction_id")
-    @JsonIgnore
-    private Auction auction;
 
     @Column(name = "is_read")
     private Boolean isRead = false;
@@ -49,12 +47,16 @@ public class Notification {
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
 
-    public Auction getAuction() { return auction; }
-    public void setAuction(Auction auction) { this.auction = auction; }
+    // Убрал геттер/сеттер для Auction, так как поля нет
+    // public Auction getAuction() { return auction; }
+    // public void setAuction(Auction auction) { this.auction = auction; }
 
     public Boolean getIsRead() { return isRead; }
     public void setIsRead(Boolean isRead) { this.isRead = isRead; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public Long getAuctionId() { return auctionId; }
+    public void setAuctionId(Long auctionId) { this.auctionId = auctionId; }
 }

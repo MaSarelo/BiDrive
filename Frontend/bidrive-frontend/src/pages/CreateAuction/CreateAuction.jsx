@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import './CreateAuction.css';
-import BynIcon from '../../components/BynIcon.jsx';
+import BynIcon from '../../components/BynIcon';
 
 const Field = ({ label, required, children }) => (
     <div className="ca-field">
@@ -12,6 +12,8 @@ const Field = ({ label, required, children }) => (
 );
 
 function CreateAuction() {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [formData, setFormData] = useState({
     sellerId: null, brandId: '', modelId: '', year: '', mileage: '',
     transmissionId: '', fuelTypeId: '', cityId: '',
@@ -24,6 +26,7 @@ function CreateAuction() {
   const [fuelTypes,     setFuelTypes]     = useState([]);
   const [regions,       setRegions]       = useState([]);
   const [cities,        setCities]        = useState([]);
+
   const [selectedBrand,  setSelectedBrand]  = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
 
@@ -32,6 +35,17 @@ function CreateAuction() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [msg,          setMsg]          = useState({ text: '', ok: true });
+
+  // === REF ДЛЯ ХРАНЕНИЯ ID КОПИИ (ЧТОБЫ УДАЛИТЬ СТАРЫЙ ЛОТ) ===
+  const copyIdRef = useRef(null);
+  // ===========================================================
+
+  // Генерация списка лет
+  const currentYear = new Date().getFullYear();
+  const yearsList = [];
+  for (let y = currentYear + 1; y >= 1980; y--) {
+    yearsList.push(y);
+  }
 
   useEffect(() => {
     const id = localStorage.getItem('userId');
@@ -44,6 +58,70 @@ function CreateAuction() {
     axios.get('http://localhost:8080/api/transmissions').then(r => setTransmissions(r.data)).catch(console.error);
     axios.get('http://localhost:8080/api/fuel-types').then(r => setFuelTypes(r.data)).catch(console.error);
   }, []);
+
+  // === ОБНОВЛЕННАЯ ЛОГИКА ЗАГРУЗКИ (COPY + RESTORE) ===
+  useEffect(() => {
+    const processParams = async () => {
+      const copyId = searchParams.get('copyId');
+
+      // 1. Если мы копируем существующий лот
+      if (copyId) {
+        // СОХРАНЯЕМ В REF, чтобы использовать при отправке
+        copyIdRef.current = copyId;
+
+        try {
+          const res = await axios.get(`http://localhost:8080/api/auctions/${copyId}`);
+          const a = res.data;
+
+          // Заполняем форму данными из лота
+          setFormData({
+            sellerId: parseInt(localStorage.getItem('userId')),
+            brandId: a.brand?.id || '',
+            modelId: a.model?.id || '',
+            year: a.year || '',
+            mileage: String(a.mileage || ''),
+            transmissionId: a.transmission?.id || '',
+            fuelTypeId: a.fuelType?.id || '',
+            cityId: a.city?.id || '',
+            description: a.description || '',
+            startingPrice: String(a.startingPrice || ''),
+            minBidStep: String(a.minBidStep || '100'),
+            endTime: '' // Сбрасываем дату, нужно выбрать новую
+          });
+
+          // Активируем зависимые списки
+          if (a.brand?.id) setSelectedBrand(String(a.brand.id));
+          if (a.city?.region?.id) setSelectedRegion(String(a.city.region.id));
+
+          // Очищаем URL, чтобы при F5 не загружать снова
+          setSearchParams({}, { replace: true });
+
+        } catch (err) {
+          console.error("Ошибка копирования лота", err);
+          alert("Не удалось загрузить данные для копирования.");
+        }
+      }
+      // 2. Иначе восстанавливаем из сохраненных параметров (после F5)
+      else {
+        const params = {};
+        const fields = ['brandId', 'modelId', 'year', 'mileage', 'transmissionId', 'fuelTypeId', 'cityId', 'description', 'startingPrice', 'minBidStep', 'endTime', 'regionId'];
+
+        fields.forEach(field => {
+          const val = searchParams.get(field);
+          if (val) params[field] = val;
+        });
+
+        if (Object.keys(params).length > 0) {
+          setFormData(prev => ({ ...prev, ...params }));
+          if (params.brandId) setSelectedBrand(params.brandId);
+          if (params.regionId) setSelectedRegion(params.regionId);
+        }
+      }
+    };
+
+    processParams();
+  }, [searchParams]);
+  // ====================================================
 
   useEffect(() => {
     if (selectedBrand) {
@@ -59,28 +137,81 @@ function CreateAuction() {
     } else { setCities([]); }
   }, [selectedRegion]);
 
+  const updateFormState = (name, value) => {
+    setFormData(p => ({ ...p, [name]: value }));
+    const newParams = new URLSearchParams(searchParams);
+    if (value) { newParams.set(name, value); } else { newParams.delete(name); }
+    setSearchParams(newParams, { replace: true });
+  };
+
   const handleChange = e => {
     const { name, value } = e.target;
-    setFormData(p => ({ ...p, [name]: value }));
+    updateFormState(name, value);
     if (e.target.tagName === 'TEXTAREA') {
       e.target.style.height = 'auto';
       e.target.style.height = e.target.scrollHeight + 'px';
     }
   };
 
-  // Обработчик для числовых полей (очистка от не-цифр)
+  // === ОБРАБОТЧИК ЧИСЕЛ (С ОГРАНИЧЕНИЕМ 2 ЗНАКА ПОСЛЕ ЗАПЯТОЙ) ===
   const handleNumericChange = e => {
     const { name, value } = e.target;
-    const raw = value.replace(/\D/g, '');
-    setFormData(p => ({ ...p, [name]: raw }));
+
+    // 1. Пробег — ТОЛЬКО ЦЕЛЫЕ ЧИСЛА
+    if (name === 'mileage') {
+      const raw = value.replace(/\D/g, '');
+      updateFormState(name, raw);
+    }
+    // 2. Цена и Шаг — ДРОБНЫЕ ЧИСЛА
+    else {
+      let val = value.replace(',', '.');
+      val = val.replace(/[^\d.]/g, '');
+
+      const parts = val.split('.');
+
+      if (parts.length > 1) {
+        const intPart = parts[0];
+        const decPart = parts[1].slice(0, 2);
+        val = intPart + '.' + decPart;
+      } else {
+        val = parts[0];
+      }
+
+      updateFormState(name, val);
+    }
   };
 
-  // Минимальная дата/время — текущий момент
+  const handleSelectChangeWithTrigger = (e, triggerSetter) => {
+    const { name, value } = e.target;
+    updateFormState(name, value);
+    triggerSetter(value);
+  };
+
   const minDateTime = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
       .toISOString().slice(0, 16);
 
   const handleFileChange = e => {
-    if (e.target.files) setFiles(p => [...p, ...Array.from(e.target.files)]);
+    if (e.target.files) {
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      const newFiles = [];
+
+      Array.from(e.target.files).forEach(file => {
+        if (!validTypes.includes(file.type)) {
+          setMsg({ text: `Файл "${file.name}" не является изображением (JPG, PNG, WEBP, GIF).`, ok: false });
+          return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          setMsg({ text: `Файл "${file.name}" слишком большой (макс. 10 МБ).`, ok: false });
+          return;
+        }
+        newFiles.push(file);
+      });
+
+      if (newFiles.length > 0) {
+        setFiles(p => [...p, ...newFiles]);
+        setMsg({ text: '', ok: true });
+      }
+    }
   };
 
   const removeFile = i => {
@@ -91,21 +222,58 @@ function CreateAuction() {
   const handleSubmit = async e => {
     e.preventDefault();
 
-    // --- FRONTEND VALIDATION ---
     const newErrors = {};
+
     if (files.length === 0) newErrors.files = 'Добавьте хотя бы одно фото';
-    if (!formData.brandId || !formData.modelId) newErrors.car = 'Выберите марку и модель';
-    if (!formData.year || formData.year < 1900 || formData.year > new Date().getFullYear() + 1) newErrors.year = 'Укажите корректный год';
-    if (!formData.mileage || formData.mileage < 0) newErrors.mileage = 'Укажите пробег';
-    if (!formData.startingPrice || formData.startingPrice <= 0) newErrors.price = 'Цена должна быть больше 0';
-    if (!formData.minBidStep || formData.minBidStep <= 0) newErrors.step = 'Шаг ставки должен быть больше 0';
-    if (!formData.endTime) newErrors.endTime = 'Укажите время окончания';
+    if (!formData.brandId) newErrors.brand = 'Выберите марку';
+    if (!formData.modelId) newErrors.model = 'Выберите модель';
+    if (!formData.year) newErrors.year = 'Выберите год выпуска';
+
+    if (!formData.mileage) {
+      newErrors.mileage = 'Укажите пробег';
+    } else if (parseInt(formData.mileage) < 0) {
+      newErrors.mileage = 'Пробег не может быть отрицательным';
+    }
+
+    if (!formData.transmissionId) newErrors.transmission = 'Выберите КПП';
+    if (!formData.fuelTypeId) newErrors.fuel = 'Выберите тип топлива';
+
+    if (!selectedRegion) newErrors.region = 'Выберите область';
+    if (!formData.cityId) newErrors.city = 'Выберите город';
+
+    const price = parseFloat(formData.startingPrice);
+    const step = parseFloat(formData.minBidStep);
+
+    if (!formData.startingPrice) {
+      newErrors.price = 'Укажите начальную цену';
+    } else if (isNaN(price) || price <= 0) {
+      newErrors.price = 'Цена должна быть положительным числом';
+    }
+
+    if (!formData.minBidStep) {
+      newErrors.step = 'Укажите шаг ставки';
+    } else if (isNaN(step) || step <= 0) {
+      newErrors.step = 'Шаг должен быть положительным числом';
+    }
+
+    if (!formData.endTime) {
+      newErrors.endTime = 'Укажите время окончания';
+    } else {
+      const endTimeDate = new Date(formData.endTime);
+      const now = new Date();
+      if (endTimeDate <= now) {
+        newErrors.endTime = 'Время окончания должно быть в будущем';
+      }
+    }
+
+    if (!formData.description || formData.description.trim().length < 10) {
+      newErrors.description = 'Описание должно содержать минимум 10 символов';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setMsg({ text: Object.values(newErrors).join('. '), ok: false });
       return;
     }
-    // ---------------------------
 
     setIsSubmitting(true);
     setMsg({ text: 'Загрузка фотографий (0/' + files.length + ')...', ok: true });
@@ -130,7 +298,23 @@ function CreateAuction() {
         sorted.unshift(main);
       }
 
-      await axios.post('http://localhost:8080/api/auctions', { ...formData, imageUrls: sorted });
+      const payload = { ...formData, regionId: selectedRegion, imageUrls: sorted };
+
+      await axios.post('http://localhost:8080/api/auctions', payload);
+
+      // === ЛОГИКА УДАЛЕНИЯ СТАРОГО ЛОТА ===
+      if (copyIdRef.current) {
+        try {
+          await axios.delete(`http://localhost:8080/api/auctions/${copyIdRef.current}`, {
+            params: { userId: formData.sellerId }
+          });
+          console.log("Старый лот #" + copyIdRef.current + " успешно удален.");
+        } catch (e) {
+          console.warn("Не удалось удалить старый лот", e);
+        }
+        copyIdRef.current = null; // Сбрасываем ref
+      }
+      // ====================================
 
       setMsg({ text: 'Лот успешно отправлен на модерацию!', ok: true });
       setTimeout(() => { window.location.href = '/profile'; }, 2000);
@@ -141,13 +325,34 @@ function CreateAuction() {
     }
   };
 
-  // Форматирование для отображения
-  const formatSpaces = v => v ? Number(v).toLocaleString('ru-RU') : '';
+  // === ФОРМАТТЕР (Пробелы + Запятая) ===
+  const formatSpaces = v => {
+    if (!v) return '';
+
+    if (v.indexOf('.') === -1) {
+      const num = parseInt(v);
+      if (isNaN(num)) return v;
+      return num.toLocaleString('ru-RU');
+    }
+
+    const parts = v.split('.');
+    const intPart = parseInt(parts[0]) || 0;
+    const decPart = parts[1] !== undefined ? parts[1] : '';
+
+    let formatted = intPart.toLocaleString('ru-RU');
+
+    if (decPart !== '') {
+      formatted += ',' + decPart;
+    } else if (v.endsWith('.')) {
+      formatted += ',';
+    }
+
+    return formatted;
+  };
 
   return (
       <div className="ca">
 
-        {/* Hero */}
         <div className="ca-hero">
           <div className="ca-container">
             <p className="ca-eyebrow">Новый лот</p>
@@ -155,25 +360,24 @@ function CreateAuction() {
           </div>
         </div>
 
-        {/* Form */}
         <main className="ca-container ca-body">
           <div className="ca-form-wrap">
             <form onSubmit={handleSubmit} className="ca-form">
 
-              {/* ── Автомобиль ── */}
+              {/* Автомобиль */}
               <section className="ca-section">
                 <p className="ca-section__title">Автомобиль</p>
                 <div className="ca-grid ca-grid--2">
                   <Field label="Марка" required>
-                    <select className="ca-select" name="brandId" value={formData.brandId} required
-                            onChange={e => { setSelectedBrand(e.target.value); handleChange(e); }}>
+                    <select className="ca-select" name="brandId" value={formData.brandId}
+                            onChange={e => handleSelectChangeWithTrigger(e, setSelectedBrand)}>
                       <option value="">Выберите марку...</option>
                       {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                     </select>
                   </Field>
 
                   <Field label="Модель" required>
-                    <select className="ca-select" name="modelId" value={formData.modelId} required
+                    <select className="ca-select" name="modelId" value={formData.modelId}
                             onChange={handleChange} disabled={!selectedBrand}>
                       <option value="">Выберите модель...</option>
                       {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -181,18 +385,20 @@ function CreateAuction() {
                   </Field>
 
                   <Field label="Год выпуска" required>
-                    <input className="ca-input" type="number" name="year"
-                           placeholder="2022" value={formData.year} onChange={handleChange} required />
+                    <select className="ca-select" name="year" value={formData.year} onChange={handleChange}>
+                      <option value="">Выберите год...</option>
+                      {yearsList.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
                   </Field>
 
                   <Field label="Пробег (км)" required>
                     <input className="ca-input" type="text" inputMode="numeric" name="mileage"
-                           placeholder="50 000" value={formatSpaces(formData.mileage)} onChange={handleNumericChange} required />
+                           placeholder="50 000" value={formatSpaces(formData.mileage)} onChange={handleNumericChange} />
                   </Field>
 
                   <Field label="КПП" required>
                     <select className="ca-select" name="transmissionId" value={formData.transmissionId}
-                            onChange={handleChange} required>
+                            onChange={handleChange}>
                       <option value="">Выберите КПП...</option>
                       {transmissions.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
@@ -200,7 +406,7 @@ function CreateAuction() {
 
                   <Field label="Тип топлива" required>
                     <select className="ca-select" name="fuelTypeId" value={formData.fuelTypeId}
-                            onChange={handleChange} required>
+                            onChange={handleChange}>
                       <option value="">Выберите топливо...</option>
                       {fuelTypes.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                     </select>
@@ -208,20 +414,20 @@ function CreateAuction() {
                 </div>
               </section>
 
-              {/* ── Местоположение ── */}
+              {/* Местоположение */}
               <section className="ca-section">
                 <p className="ca-section__title">Местоположение</p>
                 <div className="ca-grid ca-grid--2">
                   <Field label="Область" required>
-                    <select className="ca-select" value={selectedRegion}
-                            onChange={e => setSelectedRegion(e.target.value)} required>
+                    <select className="ca-select" name="regionId" value={selectedRegion}
+                            onChange={e => handleSelectChangeWithTrigger(e, setSelectedRegion)}>
                       <option value="">Выберите область...</option>
                       {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                     </select>
                   </Field>
                   <Field label="Город" required>
                     <select className="ca-select" name="cityId" value={formData.cityId}
-                            onChange={handleChange} required disabled={!selectedRegion}>
+                            onChange={handleChange} disabled={!selectedRegion}>
                       <option value="">Выберите город...</option>
                       {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
@@ -229,43 +435,43 @@ function CreateAuction() {
                 </div>
               </section>
 
-              {/* ── Параметры торгов ── */}
+              {/* Параметры торгов */}
               <section className="ca-section">
                 <p className="ca-section__title">Параметры торгов</p>
                 <div className="ca-grid ca-grid--3">
                   <Field label={<>Начальная цена (<BynIcon className="ca-label-icon" />)</>} required>
-                    <input className="ca-input" type="text" inputMode="numeric" name="startingPrice"
-                           placeholder="10 000" value={formatSpaces(formData.startingPrice)} onChange={handleNumericChange} required />
+                    <input className="ca-input" type="text" inputMode="decimal" name="startingPrice"
+                           placeholder="10 000" value={formatSpaces(formData.startingPrice)} onChange={handleNumericChange} />
                   </Field>
 
                   <Field label={<>Минимальный шаг (<BynIcon className="ca-label-icon" />)</>} required>
-                    <input className="ca-input" type="text" inputMode="numeric" name="minBidStep"
-                           placeholder="100" value={formatSpaces(formData.minBidStep)} onChange={handleNumericChange} required />
+                    <input className="ca-input" type="text" inputMode="decimal" name="minBidStep"
+                           placeholder="100" value={formatSpaces(formData.minBidStep)} onChange={handleNumericChange} />
                   </Field>
                   <Field label="Дата и время окончания" required>
                     <input className="ca-input" type="datetime-local" name="endTime"
                            value={formData.endTime} onChange={handleChange}
-                           min={minDateTime} max="2099-12-31T23:59"
-                           required />
+                           min={minDateTime} max="2099-12-31T23:59" />
                   </Field>
                 </div>
               </section>
 
-              {/* ── Описание ── */}
+              {/* Описание */}
               <section className="ca-section">
                 <p className="ca-section__title">Описание</p>
                 <Field label="Подробно опишите состояние автомобиля" required>
                   <textarea className="ca-textarea" name="description" rows="4"
                             placeholder="Состояние кузова, салона, техническое обслуживание..."
-                            value={formData.description} onChange={handleChange} required />
+                            value={formData.description} onChange={handleChange} />
                 </Field>
               </section>
 
-              {/* ── Фотографии ── */}
+              {/* Фотографии */}
               <section className="ca-section">
                 <p className="ca-section__title">Фотографии</p>
                 <p className="ca-section__hint">
                   Кликните на фото, чтобы сделать его главным — оно будет отображаться на карточке в каталоге.
+                  <span className="hint-required"> *</span>
                 </p>
 
                 <div className="ca-dropzone"
@@ -294,7 +500,7 @@ function CreateAuction() {
                 )}
               </section>
 
-              {/* ── Submit ── */}
+              {/* Submit */}
               <div className="ca-submit">
                 {msg.text && (
                     <p className={`ca-msg${msg.ok ? ' ca-msg--ok' : ' ca-msg--err'}`}>{msg.text}</p>
@@ -310,7 +516,6 @@ function CreateAuction() {
           </div>
         </main>
 
-        {/* Footer */}
         <footer className="ca-footer">
           <div className="ca-footer__grid">
             <div>

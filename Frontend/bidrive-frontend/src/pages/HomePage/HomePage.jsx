@@ -29,7 +29,7 @@ const ADVANTAGES = [
   { icon: <IconShield />, title: 'Проверенные лоты', desc: 'Каждое объявление проходит ручную модерацию' },
   { icon: <IconZap />,    title: 'Онлайн-торги',     desc: 'Ставки и обновления цен в реальном времени' },
   { icon: <IconLock />,   title: 'Безопасность',     desc: 'Контакты открываются только победителю' },
-  { icon: <IconSend />,   title: 'Telegram-бот',     desc: 'Мгновенные уведомления о ставках и победе' },
+  { icon: <IconSend />,   title: 'Telegram-бот',     desc: 'Мгновенные уведомления о появлении нового лота' },
 ];
 
 const STEPS = [

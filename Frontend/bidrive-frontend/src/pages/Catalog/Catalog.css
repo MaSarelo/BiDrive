@@ -266,3 +266,64 @@ ul  { list-style: none; }
   margin-left: 2px;
   color: var(--text-3);
 }
+
+/* ═══════════════════════════════════════════
+   PAGINATION
+═══════════════════════════════════════════ */
+.ct-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.ct-pagination__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 12px;
+
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ct-pagination__btn:hover:not(:disabled) {
+  background: var(--bg-4);
+  border-color: var(--border-2);
+  color: var(--text);
+}
+
+.ct-pagination__btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.ct-pagination__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Адаптив для мобильных */
+@media (max-width: 640px) {
+  .ct-pagination {
+    flex-wrap: wrap; /* Перенос на новую строку если не влезает */
+  }
+  .ct-pagination__btn {
+    min-width: 40px;
+    height: 40px;
+  }
+}

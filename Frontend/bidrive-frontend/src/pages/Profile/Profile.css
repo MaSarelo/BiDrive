@@ -1,7 +1,7 @@
 :root {
     --bg:        #0D1117; --bg-2:      #161B22; --bg-3:      #21262D; --bg-4:      #30363D;
     --border:    rgba(240,246,252,0.1); --border-2:  rgba(240,246,252,0.15);
-    --accent:    #3B82F6; --accent-dim: rgba(59,130,246,0.15);
+    --accent:    #3B82F6; --accent-h:  #60A5FA; --accent-dim: rgba(59,130,246,0.15);
     --text:      #F0F6FC; --text-2:    #8B949E; --text-3:    #484F58;
     --green:     #3FB950; --green-dim: rgba(63,185,80,0.15);
     --red:       #F85149; --red-dim:   rgba(248,81,73,0.15);
@@ -60,9 +60,11 @@
 .pf-badge--finished { color: var(--text-3); background: var(--bg-4); }
 .pf-badge--approved { color: var(--blue); background: var(--blue-dim); }
 
-.pf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 14px; border-radius: 4px; font-family: var(--font); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; border: 1px solid transparent; transition: background 0.15s; white-space: nowrap; width: 100%; }
-.pf-btn--publish { background: var(--green-dim); color: var(--green); border-color: rgba(63,185,80,0.3); }
-.pf-btn--publish:hover { background: rgba(63,185,80,0.25); }
+.pf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 14px; border-radius: 4px; font-family: var(--font); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; border: 1px solid transparent; transition: background 0.15s; white-space: nowrap; width: 100%; text-decoration: none; }
+/* Новая кнопка просмотра (синяя) */
+.pf-btn--view { background: var(--accent-dim); color: var(--accent); border-color: rgba(59,130,246,0.3); }
+.pf-btn--view:hover { background: rgba(59,130,246,0.25); }
+
 .pf-btn--finish { background: var(--blue-dim); color: var(--blue); border-color: rgba(96,165,250,0.3); }
 .pf-btn--finish:hover { background: rgba(96,165,250,0.25); }
 .pf-btn--delete { background: var(--red-dim); color: var(--red); border-color: rgba(248,81,73,0.3); }
@@ -76,3 +78,60 @@
 .pf-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; gap: 14px; color: var(--text-3); font-size: 0.8125rem; }
 
 @media (max-width: 768px) { .pf-wrap { padding: 0 20px; } .pf-stats { grid-template-columns: 1fr; } .pf-grid { grid-template-columns: 1fr; } }
+
+.pf-badge--rejected { color: var(--red); background: var(--red-dim); border: 1px solid rgba(248,81,73,0.2); }
+
+/* ═══════════════════════════════════════════
+   MODAL WINDOW
+═══════════════════════════════════════════ */
+.pf-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: 20px;
+}
+
+.pf-modal {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+    animation: pf-modal-in 0.2s ease-out;
+}
+
+@keyframes pf-modal-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.pf-modal__title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+}
+
+.pf-modal__text {
+    font-size: 0.875rem;
+    color: var(--text-2);
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+.pf-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.pf-modal__title--danger {
+    color: var(--red);
+}

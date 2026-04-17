@@ -1,14 +1,30 @@
-/* Layout.css */
-.ly { display: flex; flex-direction: column; min-height: 100vh; }
-.ly-content { flex: 1; padding-top: 64px; }
+/* ═══════════════════════════════════════════
+   LAYOUT CORE
+═══════════════════════════════════════════ */
+.ly {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
 
+.ly-content {
+  flex: 1;
+  padding-top: 64px;
+}
+
+/* ═══════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════ */
 .ly-header {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 900;
   height: 64px;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
 }
 
 .ly-header__inner {
@@ -21,6 +37,7 @@
   gap: 24px;
 }
 
+/* Logo */
 .ly-logo {
   display: flex;
   align-items: center;
@@ -34,7 +51,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px; height: 32px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
   background: var(--accent);
   color: #fff;
@@ -48,6 +66,7 @@
   color: var(--text);
 }
 
+/* Navigation */
 .ly-nav {
   display: flex;
   align-items: center;
@@ -66,24 +85,20 @@
   border-radius: 6px;
   transition: color 0.15s, background 0.15s;
 }
+
 .ly-nav__link:hover {
   color: var(--text);
   background: var(--bg-3);
 }
+
 .ly-nav__link--active {
   color: var(--text);
   background: var(--bg-3);
 }
 
-.ly-nav__link--admin { color: #F85149; }
-.ly-nav__link--admin:hover { background: var(--red-dim); }
-
-.ly-nav__sep {
-  width: 1px; height: 20px;
-  background: var(--border);
-  margin: 0 8px;
-}
-
+/* ═══════════════════════════════════════════
+   RIGHT SECTION (Bell, Profile, Logout)
+═══════════════════════════════════════════ */
 .ly-right {
   display: flex;
   align-items: center;
@@ -91,21 +106,31 @@
   margin-left: auto;
 }
 
+/* Notifications */
 .ly-bell {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px; height: 36px;
+  width: 36px;
+  height: 36px;
   border-radius: 6px;
   color: var(--text-2);
   transition: color 0.15s, background 0.15s;
+  text-decoration: none;
 }
-.ly-bell:hover { color: var(--text); background: var(--bg-3); }
+
+.ly-bell:hover {
+  color: var(--text);
+  background: var(--bg-3);
+}
+
 .ly-bell__badge {
   position: absolute;
-  top: 4px; right: 4px;
-  min-width: 16px; height: 16px;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
   padding: 0 4px;
   background: var(--red);
   color: #fff;
@@ -117,21 +142,34 @@
   justify-content: center;
 }
 
+/* Profile Wrapper (for dropdown positioning) */
+.ly-profile-wrapper {
+  position: relative;
+}
+
+/* Profile Button / Link (Common styles) */
 .ly-user {
   display: flex;
   align-items: center;
   gap: 8px;
-  text-decoration: none;
   padding: 4px 12px 4px 4px;
   border-radius: 6px;
   background: var(--bg-3);
   border: 1px solid var(--border);
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
+  cursor: pointer; /* For button */
+  text-decoration: none; /* For Link */
+  color: inherit; /* For button */
+  font-family: inherit;
 }
-.ly-user:hover { border-color: var(--border-2); }
+
+.ly-user:hover {
+  border-color: var(--border-2);
+}
 
 .ly-user__avatar {
-  width: 28px; height: 28px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   background: var(--accent-dim);
   color: var(--accent);
@@ -140,78 +178,281 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
+
 .ly-user__name {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text);
+  white-space: nowrap;
 }
 
+/* Chevron Arrow (Only for Admins) */
+.ly-user__chevron {
+  color: var(--text-3);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.ly-user__chevron--open {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Menu (Admin only) */
+.ly-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  padding: 6px;
+  animation: fadeInDropdown 0.15s ease-out;
+}
+
+@keyframes fadeInDropdown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ly-dropdown__item {
+  display: block;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-2);
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ly-dropdown__item:hover {
+  background: var(--bg-3);
+  color: var(--text);
+}
+
+.ly-dropdown__item--admin {
+  color: #F85149;
+}
+
+.ly-dropdown__item--admin:hover {
+  background: var(--red-dim);
+  color: #F85149;
+}
+
+/* Logout Button */
 .ly-logout {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   border-radius: 6px;
   color: var(--text-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
-.ly-logout:hover { color: #F85149; background: var(--red-dim); }
 
-.ly-guest { display: flex; align-items: center; gap: 8px; }
+.ly-logout:hover {
+  color: #F85149;
+  background: var(--red-dim);
+}
+
+/* Guest Buttons */
+.ly-guest {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 .ly-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 8px 16px; border-radius: 6px;
-  font-size: 0.875rem; font-weight: 600;
-  text-decoration: none; cursor: pointer;
-  border: 1px solid transparent; transition: all 0.15s; white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
 }
-.ly-btn--primary {
-  background: var(--accent); color: #fff; border-color: var(--accent);
-}
-.ly-btn--primary:hover { background: var(--accent-h); }
-.ly-btn--ghost {
-  color: var(--text-2); background: transparent; border-color: var(--border);
-}
-.ly-btn--ghost:hover { color: var(--text); border-color: var(--border-2); }
 
-/* Мобильное меню */
-.ly-burger {
-  display: none; flex-direction: column; justify-content: center; align-items: center;
-  width: 36px; height: 36px; background: none; border: none; cursor: pointer; gap: 5px; border-radius: 6px;
+.ly-btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
-.ly-burger:hover { background: var(--bg-3); }
-.ly-burger span { display: block; width: 20px; height: 1.5px; background: var(--text-2); border-radius: 2px; transition: transform 0.2s, opacity 0.2s; }
-.ly-burger--open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
-.ly-burger--open span:nth-child(2) { opacity: 0; }
-.ly-burger--open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+.ly-btn--primary:hover {
+  background: var(--accent-h);
+}
+
+.ly-btn--ghost {
+  color: var(--text-2);
+  background: transparent;
+  border-color: var(--border);
+}
+
+.ly-btn--ghost:hover {
+  color: var(--text);
+  border-color: var(--border-2);
+}
+
+.ly-btn--full {
+  width: 100%;
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE MENU (Burger & Drawer)
+═══════════════════════════════════════════ */
+.ly-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  gap: 5px;
+  border-radius: 6px;
+}
+
+.ly-burger:hover {
+  background: var(--bg-3);
+}
+
+.ly-burger span {
+  display: block;
+  width: 20px;
+  height: 1.5px;
+  background: var(--text-2);
+  border-radius: 2px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.ly-burger--open span:nth-child(1) {
+  transform: translateY(6.5px) rotate(45deg);
+}
+
+.ly-burger--open span:nth-child(2) {
+  opacity: 0;
+}
+
+.ly-burger--open span:nth-child(3) {
+  transform: translateY(-6.5px) rotate(-45deg);
+}
 
 .ly-overlay {
-  display: none; position: fixed; inset: 0; z-index: 850;
-  background: rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.2s; pointer-events: none;
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 850;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
 }
-.ly-overlay--visible { opacity: 1; pointer-events: auto; }
+
+.ly-overlay--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .ly-drawer {
-  display: none; position: fixed; top: 0; right: 0; z-index: 950;
-  width: 280px; height: 100vh; background: var(--bg-2);
-  border-left: 1px solid var(--border); box-shadow: -8px 0 24px rgba(0,0,0,0.3);
-  transform: translateX(100%); transition: transform 0.2s; overflow-y: auto;
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 950;
+  width: 280px;
+  height: 100vh;
+  background: var(--bg-2);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.3);
+  transform: translateX(100%);
+  transition: transform 0.2s;
+  overflow-y: auto;
 }
-.ly-drawer--open { transform: translateX(0); }
 
-.ly-drawer__body { padding: 16px; padding-top: 80px; display: flex; flex-direction: column; gap: 4px; }
+.ly-drawer--open {
+  transform: translateX(0);
+}
+
+.ly-drawer__body {
+  padding: 16px;
+  padding-top: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .ly-drawer__link {
-  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
-  font-size: 0.9rem; font-weight: 500; color: var(--text-2);
-  border-radius: 6px; transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-2);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background 0.15s;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
 }
-.ly-drawer__link:hover { color: var(--text); background: var(--bg-3); }
-.ly-drawer__link--admin { color: #F85149; }
-.ly-drawer__divider { height: 1px; background: var(--border); margin: 8px 0; }
 
+.ly-drawer__link:hover {
+  color: var(--text);
+  background: var(--bg-3);
+}
+
+.ly-drawer__link--admin {
+  color: #F85149 !important;
+}
+
+.ly-drawer__link--admin:hover {
+  background: var(--red-dim) !important;
+}
+
+.ly-drawer__divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
 @media (max-width: 860px) {
-  .ly-nav, .ly-right { display: none; }
-  .ly-burger { display: flex; }
-  .ly-drawer { display: block; }
-  .ly-overlay { display: block; }
+  .ly-nav,
+  .ly-right {
+    display: none;
+  }
+
+  .ly-burger {
+    display: flex;
+  }
+
+  .ly-drawer {
+    display: block;
+  }
+
+  .ly-overlay {
+    display: block;
+  }
 }

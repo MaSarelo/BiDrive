@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Profile.css';
 
@@ -8,13 +8,21 @@ const STATUS_MAP = {
     DRAFT:    { label: 'Черновик',    cls: 'pf-badge--draft'    },
     PENDING:  { label: 'На проверке', cls: 'pf-badge--pending'  },
     FINISHED: { label: 'Завершён',    cls: 'pf-badge--finished' },
+    COMPLETED:{ label: 'Завершён',    cls: 'pf-badge--finished' },
     APPROVED: { label: 'Одобрен',     cls: 'pf-badge--approved' },
+    REJECTED: { label: 'Отклонён',    cls: 'pf-badge--rejected' },
 };
 
 function Profile() {
     const [auctions, setAuctions] = useState([]);
     const [loading,  setLoading]  = useState(true);
     const currentUserId = localStorage.getItem('userId');
+    const navigate = useNavigate();
+
+    // === СОСТОЯНИЯ МОДАЛОК ===
+    const [finishModal, setFinishModal] = useState({ open: false, id: null });
+    const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
+    // =========================
 
     useEffect(() => {
         if (!currentUserId) return;
@@ -23,28 +31,46 @@ function Profile() {
             .catch(err => { console.error(err); setLoading(false); });
     }, [currentUserId]);
 
-    const handleDelete = id => {
-        if (!window.confirm('Вы уверены, что хотите удалить лот?')) return;
-        axios.delete(`http://localhost:8080/api/auctions/${id}`, { params: { userId: currentUserId } })
-            .then(() => setAuctions(p => p.filter(a => a.id !== id)))
-            .catch(err => alert('Ошибка: ' + (err.response?.data || 'Нет прав')));
-    };
+    // === ЛОГИКА УДАЛЕНИЯ ===
+    const openDeleteModal = (id) => setDeleteModal({ open: true, id });
+    const closeDeleteModal = () => setDeleteModal({ open: false, id: null });
 
-    const handlePublish = id => {
-        axios.put(`http://localhost:8080/api/auctions/${id}/publish`, null, { params: { userId: currentUserId } })
-            .then(() => setAuctions(p => p.map(a => a.id === id ? { ...a, status: 'ACTIVE' } : a)))
-            .catch(err => alert('Ошибка: ' + (err.response?.data || 'Нет прав')));
+    const confirmDelete = async () => {
+        if (!deleteModal.id) return;
+        try {
+            await axios.delete(`http://localhost:8080/api/auctions/${deleteModal.id}`, { params: { userId: currentUserId } });
+            setAuctions(p => p.filter(a => a.id !== deleteModal.id));
+            closeDeleteModal();
+        } catch (err) {
+            alert('Ошибка: ' + (err.response?.data || 'Нет прав'));
+            closeDeleteModal();
+        }
     };
+    // =======================
 
-    const handleFinish = id => {
-        if (!window.confirm('Завершить торги и назначить победителя?')) return;
-        axios.put(`http://localhost:8080/api/auctions/${id}/finish`, null, { params: { userId: currentUserId } })
-            .then(() => setAuctions(p => p.map(a => a.id === id ? { ...a, status: 'FINISHED' } : a)))
-            .catch(err => alert('Ошибка: ' + (err.response?.data || 'Нет прав')));
+    // === ЛОГИКА ЗАВЕРШЕНИЯ ТОРГОВ ===
+    const openFinishModal = (id) => setFinishModal({ open: true, id });
+    const closeFinishModal = () => setFinishModal({ open: false, id: null });
+
+    const confirmFinish = async () => {
+        if (!finishModal.id) return;
+        try {
+            await axios.put(`http://localhost:8080/api/auctions/${finishModal.id}/finish`, null, { params: { userId: currentUserId } });
+            setAuctions(p => p.map(a => a.id === finishModal.id ? { ...a, status: 'FINISHED' } : a));
+            closeFinishModal();
+        } catch (err) {
+            alert('Ошибка: ' + (err.response?.data || 'Нет прав'));
+            closeFinishModal();
+        }
+    };
+    // =================================
+
+    const handleRelist = (auction) => {
+        navigate(`/create?copyId=${auction.id}`);
     };
 
     const active   = auctions.filter(a => a.status === 'ACTIVE').length;
-    const finished = auctions.filter(a => a.status === 'FINISHED').length;
+    const finished = auctions.filter(a => a.status === 'FINISHED' || a.status === 'COMPLETED').length;
 
     if (loading) return (
         <div className="pf-loading">
@@ -55,7 +81,39 @@ function Profile() {
 
     return (
         <div className="pf">
-            {/* Hero */}
+
+            {/* === МОДАЛКА ЗАВЕРШЕНИЯ === */}
+            {finishModal.open && (
+                <div className="pf-modal-overlay" onClick={closeFinishModal}>
+                    <div className="pf-modal" onClick={e => e.stopPropagation()}>
+                        <h3 className="pf-modal__title">Завершить торги?</h3>
+                        <p className="pf-modal__text">
+                            Победитель будет определен по последней ставке. Это действие нельзя отменить.
+                        </p>
+                        <div className="pf-modal__actions">
+                            <button className="pf-btn pf-btn--ghost" onClick={closeFinishModal}>Отмена</button>
+                            <button className="pf-btn pf-btn--finish" onClick={confirmFinish}>Завершить</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* === МОДАЛКА УДАЛЕНИЯ === */}
+            {deleteModal.open && (
+                <div className="pf-modal-overlay" onClick={closeDeleteModal}>
+                    <div className="pf-modal" onClick={e => e.stopPropagation()}>
+                        <h3 className="pf-modal__title pf-modal__title--danger">Удалить лот?</h3>
+                        <p className="pf-modal__text">
+                            Это действие необратимо. Фотографии и данные лота будут удалены без возможности восстановления.
+                        </p>
+                        <div className="pf-modal__actions">
+                            <button className="pf-btn pf-btn--ghost" onClick={closeDeleteModal}>Отмена</button>
+                            <button className="pf-btn pf-btn--delete" onClick={confirmDelete}>Удалить</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="pf-hero">
                 <div className="pf-wrap">
                     <p className="pf-eyebrow">Личный кабинет</p>
@@ -65,7 +123,6 @@ function Profile() {
 
             <div className="pf-wrap pf-body">
 
-                {/* Статистика */}
                 <div className="pf-stats">
                     <div className="pf-stat">
                         <span className="pf-stat__num">{auctions.length}</span>
@@ -81,12 +138,10 @@ function Profile() {
                     </div>
                 </div>
 
-                {/* Кнопка нового лота */}
                 <Link to="/create" className="pf-btn pf-btn--new">
                     + Выставить автомобиль
                 </Link>
 
-                {/* Лоты */}
                 <p className="pf-section-heading">Мои объявления</p>
 
                 {auctions.length === 0 ? (
@@ -98,12 +153,14 @@ function Profile() {
                     <div className="pf-grid">
                         {auctions.map(a => {
                             const st = STATUS_MAP[a.status] ?? { label: a.status, cls: '' };
-                            // Исправлен пробел в URL
                             const img = a.mainImageUrl
                                 ? `http://localhost:8080${a.mainImageUrl}` : null;
+
+                            const canRelist = (a.status === 'FINISHED' || a.status === 'COMPLETED') && !a.winner;
+                            const canDelete = a.status !== 'ACTIVE';
+
                             return (
                                 <div key={a.id} className="pf-card">
-                                    {/* Фото */}
                                     <div className="pf-card__photo">
                                         {img
                                             ? <img src={img} alt={`${a.brand?.name} ${a.model?.name}`} loading="lazy" />
@@ -111,7 +168,6 @@ function Profile() {
                                         }
                                     </div>
 
-                                    {/* Тело */}
                                     <div className="pf-card__body">
                                         <div className="pf-card__head">
                                             <h3 className="pf-card__name">
@@ -151,24 +207,28 @@ function Profile() {
                                         </div>
                                     </div>
 
-                                    {/* Действия */}
                                     <div className="pf-card__actions">
-                                        {/* Исправлен && */}
-                                        {(a.status === 'DRAFT' || a.status === 'PENDING') && (
-                                            <button className="pf-btn pf-btn--publish"
-                                                    onClick={() => handlePublish(a.id)}>
-                                                Опубликовать
-                                            </button>
-                                        )}
+                                        <Link to={`/auction/${a.id}`} className="pf-btn pf-btn--view">
+                                            Смотреть детали
+                                        </Link>
+
                                         {a.status === 'ACTIVE' && (
                                             <button className="pf-btn pf-btn--finish"
-                                                    onClick={() => handleFinish(a.id)}>
+                                                    onClick={() => openFinishModal(a.id)}>
                                                 Завершить торги
                                             </button>
                                         )}
-                                        {a.status !== 'ACTIVE' && a.status !== 'FINISHED' && (
+
+                                        {canRelist && (
+                                            <button className="pf-btn pf-btn--publish"
+                                                    onClick={() => handleRelist(a)}>
+                                                Выставить повторно
+                                            </button>
+                                        )}
+
+                                        {canDelete && (
                                             <button className="pf-btn pf-btn--delete"
-                                                    onClick={() => handleDelete(a.id)}>
+                                                    onClick={() => openDeleteModal(a.id)}>
                                                 Удалить
                                             </button>
                                         )}

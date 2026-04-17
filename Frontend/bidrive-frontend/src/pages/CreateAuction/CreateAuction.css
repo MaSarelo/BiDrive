@@ -164,3 +164,10 @@
   .ca-grid--2, .ca-grid--3 { grid-template-columns: 1fr; }
   .ca-footer__grid { grid-template-columns: 1fr; gap: 2rem; }
 }
+
+.hint-required {
+  color: var(--red);
+  font-size: 1em; /* Размер как у текста */
+  margin-left: 2px;
+  font-weight: bold;
+}

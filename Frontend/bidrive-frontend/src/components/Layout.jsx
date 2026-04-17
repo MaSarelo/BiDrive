@@ -9,26 +9,22 @@ function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // --- ИСПРАВЛЕНИЕ: Инициализируем состояние сразу из localStorage ---
-  // Используем функцию инициализации, чтобы код выполнился один раз при старте
   const [userEmail, setUserEmail] = useState(() => localStorage.getItem('userEmail'));
   const [userRole, setUserRole] = useState(() => {
     const r = localStorage.getItem('userRole');
     return r ? parseInt(r) : null;
   });
-  // ----------------------------------------------------------------
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
+  const [profileOpen, setProfileOpen] = useState(false); // Для выпадающего меню админа
+
   const drawerRef = useRef(null);
+  const profileRef = useRef(null); // Для клика вне меню
 
-  // Глобальный скролл вверх при смене страницы
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
+  useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
 
-  // Синхронизация при смене страницы (на случай изменений в другой вкладке и т.д.)
   useEffect(() => {
     const email = localStorage.getItem('userEmail');
     const role = localStorage.getItem('userRole');
@@ -36,7 +32,10 @@ function Layout() {
     setUserRole(role ? parseInt(role) : null);
   }, [location]);
 
-  useEffect(() => { setMenuOpen(false); }, [location]);
+  useEffect(() => {
+    setMenuOpen(false);
+    setProfileOpen(false); // Закрываем всё при смене страницы
+  }, [location]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -53,13 +52,13 @@ function Layout() {
   }, [location, userEmail]);
 
   useEffect(() => {
-    if (!menuOpen) return;
     const handler = e => {
       if (drawerRef.current && !drawerRef.current.contains(e.target)) setMenuOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [menuOpen]);
+  }, []);
 
   const handleLogout = () => {
     ['userEmail', 'userId', 'userRole', 'userName'].forEach(k => localStorage.removeItem(k));
@@ -79,7 +78,6 @@ function Layout() {
               onClick={() => setMenuOpen(false)}
           />
 
-          {/* ── HEADER ── */}
           <header className={`ly-header${scrolled ? ' ly-header--solid' : ''}`}>
             <div className="ly-header__inner">
 
@@ -99,15 +97,6 @@ function Layout() {
                 <Link to="/create" className={`ly-nav__link${isActive('/create') ? ' ly-nav__link--active' : ''}`}>
                   Выставить лот
                 </Link>
-
-                {userRole === 2 && (
-                    <>
-                      <span className="ly-nav__sep" />
-                      <Link to="/admin" className={`ly-nav__link ly-nav__link--admin${isActive('/admin') ? ' ly-nav__link--active' : ''}`}>
-                        Админ
-                      </Link>
-                    </>
-                )}
               </nav>
 
               <div className="ly-right">
@@ -125,10 +114,42 @@ function Layout() {
 
                 {userEmail ? (
                     <>
-                      <Link to="/profile" className="ly-user">
-                        <span className="ly-user__avatar">{userName?.[0]?.toUpperCase()}</span>
-                        <span className="ly-user__name">{userName}</span>
-                      </Link>
+                      {/* === ЛОГИКА ПРОФИЛЯ === */}
+
+                      {/* Если Админ — показываем Dropdown */}
+                      {userRole === 2 ? (
+                          <div className="ly-profile-wrapper" ref={profileRef}>
+                            <button
+                                className="ly-user"
+                                onClick={() => setProfileOpen(v => !v)}
+                                aria-expanded={profileOpen}
+                            >
+                              <span className="ly-user__avatar">{userName?.[0]?.toUpperCase()}</span>
+                              <span className="ly-user__name">{userName}</span>
+                              <svg className={`ly-user__chevron${profileOpen ? ' ly-user__chevron--open' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <polyline points="6 9 12 15 18 9" />
+                              </svg>
+                            </button>
+
+                            {profileOpen && (
+                                <div className="ly-dropdown">
+                                  <Link to="/profile" className="ly-dropdown__item" onClick={() => setProfileOpen(false)}>
+                                    Мой профиль
+                                  </Link>
+                                  <Link to="/admin" className="ly-dropdown__item ly-dropdown__item--admin" onClick={() => setProfileOpen(false)}>
+                                    Панель администратора
+                                  </Link>
+                                </div>
+                            )}
+                          </div>
+                      ) : (
+                          /* Если обычный пользователь — просто ссылка */
+                          <Link to="/profile" className="ly-user">
+                            <span className="ly-user__avatar">{userName?.[0]?.toUpperCase()}</span>
+                            <span className="ly-user__name">{userName}</span>
+                          </Link>
+                      )}
+
                       <button className="ly-logout" onClick={handleLogout} title="Выйти">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -163,16 +184,16 @@ function Layout() {
                   </Link>
               )}
 
-              {userRole === 2 && (
-                  <Link to="/admin" className="ly-drawer__link ly-drawer__link--admin">Панель администратора</Link>
-              )}
-
               <div className="ly-drawer__divider" />
 
               {userEmail ? (
                   <>
                     <Link to="/profile" className="ly-drawer__link">Профиль ({userName})</Link>
-                    <button className="ly-drawer__link" style={{color: 'var(--text-3)'}} onClick={handleLogout}>Выйти из аккаунта</button>
+                    {/* Админку в мобильной версии оставляем ссылкой */}
+                    {userRole === 2 && (
+                        <Link to="/admin" className="ly-drawer__link ly-drawer__link--admin">Панель администратора</Link>
+                    )}
+                    <button className="ly-drawer__link" style={{color: 'var(--text-3)', background: 'none', border: 'none', width: '100%', textAlign: 'left'}} onClick={handleLogout}>Выйти из аккаунта</button>
                   </>
               ) : (
                   <div style={{display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0'}}>
