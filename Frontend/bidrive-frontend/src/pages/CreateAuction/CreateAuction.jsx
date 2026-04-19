@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './CreateAuction.css';
 import BynIcon from '../../components/BynIcon';
@@ -35,6 +35,8 @@ function CreateAuction() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [msg,          setMsg]          = useState({ text: '', ok: true });
+
+  const navigate = useNavigate();
 
   // === REF ДЛЯ ХРАНЕНИЯ ID КОПИИ (ЧТОБЫ УДАЛИТЬ СТАРЫЙ ЛОТ) ===
   const copyIdRef = useRef(null);
@@ -221,6 +223,12 @@ function CreateAuction() {
 
   const handleSubmit = async e => {
     e.preventDefault();
+
+    if (!formData.sellerId) {
+      setMsg({ text: 'Войдите в аккаунт, чтобы выставить лот', ok: false });
+      setTimeout(() => navigate('/login'), 2000); // Редирект на логин через 2 сек
+      return;
+    }
 
     const newErrors = {};
 

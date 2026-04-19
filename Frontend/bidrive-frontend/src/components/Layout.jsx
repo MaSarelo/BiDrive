@@ -1,13 +1,54 @@
-import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useState, useEffect, useMemo, useRef, createContext } from 'react';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import axios from 'axios';
 import './Layout.css';
 
 export const NotifContext = createContext();
 
+// === ИКОНКИ ===
+const SunIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/>
+      <line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/>
+      <line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+);
+
+const MoonIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+);
+// =================
+
 function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // === ТЕМА ===
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved || 'dark';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'light') {
+      root.classList.add('light-theme');
+    } else {
+      root.classList.remove('light-theme');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
+  // ============
 
   const [userEmail, setUserEmail] = useState(() => localStorage.getItem('userEmail'));
   const [userRole, setUserRole] = useState(() => {
@@ -18,10 +59,10 @@ function Layout() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
-  const [profileOpen, setProfileOpen] = useState(false); // Для выпадающего меню админа
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const drawerRef = useRef(null);
-  const profileRef = useRef(null); // Для клика вне меню
+  const profileRef = useRef(null);
 
   useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
 
@@ -34,7 +75,7 @@ function Layout() {
 
   useEffect(() => {
     setMenuOpen(false);
-    setProfileOpen(false); // Закрываем всё при смене страницы
+    setProfileOpen(false);
   }, [location]);
 
   useEffect(() => {
@@ -100,6 +141,17 @@ function Layout() {
               </nav>
 
               <div className="ly-right">
+
+                {/* === КНОПКА ПЕРЕКЛЮЧЕНИЯ ТЕМЫ === */}
+                <button
+                    className="ly-theme-toggle"
+                    onClick={toggleTheme}
+                    title={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
+                >
+                  {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                </button>
+                {/* ================================= */}
+
                 {userEmail && (
                     <Link to="/notifications" className="ly-bell" title="Уведомления">
                       <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -114,9 +166,6 @@ function Layout() {
 
                 {userEmail ? (
                     <>
-                      {/* === ЛОГИКА ПРОФИЛЯ === */}
-
-                      {/* Если Админ — показываем Dropdown */}
                       {userRole === 2 ? (
                           <div className="ly-profile-wrapper" ref={profileRef}>
                             <button
@@ -143,7 +192,6 @@ function Layout() {
                             )}
                           </div>
                       ) : (
-                          /* Если обычный пользователь — просто ссылка */
                           <Link to="/profile" className="ly-user">
                             <span className="ly-user__avatar">{userName?.[0]?.toUpperCase()}</span>
                             <span className="ly-user__name">{userName}</span>
@@ -184,12 +232,16 @@ function Layout() {
                   </Link>
               )}
 
+              {/* === КНОПКА ТЕМЫ В МОБИЛЬНОМ МЕНЮ === */}
+              <button className="ly-drawer__link" onClick={toggleTheme} style={{marginTop: '4px'}}>
+                {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+              </button>
+
               <div className="ly-drawer__divider" />
 
               {userEmail ? (
                   <>
                     <Link to="/profile" className="ly-drawer__link">Профиль ({userName})</Link>
-                    {/* Админку в мобильной версии оставляем ссылкой */}
                     {userRole === 2 && (
                         <Link to="/admin" className="ly-drawer__link ly-drawer__link--admin">Панель администратора</Link>
                     )}

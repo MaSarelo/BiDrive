@@ -3,3 +3,7 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
+
+:root.light-theme {
+  color-scheme: light;
+}
