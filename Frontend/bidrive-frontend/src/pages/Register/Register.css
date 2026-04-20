@@ -16,6 +16,15 @@
   --font: 'Inter', system-ui, sans-serif;
 }
 
+/* === ГЛОБАЛЬНЫЙ ФОН (УБИРАЕТ БЕЛУЮ ПОЛОСУ) === */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+}
+/* ============================================= */
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -26,7 +35,7 @@
 .rg {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-height: 90vh;
+  min-height: 100vh; /* ИСПРАВЛЕНО: было 90vh, стало 100vh */
   background: var(--bg);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
