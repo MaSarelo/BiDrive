@@ -12,26 +12,45 @@ const STATUS_MAP = {
 };
 
 function AuctionCard({ auction }) {
-  const imageUrl = auction.mainImageUrl
-      ? `http://localhost:8080${auction.mainImageUrl}`
+  const {
+    id,
+    mainImageUrl,
+    brand,
+    model,
+    year,
+    mileage,
+    transmission,
+    fuelType,
+    status: statusKey,
+    currentPrice,
+    endTime
+  } = auction || {}; // Добавил fallback {} на случай, если auction пустой
+
+  const imageUrl = mainImageUrl
+      ? `http://localhost:8080${mainImageUrl}`
       : null;
 
-  const status = STATUS_MAP[auction.status] ?? { label: auction.status, cls: '' };
+  const status = STATUS_MAP[statusKey] ?? { label: statusKey, cls: '' };
 
   // Получаем курс и считаем цену в USD
   const rate = useRate();
-  const priceUsd = rate && auction.currentPrice
-      ? Math.round(auction.currentPrice / rate).toLocaleString('ru-RU')
+
+  // ЯВНОЕ ПРИВЕДЕНИЕ К ЧИСЛУ
+  // Убирает предупреждение "Invalid number of arguments", если придет строка
+  const priceNum = Number(currentPrice) || 0;
+
+  const priceUsd = rate && priceNum
+      ? Math.round(priceNum / rate).toLocaleString('ru-RU')
       : '...';
 
   return (
-      <Link to={`/auction/${auction.id}`} className="ac-link">
+      <Link to={`/auction/${id}`} className="ac-link">
         <article className="ac">
 
           {/* Photo */}
           <div className="ac-photo">
             {imageUrl
-                ? <img src={imageUrl} alt={`${auction.brand?.name} ${auction.model?.name}`} loading="lazy" />
+                ? <img src={imageUrl} alt={`${brand?.name} ${model?.name}`} loading="lazy" />
                 : <div className="ac-photo__empty">Фото не загружено</div>
             }
             <span className={`ac-status ${status.cls}`}>{status.label}</span>
@@ -40,27 +59,27 @@ function AuctionCard({ auction }) {
           {/* Body */}
           <div className="ac-body">
             <h2 className="ac-title">
-              {auction.brand?.name} {auction.model?.name}
+              {brand?.name} {model?.name}
             </h2>
 
             <div className="ac-specs">
               <div className="ac-spec">
                 <span className="ac-spec__label">Год </span>
-                <span className="ac-spec__value">{auction.year ?? '—'}</span>
+                <span className="ac-spec__value">{year ?? '—'}</span>
               </div>
               <div className="ac-spec">
                 <span className="ac-spec__label">Пробег </span>
                 <span className="ac-spec__value">
-                  {auction.mileage ? `${auction.mileage.toLocaleString('ru-RU')} км` : '—'}
+                  {mileage ? `${mileage.toLocaleString('ru-RU')} км` : '—'}
                 </span>
               </div>
               <div className="ac-spec">
                 <span className="ac-spec__label">КПП </span>
-                <span className="ac-spec__value">{auction.transmission?.name ?? '—'}</span>
+                <span className="ac-spec__value">{transmission?.name ?? '—'}</span>
               </div>
               <div className="ac-spec">
                 <span className="ac-spec__label">Топливо </span>
-                <span className="ac-spec__value">{auction.fuelType?.name ?? '—'}</span>
+                <span className="ac-spec__value">{fuelType?.name ?? '—'}</span>
               </div>
             </div>
           </div>
@@ -72,20 +91,19 @@ function AuctionCard({ auction }) {
               <div>
                 <p className="ac-price__label">Текущая цена</p>
                 <p className="ac-price__value">
-                  {auction.currentPrice?.toLocaleString('ru-RU')}
+                  {priceNum.toLocaleString('ru-RU')}
                   <BynIcon className="ac-currency-icon" />
                 </p>
 
                 {/* Вывод цены в USD */}
                 {rate && (
                     <p className="ac-price__usd">
-                      ≈ {priceUsd} $
-                    </p>
+                      ≈ {priceUsd} $                     </p>
                 )}
 
-                {auction.status === 'ACTIVE' && auction.endTime && (
+                {statusKey === 'ACTIVE' && endTime && (
                     <p className="ac-end-time">
-                      {new Date(auction.endTime).toLocaleString('ru-RU', {
+                      {new Date(endTime).toLocaleString('ru-RU', {
                         day: 'numeric', month: 'short',
                         hour: '2-digit', minute: '2-digit'
                       })}

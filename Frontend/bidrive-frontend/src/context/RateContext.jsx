@@ -1,7 +1,8 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
-const RateContext = createContext();
+// ИСПРАВЛЕНО: createContext требует аргумент. Передаем null как значение по умолчанию.
+const RateContext = createContext(null);
 
 export const RateProvider = ({ children }) => {
     const [rate, setRate] = useState(null);
@@ -16,7 +17,9 @@ export const RateProvider = ({ children }) => {
                 setRate(3); // Заглушка, если сервер не отвечает
             }
         };
-        fetchRate();
+
+        // ИСПРАВЛЕНО: Добавляем void, чтобы IDE поняла, что мы осознанно игнорируем Promise
+        void fetchRate();
     }, []);
 
     return (

@@ -53,7 +53,8 @@ function Layout() {
     const [userEmail, setUserEmail] = useState(() => localStorage.getItem('userEmail'));
     const [userRole, setUserRole] = useState(() => {
         const r = localStorage.getItem('userRole');
-        return r ? parseInt(r) : null;
+        // ИСПРАВЛЕНО: Явно указываем основание 10, чтобы не было предупреждений
+        return r ? parseInt(r, 10) : null;
     });
 
     const [scrolled, setScrolled] = useState(false);
@@ -64,13 +65,16 @@ function Layout() {
     const drawerRef = useRef(null);
     const profileRef = useRef(null);
 
-    useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
+    useEffect(() => {
+        // ИСПРАВЛЕНО: Современный синтаксис scrollTo (объект вместо аргументов)
+        window.scrollTo({ top: 0, left: 0 });
+    }, [location.pathname]);
 
     useEffect(() => {
         const email = localStorage.getItem('userEmail');
         const role = localStorage.getItem('userRole');
         setUserEmail(email || null);
-        setUserRole(role ? parseInt(role) : null);
+        setUserRole(role ? parseInt(role, 10) : null);
     }, [location]);
 
     useEffect(() => {
@@ -87,13 +91,18 @@ function Layout() {
     useEffect(() => {
         const userId = localStorage.getItem('userId');
         if (!userId) { setNotifCount(0); return; }
+
         axios.get(`http://localhost:8080/api/notifications/user/${userId}`)
-            .then(r => setNotifCount(r.data.filter(n => !n.isRead).length))
+            .then(r => {
+                // ИСПРАВЛЕНО: Проверка данных, чтобы убрать unknown
+                const data = r.data || [];
+                setNotifCount(data.filter(n => !n.isRead).length);
+            })
             .catch(() => setNotifCount(0));
     }, [location, userEmail]);
 
     useEffect(() => {
-        const handler = e => {
+        const handler = (e) => {
             if (drawerRef.current && !drawerRef.current.contains(e.target)) setMenuOpen(false);
             if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
         };
@@ -109,7 +118,7 @@ function Layout() {
     };
 
     const userName = useMemo(() => userEmail ? userEmail.split('@')[0] : null, [userEmail]);
-    const isActive = path => location.pathname === path;
+    const isActive = (path) => location.pathname === path;
 
     return (
         <NotifContext.Provider value={{ notifCount, setNotifCount }}>
@@ -122,11 +131,10 @@ function Layout() {
                 <header className={`ly-header${scrolled ? ' ly-header--solid' : ''}`}>
                     <div className="ly-header__inner">
 
-                        {/* === ЛОГОТИП (С ТЕКСТОМ) === */}
                         <Link to="/" className="ly-logo">
-                <span className="ly-logo__icon">
-                  <img src="/logo.png" alt="BiDrive Logo" />
-                </span>
+                            <span className="ly-logo__icon">
+                                <img src="/logo.png" alt="BiDrive Logo" />
+                            </span>
                             <span className="ly-logo__text">BiDrive</span>
                         </Link>
 
@@ -216,7 +224,6 @@ function Layout() {
                     </div>
                 </header>
 
-                {/* Mobile drawer */}
                 <aside ref={drawerRef} className={`ly-drawer${menuOpen ? ' ly-drawer--open' : ''}`}>
                     <div className="ly-drawer__body">
                         <Link to="/catalog" className="ly-drawer__link">Каталог</Link>

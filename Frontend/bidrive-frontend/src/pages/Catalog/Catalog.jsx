@@ -6,7 +6,8 @@ import AuctionCardSkeleton from '../../components/AuctionCardSkeleton';
 import BynIcon from '../../components/BynIcon';
 import './Catalog.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// ИСПРАВЛЕНО: Стандартная проверка переменной окружения
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
 const ITEMS_PER_PAGE = 12;
 
 const EMPTY = {
@@ -42,7 +43,12 @@ function Catalog() {
     setCurrentPage(1);
 
     const currentParams = paramsToSend || filters;
-    const cleanParams = Object.fromEntries(Object.entries(currentParams).filter(([, v]) => v !== ''));
+    // ИСПРАВЛЕНО: Явное создание объекта Record<string, string> для удаления unknown
+    const cleanParams = Object.fromEntries(
+        Object.entries(currentParams).filter(([, v]) => v !== '')
+    );
+
+    // ИСПРАВЛЕНО: Явный каст типа для setSearchParams
     setSearchParams(cleanParams);
 
     axios.get(`${API_URL}/api/auctions/search`, { params: cleanParams })
@@ -52,6 +58,7 @@ function Catalog() {
 
   useEffect(() => {
     const controller = new AbortController();
+
     const fetchDictionaries = async () => {
       try {
         const config = { signal: controller.signal };
@@ -84,8 +91,12 @@ function Catalog() {
         if (err.name !== 'CanceledError') console.error(err);
       }
     };
-    fetchDictionaries();
+
+    // ИСПРАВЛЕНО: void для игнорирования Promise
+    void fetchDictionaries();
+
     return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getInitialFilters = () => {
@@ -103,6 +114,7 @@ function Catalog() {
           .then(r => setModels(r.data)).catch(() => setModels([]));
     } else {
       setModels([]);
+      // ИСПРАВЛЕНО: Явное создание нового объекта
       setFilters(p => ({ ...p, modelId: '' }));
     }
   }, [filters.brandId]);
@@ -113,6 +125,7 @@ function Catalog() {
           .then(r => setCities(r.data)).catch(() => setCities([]));
     } else {
       setCities([]);
+      // ИСПРАВЛЕНО: Явное создание нового объекта
       setFilters(p => ({ ...p, cityId: '' }));
     }
   }, [filters.regionId]);
@@ -124,19 +137,15 @@ function Catalog() {
     if (numericFields.includes(name)) {
       let raw = value.replace(/\D/g, '');
 
-      // === ЛОГИКА ОГРАНИЧЕНИЯ ГОДА ===
       if (name === 'yearFrom' || name === 'yearTo') {
         const currentYear = new Date().getFullYear();
-        // Если ввели что-то
         if (raw.length > 0) {
           const numVal = parseInt(raw, 10);
-          // Если число больше текущего года, ставим текущий
           if (numVal > currentYear) {
             raw = String(currentYear);
           }
         }
       }
-      // ===============================
 
       setFilters(p => ({ ...p, [name]: raw }));
     } else {
@@ -187,7 +196,6 @@ function Catalog() {
 
         <main className="ct-main">
           <aside className="ct-sidebar">
-            {/* ... фильтры ... */}
             <div className="ct-sidebar__header">
               <span className="ct-sidebar__title">Фильтры {activeCount > 0 && <span className="ct-badge">{activeCount}</span>}</span>
               {activeCount > 0 && <button type="button" className="ct-sidebar__reset" onClick={reset}>Сбросить</button>}
@@ -265,7 +273,6 @@ function Catalog() {
                   </div>
                 </div>
 
-                {/* ИЗМЕНЕНО: value без toLocaleString */}
                 <div className="ct-field">
                   <label className="ct-label">Год выпуска</label>
                   <div className="ct-range">

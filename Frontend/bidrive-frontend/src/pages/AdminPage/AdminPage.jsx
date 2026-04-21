@@ -34,7 +34,7 @@ function AdminPage() {
 
     // === Modal State ===
     const [modal, setModal] = useState({ isOpen: false, type: '', id: null, name: '' });
-    const [modalError, setModalError] = useState(''); // Новый стейт для ошибки в модалке
+    const [modalError, setModalError] = useState(''); // Состояние для ошибки в модальном окне
 
     useEffect(() => {
         fetchAuctions();
@@ -115,19 +115,16 @@ function AdminPage() {
 
     // === Reference Data Actions ===
 
-    // Открытие модалки удаления
     const openDeleteModal = (type, id, name) => {
         setModal({ isOpen: true, type, id, name });
-        setModalError(''); // Сбрасываем ошибку при открытии
+        setModalError('');
     };
 
-    // Закрытие модалки
     const closeModal = () => {
         setModal({ isOpen: false, type: '', id: null, name: '' });
-        setModalError(''); // Сбрасываем ошибку при закрытии
+        setModalError('');
     };
 
-    // Подтверждение удаления
     const handleConfirmDelete = () => {
         const { type, id } = modal;
         let request;
@@ -143,7 +140,7 @@ function AdminPage() {
                 closeModal();
             }).catch(err => {
                 const msg = err.response?.data || "Ошибка удаления";
-                setModalError(msg); // Устанавливаем ошибку вместо alert
+                setModalError(msg);
             });
         }
     };
@@ -185,7 +182,8 @@ function AdminPage() {
         c.region?.name.toLowerCase().includes(searchCity.toLowerCase())
     );
 
-    const sortedUsers = [...users].sort((a, b) => (b.roleId === 2 ? 1 : 0) - (a.roleId === 2 ? 1 : 0));
+    // ИСПРАВЛЕНО: Деструктуризация для устранения "Unresolved variable"
+    const sortedUsers = [...users].sort(({ roleId: a }, { roleId: b }) => (b === 2 ? 1 : 0) - (a === 2 ? 1 : 0));
 
     if (loading) return <div className="ap-loading">Загрузка...</div>;
 
@@ -201,7 +199,6 @@ function AdminPage() {
                             {modal.type === 'brand' && ' Все связанные модели также будут удалены.'}
                         </p>
 
-                        {/* Блок ошибки внутри модалки */}
                         {modalError && <div className="ap-modal__error">{modalError}</div>}
 
                         <div className="ap-modal__actions">
@@ -225,25 +222,30 @@ function AdminPage() {
                     <p className="ap-section-heading">Статистика платформы</p>
                     {stats ? (
                         <div className="ap-stats-grid">
-                            <div className="ap-stat-card">
-                                <span className="ap-stat-card__value">{stats.totalUsers}</span>
-                                <span className="ap-stat-card__label">Пользователей</span>
-                            </div>
-                            <div className="ap-stat-card">
-                                <span className="ap-stat-card__value">{stats.activeAuctions}</span>
-                                <span className="ap-stat-card__label">Активных аукционов</span>
-                            </div>
-                            <div className="ap-stat-card">
-                                <span className="ap-stat-card__value">{stats.totalBids}</span>
-                                <span className="ap-stat-card__label">Всего ставок</span>
-                            </div>
-                            <div className="ap-stat-card">
-                                <span className="ap-stat-card__value">
-                                    {stats.totalTurnover?.toLocaleString('ru-RU')}
-                                    <BynIcon className="ap-currency-icon" />
-                                </span>
-                                <span className="ap-stat-card__label">Общий оборот</span>
-                            </div>
+                            {/* ИСПРАВЛЕНО: Деструктуризация stats */}
+                            {(({ totalUsers, activeAuctions, totalBids, totalTurnover }) => (
+                                <>
+                                    <div className="ap-stat-card">
+                                        <span className="ap-stat-card__value">{totalUsers}</span>
+                                        <span className="ap-stat-card__label">Пользователей</span>
+                                    </div>
+                                    <div className="ap-stat-card">
+                                        <span className="ap-stat-card__value">{activeAuctions}</span>
+                                        <span className="ap-stat-card__label">Активных аукционов</span>
+                                    </div>
+                                    <div className="ap-stat-card">
+                                        <span className="ap-stat-card__value">{totalBids}</span>
+                                        <span className="ap-stat-card__label">Всего ставок</span>
+                                    </div>
+                                    <div className="ap-stat-card">
+                                        <span className="ap-stat-card__value">
+                                            {totalTurnover?.toLocaleString('ru-RU')}
+                                            <BynIcon className="ap-currency-icon" />
+                                        </span>
+                                        <span className="ap-stat-card__label">Общий оборот</span>
+                                    </div>
+                                </>
+                            ))(stats)}
                         </div>
                     ) : (
                         <div className="ap-loading ap-loading--inline">Загрузка статистики...</div>
@@ -261,46 +263,49 @@ function AdminPage() {
                     ) : (
                         <div className="ap-list">
                             {auctions.map(a => (
-                                <article key={a.id} className="ap-card">
-                                    <div className="ap-card__left">
-                                        {a.mainImageUrl ? (
-                                            <img src={`${API_URL}${a.mainImageUrl}`} alt="Фото" className="ap-card__img" />
-                                        ) : (
-                                            <div className="ap-card__img ap-card__img--empty">Нет фото</div>
-                                        )}
-                                    </div>
-                                    <div className="ap-card__body">
-                                        <h3 className="ap-card__title">{a.brand?.name} {a.model?.name}</h3>
-                                        <div className="ap-card__meta">
-                                            <span>Год: {a.year}</span>
-                                            <span>Пробег: {a.mileage?.toLocaleString()} км</span>
-                                            <span>Продавец: {a.seller?.firstName}</span>
+                                // ИСПРАВЛЕНО: Деструктуризация a
+                                (({ id, mainImageUrl, brand, model, seller, year, mileage, startingPrice }) => (
+                                    <article key={id} className="ap-card">
+                                        <div className="ap-card__left">
+                                            {mainImageUrl ? (
+                                                <img src={`${API_URL}${mainImageUrl}`} alt="Фото" className="ap-card__img" />
+                                            ) : (
+                                                <div className="ap-card__img ap-card__img--empty">Нет фото</div>
+                                            )}
                                         </div>
-                                        <p className="ap-card__price">Старт: {a.startingPrice?.toLocaleString()} BYN</p>
-                                    </div>
-                                    <div className="ap-card__actions">
-                                        <button type="button" className="ap-btn ap-btn--green" onClick={() => handleApprove(a.id)}>Одобрить</button>
-                                        {rejectingId === a.id ? (
-                                            <div className="ap-reject-form">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Причина отклонения"
-                                                    value={rejectReason}
-                                                    onChange={(e) => setRejectReason(e.target.value)}
-                                                    className={`ap-reject-input ${rejectError ? 'input--error' : ''}`}
-                                                />
-                                                {rejectError && <span className="ap-reject-error">{rejectError}</span>}
-                                                <div className="ap-reject-actions">
-                                                    <button type="button" className="ap-btn ap-btn--red" onClick={() => handleRejectConfirm(a.id)}>Отправить</button>
-                                                    <button type="button" className="ap-btn ap-btn--ghost" onClick={() => setRejectingId(null)}>Отмена</button>
-                                                </div>
+                                        <div className="ap-card__body">
+                                            <h3 className="ap-card__title">{brand?.name} {model?.name}</h3>
+                                            <div className="ap-card__meta">
+                                                <span>Год: {year}</span>
+                                                <span>Пробег: {mileage?.toLocaleString()} км</span>
+                                                <span>Продавец: {seller?.firstName}</span>
                                             </div>
-                                        ) : (
-                                            <button type="button" className="ap-btn ap-btn--red" onClick={() => handleRejectInit(a.id)}>Отклонить</button>
-                                        )}
-                                        <Link to={`/auction/${a.id}`} className="ap-btn ap-btn--ghost">Смотреть</Link>
-                                    </div>
-                                </article>
+                                            <p className="ap-card__price">Старт: {startingPrice?.toLocaleString()} BYN</p>
+                                        </div>
+                                        <div className="ap-card__actions">
+                                            <button type="button" className="ap-btn ap-btn--green" onClick={() => handleApprove(id)}>Одобрить</button>
+                                            {rejectingId === id ? (
+                                                <div className="ap-reject-form">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Причина отклонения"
+                                                        value={rejectReason}
+                                                        onChange={e => setRejectReason(e.target.value)}
+                                                        className={`ap-reject-input ${rejectError ? 'input--error' : ''}`}
+                                                    />
+                                                    {rejectError && <span className="ap-reject-error">{rejectError}</span>}
+                                                    <div className="ap-reject-actions">
+                                                        <button type="button" className="ap-btn ap-btn--red" onClick={() => handleRejectConfirm(id)}>Отправить</button>
+                                                        <button type="button" className="ap-btn ap-btn--ghost" onClick={() => setRejectingId(null)}>Отмена</button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <button type="button" className="ap-btn ap-btn--red" onClick={() => handleRejectInit(id)}>Отклонить</button>
+                                            )}
+                                            <Link to={`/auction/${id}`} className="ap-btn ap-btn--ghost">Смотреть</Link>
+                                        </div>
+                                    </article>
+                                ))(a)
                             ))}
                         </div>
                     )}
@@ -311,23 +316,26 @@ function AdminPage() {
                     <p className="ap-section-heading">Управление пользователями</p>
                     <div className="ap-users">
                         {sortedUsers.map(u => (
-                            <div key={u.id} className="ap-user">
-                                <div className="ap-user__info">
-                                    <span className="ap-user__name">{u.firstName} {u.lastName}</span>
-                                    <span className="ap-user__email">{u.email}</span>
-                                    <div className="ap-user__tags">
-                                        {u.roleId === 2 && <span className="ap-tag ap-tag--admin">Админ</span>}
-                                        {u.isBlocked && <span className="ap-tag ap-tag--blocked">Заблокирован</span>}
+                            // ИСПРАВЛЕНО: Деструктуризация u
+                            (({ id, firstName, lastName, email, roleId, isBlocked }) => (
+                                <div key={id} className="ap-user">
+                                    <div className="ap-user__info">
+                                        <span className="ap-user__name">{firstName} {lastName}</span>
+                                        <span className="ap-user__email">{email}</span>
+                                        <div className="ap-user__tags">
+                                            {roleId === 2 && <span className="ap-tag ap-tag--admin">Админ</span>}
+                                            {isBlocked && <span className="ap-tag ap-tag--blocked">Заблокирован</span>}
+                                        </div>
                                     </div>
+                                    {roleId !== 2 && (
+                                        isBlocked ? (
+                                            <button type="button" className="ap-btn ap-btn--unblock" onClick={() => handleUnblock(id)}>Разблокировать</button>
+                                        ) : (
+                                            <button type="button" className="ap-btn ap-btn--block" onClick={() => handleBlock(id)}>Заблокировать</button>
+                                        )
+                                    )}
                                 </div>
-                                {u.roleId !== 2 && (
-                                    u.isBlocked ? (
-                                        <button type="button" className="ap-btn ap-btn--unblock" onClick={() => handleUnblock(u.id)}>Разблокировать</button>
-                                    ) : (
-                                        <button type="button" className="ap-btn ap-btn--block" onClick={() => handleBlock(u.id)}>Заблокировать</button>
-                                    )
-                                )}
-                            </div>
+                            ))(u)
                         ))}
                     </div>
                 </section>
