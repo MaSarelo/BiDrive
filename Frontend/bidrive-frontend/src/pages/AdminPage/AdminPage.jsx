@@ -4,22 +4,46 @@ import axios from 'axios';
 import BynIcon from '../../components/BynIcon';
 import './AdminPage.css';
 
-const API_URL = 'http://localhost:8080'; // Вынесли хардкод
+const API_URL = 'http://localhost:8080';
 
 function AdminPage() {
+    // === Auctions & Users State ===
     const [auctions, setAuctions] = useState([]);
     const [users, setUsers] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [rejectingId, setRejectingId] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
-    const [rejectError, setRejectError] = useState(''); // Для инлайн-ошибки
+    const [rejectError, setRejectError] = useState('');
+
+    // === Reference Data State ===
+    const [brands, setBrands] = useState([]);
+    const [models, setModels] = useState([]);
+    const [cities, setCities] = useState([]);
+    const [regions, setRegions] = useState([]);
+
+    // === Forms State ===
+    const [newBrand, setNewBrand] = useState('');
+    const [newModel, setNewModel] = useState({ name: '', brandId: '' });
+    const [newCity, setNewCity] = useState({ name: '', regionId: '' });
+
+    // === Search State ===
+    const [searchBrand, setSearchBrand] = useState('');
+    const [searchModel, setSearchModel] = useState('');
+    const [searchCity, setSearchCity] = useState('');
+
+    // === Modal State ===
+    const [modal, setModal] = useState({ isOpen: false, type: '', id: null, name: '' });
+    const [modalError, setModalError] = useState(''); // Новый стейт для ошибки в модалке
 
     useEffect(() => {
         fetchAuctions();
         fetchUsers();
         fetchStats();
+        fetchReferenceData();
     }, []);
+
+    // === Fetch Functions ===
 
     const fetchAuctions = () => {
         setLoading(true);
@@ -40,6 +64,15 @@ function AdminPage() {
             .catch(err => console.error(err));
     };
 
+    const fetchReferenceData = () => {
+        axios.get(`${API_URL}/api/admin/data/brands`).then(r => setBrands(r.data));
+        axios.get(`${API_URL}/api/admin/data/models`).then(r => setModels(r.data));
+        axios.get(`${API_URL}/api/admin/data/cities`).then(r => setCities(r.data));
+        axios.get(`${API_URL}/api/admin/data/regions`).then(r => setRegions(r.data));
+    };
+
+    // === Auction Actions ===
+
     const handleApprove = (id) => {
         axios.put(`${API_URL}/api/auctions/${id}/approve`)
             .then(() => setAuctions(prev => prev.filter(a => a.id !== id)))
@@ -54,13 +87,11 @@ function AdminPage() {
 
     const handleRejectConfirm = (id) => {
         if (!rejectReason.trim()) {
-            setRejectError('Укажите причину отклонения'); // Заменили alert()
+            setRejectError('Укажите причину отклонения');
             return;
         }
         setRejectError('');
-        axios.post(`${API_URL}/api/auctions/${id}/reject`, null, {
-            params: { reason: rejectReason }
-        })
+        axios.post(`${API_URL}/api/auctions/${id}/reject`, null, { params: { reason: rejectReason } })
             .then(() => {
                 setAuctions(prev => prev.filter(a => a.id !== id));
                 setRejectingId(null);
@@ -68,21 +99,91 @@ function AdminPage() {
             .catch(err => console.error(err));
     };
 
+    // === User Actions ===
+
     const handleBlock = (userId) => {
         axios.put(`${API_URL}/api/users/${userId}/block`, null, { params: { isBlocked: true } })
-            .then(() => {
-                setUsers(prev => prev.map(u => u.id === userId ? { ...u, isBlocked: true } : u));
-            })
+            .then(() => setUsers(prev => prev.map(u => u.id === userId ? { ...u, isBlocked: true } : u)))
             .catch(err => console.error(err));
     };
 
     const handleUnblock = (userId) => {
         axios.put(`${API_URL}/api/users/${userId}/block`, null, { params: { isBlocked: false } })
-            .then(() => {
-                setUsers(prev => prev.map(u => u.id === userId ? { ...u, isBlocked: false } : u));
-            })
+            .then(() => setUsers(prev => prev.map(u => u.id === userId ? { ...u, isBlocked: false } : u)))
             .catch(err => console.error(err));
     };
+
+    // === Reference Data Actions ===
+
+    // Открытие модалки удаления
+    const openDeleteModal = (type, id, name) => {
+        setModal({ isOpen: true, type, id, name });
+        setModalError(''); // Сбрасываем ошибку при открытии
+    };
+
+    // Закрытие модалки
+    const closeModal = () => {
+        setModal({ isOpen: false, type: '', id: null, name: '' });
+        setModalError(''); // Сбрасываем ошибку при закрытии
+    };
+
+    // Подтверждение удаления
+    const handleConfirmDelete = () => {
+        const { type, id } = modal;
+        let request;
+
+        if (type === 'brand') request = axios.delete(`${API_URL}/api/admin/data/brands/${id}`);
+        if (type === 'model') request = axios.delete(`${API_URL}/api/admin/data/models/${id}`);
+        if (type === 'city') request = axios.delete(`${API_URL}/api/admin/data/cities/${id}`);
+        if (type === 'region') request = axios.delete(`${API_URL}/api/admin/data/regions/${id}`);
+
+        if (request) {
+            request.then(() => {
+                fetchReferenceData();
+                closeModal();
+            }).catch(err => {
+                const msg = err.response?.data || "Ошибка удаления";
+                setModalError(msg); // Устанавливаем ошибку вместо alert
+            });
+        }
+    };
+
+    const handleAddBrand = (e) => {
+        e.preventDefault();
+        if (!newBrand.trim()) return;
+        axios.post(`${API_URL}/api/admin/data/brands`, { name: newBrand })
+            .then(() => { setNewBrand(''); fetchReferenceData(); });
+    };
+
+    const handleAddModel = (e) => {
+        e.preventDefault();
+        if (!newModel.name || !newModel.brandId) return;
+        axios.post(`${API_URL}/api/admin/data/models`, null, { params: newModel })
+            .then(() => { setNewModel({ name: '', brandId: '' }); fetchReferenceData(); });
+    };
+
+    const handleAddCity = (e) => {
+        e.preventDefault();
+        if (!newCity.name || !newCity.regionId) return;
+        axios.post(`${API_URL}/api/admin/data/cities`, null, { params: newCity })
+            .then(() => { setNewCity({ name: '', regionId: '' }); fetchReferenceData(); });
+    };
+
+    // === Filtering Logic ===
+
+    const filteredBrands = brands.filter(b =>
+        b.name.toLowerCase().includes(searchBrand.toLowerCase())
+    );
+
+    const filteredModels = models.filter(m =>
+        m.name.toLowerCase().includes(searchModel.toLowerCase()) ||
+        m.brand?.name.toLowerCase().includes(searchModel.toLowerCase())
+    );
+
+    const filteredCities = cities.filter(c =>
+        c.name.toLowerCase().includes(searchCity.toLowerCase()) ||
+        c.region?.name.toLowerCase().includes(searchCity.toLowerCase())
+    );
 
     const sortedUsers = [...users].sort((a, b) => (b.roleId === 2 ? 1 : 0) - (a.roleId === 2 ? 1 : 0));
 
@@ -90,6 +191,27 @@ function AdminPage() {
 
     return (
         <div className="ap">
+            {/* Modal */}
+            {modal.isOpen && (
+                <div className="ap-modal-overlay" onClick={closeModal}>
+                    <div className="ap-modal" onClick={e => e.stopPropagation()}>
+                        <h3 className="ap-modal__title">Подтверждение</h3>
+                        <p className="ap-modal__text">
+                            Вы уверены, что хотите удалить <strong>"{modal.name}"</strong>?
+                            {modal.type === 'brand' && ' Все связанные модели также будут удалены.'}
+                        </p>
+
+                        {/* Блок ошибки внутри модалки */}
+                        {modalError && <div className="ap-modal__error">{modalError}</div>}
+
+                        <div className="ap-modal__actions">
+                            <button className="ap-btn ap-btn--ghost" onClick={closeModal}>Отмена</button>
+                            <button className="ap-btn ap-btn--red" onClick={handleConfirmDelete}>Удалить</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <header className="ap-header">
                 <div className="ap-header__inner">
                     <h1 className="ap-title">Панель администратора</h1>
@@ -98,11 +220,9 @@ function AdminPage() {
             </header>
 
             <main className="ap-main">
-
-                {/* СТАТИСТИКА */}
+                {/* Stats */}
                 <section className="ap-section">
                     <p className="ap-section-heading">Статистика платформы</p>
-
                     {stats ? (
                         <div className="ap-stats-grid">
                             <div className="ap-stat-card">
@@ -130,10 +250,9 @@ function AdminPage() {
                     )}
                 </section>
 
-                {/* СЕКЦИЯ МОДЕРАЦИИ ЛОТОВ */}
+                {/* Moderation */}
                 <section className="ap-section">
                     <p className="ap-section-heading">Модерация лотов</p>
-
                     {auctions.length === 0 ? (
                         <div className="ap-empty">
                             <div className="ap-empty__icon">✓</div>
@@ -145,7 +264,7 @@ function AdminPage() {
                                 <article key={a.id} className="ap-card">
                                     <div className="ap-card__left">
                                         {a.mainImageUrl ? (
-                                            <img src={`${API_URL}${a.mainImageUrl}`} alt="Фото автомобиля" className="ap-card__img" />
+                                            <img src={`${API_URL}${a.mainImageUrl}`} alt="Фото" className="ap-card__img" />
                                         ) : (
                                             <div className="ap-card__img ap-card__img--empty">Нет фото</div>
                                         )}
@@ -157,14 +276,10 @@ function AdminPage() {
                                             <span>Пробег: {a.mileage?.toLocaleString()} км</span>
                                             <span>Продавец: {a.seller?.firstName}</span>
                                         </div>
-                                        <p className="ap-card__price">
-                                            Старт: {a.startingPrice?.toLocaleString()} BYN
-                                        </p>
+                                        <p className="ap-card__price">Старт: {a.startingPrice?.toLocaleString()} BYN</p>
                                     </div>
                                     <div className="ap-card__actions">
-                                        <button type="button" className="ap-btn ap-btn--green" onClick={() => handleApprove(a.id)}>
-                                            Одобрить
-                                        </button>
+                                        <button type="button" className="ap-btn ap-btn--green" onClick={() => handleApprove(a.id)}>Одобрить</button>
                                         {rejectingId === a.id ? (
                                             <div className="ap-reject-form">
                                                 <input
@@ -181,13 +296,9 @@ function AdminPage() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <button type="button" className="ap-btn ap-btn--red" onClick={() => handleRejectInit(a.id)}>
-                                                Отклонить
-                                            </button>
+                                            <button type="button" className="ap-btn ap-btn--red" onClick={() => handleRejectInit(a.id)}>Отклонить</button>
                                         )}
-                                        <Link to={`/auction/${a.id}`} className="ap-btn ap-btn--ghost">
-                                            Смотреть
-                                        </Link>
+                                        <Link to={`/auction/${a.id}`} className="ap-btn ap-btn--ghost">Смотреть</Link>
                                     </div>
                                 </article>
                             ))}
@@ -195,7 +306,7 @@ function AdminPage() {
                     )}
                 </section>
 
-                {/* СЕКЦИЯ ПОЛЬЗОВАТЕЛЕЙ */}
+                {/* Users */}
                 <section className="ap-section">
                     <p className="ap-section-heading">Управление пользователями</p>
                     <div className="ap-users">
@@ -209,20 +320,87 @@ function AdminPage() {
                                         {u.isBlocked && <span className="ap-tag ap-tag--blocked">Заблокирован</span>}
                                     </div>
                                 </div>
-
                                 {u.roleId !== 2 && (
                                     u.isBlocked ? (
-                                        <button type="button" className="ap-btn ap-btn--unblock" onClick={() => handleUnblock(u.id)}>
-                                            Разблокировать
-                                        </button>
+                                        <button type="button" className="ap-btn ap-btn--unblock" onClick={() => handleUnblock(u.id)}>Разблокировать</button>
                                     ) : (
-                                        <button type="button" className="ap-btn ap-btn--block" onClick={() => handleBlock(u.id)}>
-                                            Заблокировать
-                                        </button>
+                                        <button type="button" className="ap-btn ap-btn--block" onClick={() => handleBlock(u.id)}>Заблокировать</button>
                                     )
                                 )}
                             </div>
                         ))}
+                    </div>
+                </section>
+
+                {/* Reference Data */}
+                <section className="ap-section">
+                    <p className="ap-section-heading">Справочники</p>
+
+                    <div className="ap-reference">
+                        {/* Brands */}
+                        <div className="ap-ref-col">
+                            <h3 className="ap-ref-col__title">Марки автомобилей</h3>
+                            <form className="ap-ref-form" onSubmit={handleAddBrand}>
+                                <input type="text" placeholder="Название марки" value={newBrand} onChange={e => setNewBrand(e.target.value)} className="ap-ref-input" />
+                                <button type="submit" className="ap-btn ap-btn--primary">Добавить</button>
+                            </form>
+                            <input type="text" placeholder="Поиск марки..." value={searchBrand} onChange={e => setSearchBrand(e.target.value)} className="ap-ref-search" />
+                            <ul className="ap-ref-list">
+                                {filteredBrands.map(b => (
+                                    <li key={b.id} className="ap-ref-item">
+                                        <span>{b.name}</span>
+                                        <button className="ap-ref-del" onClick={() => openDeleteModal('brand', b.id, b.name)}>×</button>
+                                    </li>
+                                ))}
+                                {filteredBrands.length === 0 && searchBrand && <li className="ap-ref-empty">Ничего не найдено</li>}
+                            </ul>
+                        </div>
+
+                        {/* Models */}
+                        <div className="ap-ref-col">
+                            <h3 className="ap-ref-col__title">Модели</h3>
+                            <form className="ap-ref-form" onSubmit={handleAddModel}>
+                                <select value={newModel.brandId} onChange={e => setNewModel({ ...newModel, brandId: e.target.value })} className="ap-ref-select">
+                                    <option value="">Выберите марку</option>
+                                    {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                </select>
+                                <input type="text" placeholder="Название модели" value={newModel.name} onChange={e => setNewModel({ ...newModel, name: e.target.value })} className="ap-ref-input" />
+                                <button type="submit" className="ap-btn ap-btn--primary">Добавить</button>
+                            </form>
+                            <input type="text" placeholder="Поиск модели или марки..." value={searchModel} onChange={e => setSearchModel(e.target.value)} className="ap-ref-search" />
+                            <ul className="ap-ref-list">
+                                {filteredModels.map(m => (
+                                    <li key={m.id} className="ap-ref-item">
+                                        <span>{m.brand?.name} {m.name}</span>
+                                        <button className="ap-ref-del" onClick={() => openDeleteModal('model', m.id, m.name)}>×</button>
+                                    </li>
+                                ))}
+                                {filteredModels.length === 0 && searchModel && <li className="ap-ref-empty">Ничего не найдено</li>}
+                            </ul>
+                        </div>
+
+                        {/* Cities */}
+                        <div className="ap-ref-col">
+                            <h3 className="ap-ref-col__title">Города</h3>
+                            <form className="ap-ref-form" onSubmit={handleAddCity}>
+                                <select value={newCity.regionId} onChange={e => setNewCity({ ...newCity, regionId: e.target.value })} className="ap-ref-select">
+                                    <option value="">Выберите область</option>
+                                    {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                </select>
+                                <input type="text" placeholder="Название города" value={newCity.name} onChange={e => setNewCity({ ...newCity, name: e.target.value })} className="ap-ref-input" />
+                                <button type="submit" className="ap-btn ap-btn--primary">Добавить</button>
+                            </form>
+                            <input type="text" placeholder="Поиск города или области..." value={searchCity} onChange={e => setSearchCity(e.target.value)} className="ap-ref-search" />
+                            <ul className="ap-ref-list">
+                                {filteredCities.map(c => (
+                                    <li key={c.id} className="ap-ref-item">
+                                        <span>{c.name} <small>({c.region?.name})</small></span>
+                                        <button className="ap-ref-del" onClick={() => openDeleteModal('city', c.id, c.name)}>×</button>
+                                    </li>
+                                ))}
+                                {filteredCities.length === 0 && searchCity && <li className="ap-ref-empty">Ничего не найдено</li>}
+                            </ul>
+                        </div>
                     </div>
                 </section>
 

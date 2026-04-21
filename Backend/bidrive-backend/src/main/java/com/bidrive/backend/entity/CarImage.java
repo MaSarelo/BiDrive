@@ -3,11 +3,16 @@ package com.bidrive.backend.entity;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "car_images")
 public class CarImage {
 
+    // Геттеры и сеттеры
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -30,19 +35,4 @@ public class CarImage {
     // Пустой конструктор
     public CarImage() {}
 
-    // Геттеры и сеттеры
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public Auction getAuction() { return auction; }
-    public void setAuction(Auction auction) { this.auction = auction; }
-
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-
-    public Integer getDisplayOrder() { return displayOrder; }
-    public void setDisplayOrder(Integer displayOrder) { this.displayOrder = displayOrder; }
-
-    public Boolean getIsMain() { return isMain; }
-    public void setIsMain(Boolean isMain) { this.isMain = isMain; }
 }

@@ -3,7 +3,6 @@ package com.bidrive.backend.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,8 +12,6 @@ import java.util.UUID;
 @Service
 public class FileService {
 
-    private final String UPLOAD_DIR = "uploads/";
-
     public String uploadFile(MultipartFile file) {
         if (file.isEmpty()) {
             throw new RuntimeException("Файл пустой!");
@@ -22,13 +19,14 @@ public class FileService {
 
         String originalFilename = file.getOriginalFilename();
         String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        String newFilename = UUID.randomUUID().toString() + extension;
+        String newFilename = UUID.randomUUID() + extension;
 
         if (!isImage(extension)) {
             throw new RuntimeException("Разрешены только изображения (jpg, png, jpeg)!");
         }
 
         try {
+            String UPLOAD_DIR = "uploads/";
             Path path = Paths.get(UPLOAD_DIR + newFilename);
             Files.copy(file.getInputStream(), path);
             return "/uploads/" + newFilename;

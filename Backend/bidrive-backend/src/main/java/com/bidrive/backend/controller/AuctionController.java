@@ -3,6 +3,8 @@ package com.bidrive.backend.controller;
 import com.bidrive.backend.entity.Auction;
 import com.bidrive.backend.repository.AuctionRepository;
 import com.bidrive.backend.service.AuctionService;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -108,7 +110,10 @@ public class AuctionController {
     }
 
     // Вспомогательный класс
+    @Setter
+    @Getter
     public static class CreateAuctionRequest {
+        // Геттеры и сеттеры
         private Long sellerId;
         private Long brandId;
         private Long modelId;
@@ -123,33 +128,6 @@ public class AuctionController {
         private List<String> imageUrls;
         private LocalDateTime endTime;
 
-        // Геттеры и сеттеры
-        public Long getSellerId() { return sellerId; }
-        public void setSellerId(Long sellerId) { this.sellerId = sellerId; }
-        public Long getBrandId() { return brandId; }
-        public void setBrandId(Long brandId) { this.brandId = brandId; }
-        public Long getModelId() { return modelId; }
-        public void setModelId(Long modelId) { this.modelId = modelId; }
-        public Integer getYear() { return year; }
-        public void setYear(Integer year) { this.year = year; }
-        public Integer getMileage() { return mileage; }
-        public void setMileage(Integer mileage) { this.mileage = mileage; }
-        public Integer getTransmissionId() { return transmissionId; }
-        public void setTransmissionId(Integer transmissionId) { this.transmissionId = transmissionId; }
-        public Integer getFuelTypeId() { return fuelTypeId; }
-        public void setFuelTypeId(Integer fuelTypeId) { this.fuelTypeId = fuelTypeId; }
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-        public BigDecimal getStartingPrice() { return startingPrice; }
-        public void setStartingPrice(BigDecimal startingPrice) { this.startingPrice = startingPrice; }
-        public BigDecimal getMinBidStep() { return minBidStep; }
-        public void setMinBidStep(BigDecimal minBidStep) { this.minBidStep = minBidStep; }
-        public Integer getCityId() { return cityId; }
-        public void setCityId(Integer cityId) { this.cityId = cityId; }
-        public List<String> getImageUrls() { return imageUrls; }
-        public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
-        public LocalDateTime getEndTime() { return endTime; }
-        public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
     }
 
     // === ОДОБРЕНИЕ АУКЦИОНА ===

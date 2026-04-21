@@ -6,11 +6,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonIgnore; // Импорт
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "auctions")
 public class Auction {
 
+    // Геттеры и сеттеры
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -81,6 +86,7 @@ public class Auction {
     @JsonManagedReference
     private List<CarImage> images;
 
+    // Важно: геттер для bids нужен для Scheduler, а сетчик нужен для JPA
     // === ИСПРАВЛЕНО: Добавлен @JsonIgnore ===
     @OneToMany(mappedBy = "auction", fetch = FetchType.LAZY)
     @JsonIgnore // <--- ЭТО РЕШАЕТ ПРОБЛЕМУ РЕКУРСИИ
@@ -92,69 +98,11 @@ public class Auction {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // Геттер и сеттер
     @Column(name = "rejection_reason")
     private String rejectionReason;
-
-    // Геттер и сеттер
-    public String getRejectionReason() {
-        return rejectionReason;
-    }
-
-    public void setRejectionReason(String rejectionReason) {
-        this.rejectionReason = rejectionReason;
-    }
 
     // Конструктор
     public Auction() {}
 
-    // Геттеры и сеттеры
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public User getSeller() { return seller; }
-    public void setSeller(User seller) { this.seller = seller; }
-    public Brand getBrand() { return brand; }
-    public void setBrand(Brand brand) { this.brand = brand; }
-    public Model getModel() { return model; }
-    public void setModel(Model model) { this.model = model; }
-    public Integer getYear() { return year; }
-    public void setYear(Integer year) { this.year = year; }
-    public Integer getMileage() { return mileage; }
-    public void setMileage(Integer mileage) { this.mileage = mileage; }
-    public Transmission getTransmission() { return transmission; }
-    public void setTransmission(Transmission transmission) { this.transmission = transmission; }
-    public FuelType getFuelType() { return fuelType; }
-    public void setFuelType(FuelType fuelType) { this.fuelType = fuelType; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public BigDecimal getStartingPrice() { return startingPrice; }
-    public void setStartingPrice(BigDecimal startingPrice) { this.startingPrice = startingPrice; }
-    public BigDecimal getCurrentPrice() { return currentPrice; }
-    public void setCurrentPrice(BigDecimal currentPrice) { this.currentPrice = currentPrice; }
-    public BigDecimal getMinBidStep() { return minBidStep; }
-    public void setMinBidStep(BigDecimal minBidStep) { this.minBidStep = minBidStep; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public String getModerationStatus() { return moderationStatus; }
-    public void setModerationStatus(String moderationStatus) { this.moderationStatus = moderationStatus; }
-    public LocalDateTime getStartTime() { return startTime; }
-    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
-    public LocalDateTime getEndTime() { return endTime; }
-    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
-    public City getCity() { return city; }
-    public void setCity(City city) { this.city = city; }
-    public User getWinner() { return winner; }
-    public void setWinner(User winner) { this.winner = winner; }
-    public String getMainImageUrl() { return mainImageUrl; }
-    public void setMainImageUrl(String mainImageUrl) { this.mainImageUrl = mainImageUrl; }
-    public List<CarImage> getImages() { return images; }
-    public void setImages(List<CarImage> images) { this.images = images; }
-
-    // Важно: геттер для bids нужен для Scheduler, а сетчик нужен для JPA
-    public List<Bid> getBids() { return bids; }
-    public void setBids(List<Bid> bids) { this.bids = bids; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
