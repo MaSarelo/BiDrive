@@ -61,22 +61,34 @@ public class AuctionScheduler {
             auction.setWinner(winner);
             auction.setCurrentPrice(lastBid.getAmount());
 
+            // === ИСПРАВЛЕНО: Безопасная логика контактов ===
+
+            // 1. Контакты продавца (для победителя)
+            String sellerContact = (seller.getPhone() != null && !seller.getPhone().isEmpty())
+                    ? "Тел: " + seller.getPhone()
+                    : "Email: " + seller.getEmail();
+
+            // 2. Контакты победителя (для продавца)
+            String winnerContact = (winner.getPhone() != null && !winner.getPhone().isEmpty())
+                    ? "Тел: " + winner.getPhone()
+                    : "Email: " + winner.getEmail();
+
+            // Уведомление ПОБЕДИТЕЛЮ
             Notification notifWinner = new Notification();
             notifWinner.setUser(winner);
             notifWinner.setMessage("🎉 Вы выиграли лот: " + auction.getBrand().getName() + " " + auction.getModel().getName() +
-                    "! Свяжитесь с продавцом: " + seller.getFirstName() + " (" + seller.getEmail() + ")");
+                    "! Свяжитесь с продавцом: " + seller.getFirstName() + " (" + sellerContact + ")");
             notifWinner.setCreatedAt(LocalDateTime.now());
             notifWinner.setType("AUCTION_WON");
-
             notificationRepository.save(notifWinner);
 
+            // Уведомление ПРОДАВЦУ
             Notification notifSeller = new Notification();
             notifSeller.setUser(seller);
             notifSeller.setMessage("✅ Ваш лот продан: " + auction.getBrand().getName() + " " + auction.getModel().getName() +
-                    ". Победитель: " + winner.getFirstName() + " (" + winner.getEmail() + ")");
+                    ". Победитель: " + winner.getFirstName() + " (" + winnerContact + ")");
             notifSeller.setCreatedAt(LocalDateTime.now());
             notifSeller.setType("AUCTION_SOLD");
-
             notificationRepository.save(notifSeller);
 
             System.out.println(">>> Победитель: " + winner.getEmail());
@@ -88,7 +100,6 @@ public class AuctionScheduler {
             notifSeller.setMessage("⚠️ Время аукциона истекло, но ставок не было: " + auction.getBrand().getName());
             notifSeller.setCreatedAt(LocalDateTime.now());
             notifSeller.setType("AUCTION_UNSOLD");
-
             notificationRepository.save(notifSeller);
         }
 

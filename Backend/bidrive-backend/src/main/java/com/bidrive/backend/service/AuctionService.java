@@ -58,7 +58,7 @@ public class AuctionService {
     private EntityManager entityManager;
 
     // === 1. ИСТОРИЯ СТАВОК ===
-    @SuppressWarnings("unchecked") // Убирает предупреждение о типах List
+    @SuppressWarnings("unchecked")
     public List<BidHistoryDTO> getBidHistory(Long auctionId) {
         List<BidHistoryDTO> history = new ArrayList<>();
         try {
@@ -143,7 +143,7 @@ public class AuctionService {
                 img.setIsMain(i == 0);
                 carImageRepository.save(img);
             }
-            savedAuction.setMainImageUrl(imageUrls.get(0)); // Можно заменить на getFirst() если Java 21+
+            savedAuction.setMainImageUrl(imageUrls.get(0));
             auctionRepository.save(savedAuction);
         }
 
@@ -261,7 +261,6 @@ public class AuctionService {
         }
         auction.setStatus("FINISHED");
         auction.setUpdatedAt(LocalDateTime.now());
-
         auctionRepository.save(auction);
 
         // === СОЗДАНИЕ УВЕДОМЛЕНИЙ ===
@@ -271,36 +270,44 @@ public class AuctionService {
             String carName = auction.getBrand().getName() + " " + auction.getModel().getName();
             String price = auction.getCurrentPrice().toString();
 
+            // === ИСПРАВЛЕНО: Безопасная логика контактов ===
+
+            // 1. Контакты продавца (для победителя)
+            String sellerContact = (seller.getPhone() != null && !seller.getPhone().isEmpty())
+                    ? "Тел: " + seller.getPhone()
+                    : "Email: " + seller.getEmail();
+
+            // 2. Контакты победителя (для продавца)
+            String winnerContact = (winner.getPhone() != null && !winner.getPhone().isEmpty())
+                    ? "Тел: " + winner.getPhone()
+                    : "Email: " + winner.getEmail();
+
             // 1. Уведомление ПОБЕДИТЕЛЮ
             String winnerMsg = String.format(
-                    "Вы выиграли лот %s (%s г.) за %s BYN. Свяжитесь с продавцом:\nEmail: %s\nТел: %s",
-                    carName, auction.getYear(), price,
-                    seller.getEmail(),
-                    seller.getPhone() != null ? seller.getPhone() : "не указан"
+                    "Вы выиграли лот %s (%s г.) за %s BYN. Свяжитесь с продавцом: %s",
+                    carName, auction.getYear(), price, sellerContact
             );
 
             Notification notifWinner = new Notification();
             notifWinner.setUser(winner);
             notifWinner.setType("WIN");
             notifWinner.setMessage(winnerMsg);
-            notifWinner.setAuctionId(auction.getId()); // Теперь это должно работать
+            notifWinner.setAuctionId(auction.getId());
             notifWinner.setIsRead(false);
             notifWinner.setCreatedAt(LocalDateTime.now());
             notificationRepository.save(notifWinner);
 
             // 2. Уведомление ПРОДАВЦУ
             String sellerMsg = String.format(
-                    "Ваш лот %s (%s г.) продан за %s BYN. Свяжитесь с победителем:\nEmail: %s\nТел: %s",
-                    carName, auction.getYear(), price,
-                    winner.getEmail(),
-                    winner.getPhone() != null ? winner.getPhone() : "не указан"
+                    "Ваш лот %s (%s г.) продан за %s BYN. Свяжитесь с победителем: %s",
+                    carName, auction.getYear(), price, winnerContact
             );
 
             Notification notifSeller = new Notification();
             notifSeller.setUser(seller);
             notifSeller.setType("SALE");
             notifSeller.setMessage(sellerMsg);
-            notifSeller.setAuctionId(auction.getId()); // Теперь это должно работать
+            notifSeller.setAuctionId(auction.getId());
             notifSeller.setIsRead(false);
             notifSeller.setCreatedAt(LocalDateTime.now());
             notificationRepository.save(notifSeller);
