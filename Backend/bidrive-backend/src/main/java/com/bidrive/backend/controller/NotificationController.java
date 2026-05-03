@@ -17,7 +17,6 @@ public class NotificationController {
     // Получить все уведомления для пользователя
     @GetMapping("/user/{userId}")
     public List<Notification> getUserNotifications(@PathVariable Long userId) {
-        // Сортируем по дате (новые сверху)
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
@@ -36,5 +35,11 @@ public class NotificationController {
         List<Notification> notifs = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
         notifs.forEach(n -> n.setIsRead(true));
         notificationRepository.saveAll(notifs);
+    }
+
+    // Удалить уведомление
+    @DeleteMapping("/{id}")
+    public void deleteNotification(@PathVariable Long id) {
+        notificationRepository.deleteById(id);
     }
 }

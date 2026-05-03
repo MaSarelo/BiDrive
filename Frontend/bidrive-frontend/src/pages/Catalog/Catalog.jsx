@@ -6,7 +6,6 @@ import AuctionCardSkeleton from '../../components/AuctionCardSkeleton';
 import BynIcon from '../../components/BynIcon';
 import './Catalog.css';
 
-// ИСПРАВЛЕНО: Стандартная проверка переменной окружения
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
 const ITEMS_PER_PAGE = 12;
 
@@ -38,27 +37,30 @@ function Catalog() {
     return initial;
   });
 
-  const fetchAuctions = useCallback((paramsToSend) => {
-    setLoading(true);
-    setCurrentPage(1);
+  // === ФУНКЦИЯ ЗАГРУЗКИ ДАННЫХ ===
+  // useCallback нужен, чтобы функция не пересоздавалась и interval работал корректно
+  const fetchAuctions = useCallback((currentFilters) => {
+    // Не показываем скелетон при автообновлении, только при ручном поиске или первой загрузке
+    // setLoading(true); // Можно раскомментировать, если нужен индикатор загрузки
 
-    const currentParams = paramsToSend || filters;
-    // ИСПРАВЛЕНО: Явное создание объекта Record<string, string> для удаления unknown
+    const paramsToSend = currentFilters || filters;
+
     const cleanParams = Object.fromEntries(
-        Object.entries(currentParams).filter(([, v]) => v !== '')
+        Object.entries(paramsToSend).filter(([, v]) => v !== '')
     );
 
-    // ИСПРАВЛЕНО: Явный каст типа для setSearchParams
-    setSearchParams(cleanParams);
-
     axios.get(`${API_URL}/api/auctions/search`, { params: cleanParams })
-        .then(r => { setAuctions(r.data); setLoading(false); })
+        .then(r => {
+          setAuctions(r.data);
+          setLoading(false);
+        })
         .catch(() => setLoading(false));
-  }, [setSearchParams, filters]);
+  }, [filters]); // Зависит от filters
 
+  // === ПЕРВИЧНАЯ ЗАГРУЗКА И POLLING ===
   useEffect(() => {
+    // 1. Загружаем справочники (brands, etc) - только один раз при монтировании
     const controller = new AbortController();
-
     const fetchDictionaries = async () => {
       try {
         const config = { signal: controller.signal };
@@ -73,6 +75,7 @@ function Catalog() {
         setTransmissions(tr.data);
         setRegions(rg.data);
 
+        // Если в URL были фильтры, подгружаем зависимые списки
         const initialBrand = searchParams.get('brandId');
         if (initialBrand) {
           const md = await axios.get(`${API_URL}/api/models/by-brand?brandId=${initialBrand}`, config);
@@ -83,30 +86,27 @@ function Catalog() {
           const ct = await axios.get(`${API_URL}/api/cities/by-region?regionId=${initialRegion}`, config);
           setCities(ct.data);
         }
-
-        const initialFilters = getInitialFilters();
-        fetchAuctions(initialFilters);
-
       } catch (err) {
         if (err.name !== 'CanceledError') console.error(err);
       }
     };
 
-    // ИСПРАВЛЕНО: void для игнорирования Promise
-    void fetchDictionaries();
+    fetchDictionaries();
 
-    return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // 2. Запускаем автообновление списка аукционов
+    fetchAuctions(filters); // Первичная загрузка
 
-  const getInitialFilters = () => {
-    const initial = { ...EMPTY };
-    for (let key in EMPTY) {
-      const param = searchParams.get(key);
-      if (param) initial[key] = param;
-    }
-    return initial;
-  };
+    const intervalId = setInterval(() => {
+      fetchAuctions(filters); // Обновление каждые 10 сек
+    }, 10000);
+
+    return () => {
+      controller.abort();
+      clearInterval(intervalId); // Очистка таймера
+    };
+  }, [filters, fetchAuctions]); // Перезапускать, если изменились фильтры
+
+  // === ХЕНДЛЕРЫ И ОСТАЛЬНОЙ КОД ===
 
   useEffect(() => {
     if (filters.brandId) {
@@ -114,7 +114,6 @@ function Catalog() {
           .then(r => setModels(r.data)).catch(() => setModels([]));
     } else {
       setModels([]);
-      // ИСПРАВЛЕНО: Явное создание нового объекта
       setFilters(p => ({ ...p, modelId: '' }));
     }
   }, [filters.brandId]);
@@ -125,7 +124,6 @@ function Catalog() {
           .then(r => setCities(r.data)).catch(() => setCities([]));
     } else {
       setCities([]);
-      // ИСПРАВЛЕНО: Явное создание нового объекта
       setFilters(p => ({ ...p, cityId: '' }));
     }
   }, [filters.regionId]);
@@ -136,21 +134,23 @@ function Catalog() {
 
     if (numericFields.includes(name)) {
       let raw = value.replace(/\D/g, '');
-
       if (name === 'yearFrom' || name === 'yearTo') {
         const currentYear = new Date().getFullYear();
         if (raw.length > 0) {
           const numVal = parseInt(raw, 10);
-          if (numVal > currentYear) {
-            raw = String(currentYear);
-          }
+          if (numVal > currentYear) raw = String(currentYear);
         }
       }
-
       setFilters(p => ({ ...p, [name]: raw }));
     } else {
       setFilters(p => ({ ...p, [name]: value }));
     }
+  };
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    setSearchParams(Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== '')));
+    fetchAuctions(filters); // Ручной поиск
   };
 
   const reset = () => {
@@ -178,7 +178,6 @@ function Catalog() {
   for (let i = 1; i <= totalPages; i++) {
     pageNumbers.push(i);
   }
-  // -----------------
 
   const lotsWord = n => {
     if (n % 10 === 1 && n % 100 !== 11) return 'лот';
@@ -294,7 +293,7 @@ function Catalog() {
             </div>
 
             <div className="ct-sidebar__actions">
-              <button type="button" className="ct-btn ct-btn--primary ct-btn--full" onClick={() => fetchAuctions(filters)}>Найти</button>
+              <button type="button" className="ct-btn ct-btn--primary ct-btn--full" onClick={handleSearch}>Найти</button>
               <button type="button" className="ct-btn ct-btn--ghost ct-btn--full" onClick={reset}>Сбросить всё</button>
             </div>
           </aside>

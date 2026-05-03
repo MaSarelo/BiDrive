@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AuctionService {
@@ -173,7 +174,7 @@ public class AuctionService {
         }
     }
 
-    // === 4. СТАВКА ===
+    // === 4. СТАВКА (ОБНОВЛЕНО: УВЕДОМЛЕНИЕ О ПЕРЕБИТИИ) ===
     @Transactional
     public Bid placeBid(Long auctionId, Long userId, BigDecimal amount) {
         Auction auction = auctionRepository.findById(auctionId)
@@ -198,6 +199,26 @@ public class AuctionService {
         }
         if (amount.subtract(currentPrice).compareTo(minStep) < 0) {
             throw new RuntimeException(String.format("Минимальный шаг ставки: %s BYN.", minStep));
+        }
+
+        // === НОВАЯ ЛОГИКА: УВЕДОМЛЕНИЕ О ПЕРЕБИТИИ ===
+        // 1. Находим ТЕКУЩЕГО лидера (до сохранения новой ставки)
+        Optional<Bid> previousTopBid = bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId);
+
+        if (previousTopBid.isPresent()) {
+            User previousLeader = previousTopBid.get().getUser();
+
+            // 2. Если предыдущий лидер - не тот, кто делает ставку сейчас
+            if (!previousLeader.getId().equals(userId)) {
+                Notification notif = new Notification();
+                notif.setUser(previousLeader);
+                notif.setType("BID_OUTBID");
+                notif.setAuctionId(auction.getId()); // Ссылка на лот
+                notif.setMessage("⚠️ Вашу ставку перебили на лоте: " + auction.getBrand().getName() + " " + auction.getModel().getName());
+                notif.setIsRead(false);
+                notif.setCreatedAt(LocalDateTime.now());
+                notificationRepository.save(notif);
+            }
         }
 
         Bid bid = new Bid();
@@ -263,21 +284,16 @@ public class AuctionService {
         auction.setUpdatedAt(LocalDateTime.now());
         auctionRepository.save(auction);
 
-        // === СОЗДАНИЕ УВЕДОМЛЕНИЙ ===
         if (topBid != null) {
             User winner = topBid.getUser();
             User seller = auction.getSeller();
             String carName = auction.getBrand().getName() + " " + auction.getModel().getName();
             String price = auction.getCurrentPrice().toString();
 
-            // === ИСПРАВЛЕНО: Безопасная логика контактов ===
-
-            // 1. Контакты продавца (для победителя)
             String sellerContact = (seller.getPhone() != null && !seller.getPhone().isEmpty())
                     ? "Тел: " + seller.getPhone()
                     : "Email: " + seller.getEmail();
 
-            // 2. Контакты победителя (для продавца)
             String winnerContact = (winner.getPhone() != null && !winner.getPhone().isEmpty())
                     ? "Тел: " + winner.getPhone()
                     : "Email: " + winner.getEmail();

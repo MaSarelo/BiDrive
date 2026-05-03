@@ -37,12 +37,8 @@ function CreateAuction() {
   const [msg,          setMsg]          = useState({ text: '', ok: true });
 
   const navigate = useNavigate();
-
-  // === REF ДЛЯ ХРАНЕНИЯ ID КОПИИ (ЧТОБЫ УДАЛИТЬ СТАРЫЙ ЛОТ) ===
   const copyIdRef = useRef(null);
-  // ===========================================================
 
-  // Генерация списка лет
   const currentYear = new Date().getFullYear();
   const yearsList = [];
   for (let y = currentYear + 1; y >= 1980; y--) {
@@ -61,21 +57,14 @@ function CreateAuction() {
     axios.get('http://localhost:8080/api/fuel-types').then(r => setFuelTypes(r.data)).catch(console.error);
   }, []);
 
-  // === ОБНОВЛЕННАЯ ЛОГИКА ЗАГРУЗКИ (COPY + RESTORE) ===
   useEffect(() => {
     const processParams = async () => {
       const copyId = searchParams.get('copyId');
-
-      // 1. Если мы копируем существующий лот
       if (copyId) {
-        // СОХРАНЯЕМ В REF, чтобы использовать при отправке
         copyIdRef.current = copyId;
-
         try {
           const res = await axios.get(`http://localhost:8080/api/auctions/${copyId}`);
           const a = res.data;
-
-          // Заполняем форму данными из лота
           setFormData({
             sellerId: parseInt(localStorage.getItem('userId')),
             brandId: a.brand?.id || '',
@@ -88,42 +77,19 @@ function CreateAuction() {
             description: a.description || '',
             startingPrice: String(a.startingPrice || ''),
             minBidStep: String(a.minBidStep || '100'),
-            endTime: '' // Сбрасываем дату, нужно выбрать новую
+            endTime: ''
           });
-
-          // Активируем зависимые списки
           if (a.brand?.id) setSelectedBrand(String(a.brand.id));
           if (a.city?.region?.id) setSelectedRegion(String(a.city.region.id));
-
-          // Очищаем URL, чтобы при F5 не загружать снова
           setSearchParams({}, { replace: true });
-
         } catch (err) {
-          console.error("Ошибка копирования лота", err);
-          alert("Не удалось загрузить данные для копирования.");
-        }
-      }
-      // 2. Иначе восстанавливаем из сохраненных параметров (после F5)
-      else {
-        const params = {};
-        const fields = ['brandId', 'modelId', 'year', 'mileage', 'transmissionId', 'fuelTypeId', 'cityId', 'description', 'startingPrice', 'minBidStep', 'endTime', 'regionId'];
-
-        fields.forEach(field => {
-          const val = searchParams.get(field);
-          if (val) params[field] = val;
-        });
-
-        if (Object.keys(params).length > 0) {
-          setFormData(prev => ({ ...prev, ...params }));
-          if (params.brandId) setSelectedBrand(params.brandId);
-          if (params.regionId) setSelectedRegion(params.regionId);
+          console.error("Ошибка копирования", err);
+          alert("Не удалось загрузить данные.");
         }
       }
     };
-
     processParams();
   }, [searchParams]);
-  // ====================================================
 
   useEffect(() => {
     if (selectedBrand) {
@@ -155,30 +121,15 @@ function CreateAuction() {
     }
   };
 
-  // === ОБРАБОТЧИК ЧИСЕЛ (С ОГРАНИЧЕНИЕМ 2 ЗНАКА ПОСЛЕ ЗАПЯТОЙ) ===
   const handleNumericChange = e => {
     const { name, value } = e.target;
-
-    // 1. Пробег — ТОЛЬКО ЦЕЛЫЕ ЧИСЛА
     if (name === 'mileage') {
       const raw = value.replace(/\D/g, '');
       updateFormState(name, raw);
-    }
-    // 2. Цена и Шаг — ДРОБНЫЕ ЧИСЛА
-    else {
-      let val = value.replace(',', '.');
-      val = val.replace(/[^\d.]/g, '');
-
+    } else {
+      let val = value.replace(',', '.').replace(/[^\d.]/g, '');
       const parts = val.split('.');
-
-      if (parts.length > 1) {
-        const intPart = parts[0];
-        const decPart = parts[1].slice(0, 2);
-        val = intPart + '.' + decPart;
-      } else {
-        val = parts[0];
-      }
-
+      if (parts.length > 1) val = parts[0] + '.' + parts[1].slice(0, 2);
       updateFormState(name, val);
     }
   };
@@ -189,26 +140,16 @@ function CreateAuction() {
     triggerSetter(value);
   };
 
-  const minDateTime = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-      .toISOString().slice(0, 16);
+  const minDateTime = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
   const handleFileChange = e => {
     if (e.target.files) {
       const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       const newFiles = [];
-
       Array.from(e.target.files).forEach(file => {
-        if (!validTypes.includes(file.type)) {
-          setMsg({ text: `Файл "${file.name}" не является изображением (JPG, PNG, WEBP, GIF).`, ok: false });
-          return;
-        }
-        if (file.size > 10 * 1024 * 1024) {
-          setMsg({ text: `Файл "${file.name}" слишком большой (макс. 10 МБ).`, ok: false });
-          return;
-        }
+        if (!validTypes.includes(file.type) || file.size > 10 * 1024 * 1024) return;
         newFiles.push(file);
       });
-
       if (newFiles.length > 0) {
         setFiles(p => [...p, ...newFiles]);
         setMsg({ text: '', ok: true });
@@ -223,60 +164,29 @@ function CreateAuction() {
 
   const handleSubmit = async e => {
     e.preventDefault();
-
-    if (!formData.sellerId) {
-      setMsg({ text: 'Войдите в аккаунт, чтобы выставить лот', ok: false });
-      setTimeout(() => navigate('/login'), 2000); // Редирект на логин через 2 сек
-      return;
-    }
+    if (!formData.sellerId) { setMsg({ text: 'Войдите в аккаунт', ok: false }); return; }
 
     const newErrors = {};
-
-    if (files.length === 0) newErrors.files = 'Добавьте хотя бы одно фото';
+    if (files.length === 0) newErrors.files = 'Добавьте фото';
     if (!formData.brandId) newErrors.brand = 'Выберите марку';
     if (!formData.modelId) newErrors.model = 'Выберите модель';
-    if (!formData.year) newErrors.year = 'Выберите год выпуска';
-
-    if (!formData.mileage) {
-      newErrors.mileage = 'Укажите пробег';
-    } else if (parseInt(formData.mileage) < 0) {
-      newErrors.mileage = 'Пробег не может быть отрицательным';
-    }
-
+    if (!formData.year) newErrors.year = 'Выберите год';
+    if (!formData.mileage) newErrors.mileage = 'Укажите пробег';
+    else if (parseInt(formData.mileage) < 0) newErrors.mileage = 'Пробег >= 0';
     if (!formData.transmissionId) newErrors.transmission = 'Выберите КПП';
-    if (!formData.fuelTypeId) newErrors.fuel = 'Выберите тип топлива';
-
+    if (!formData.fuelTypeId) newErrors.fuel = 'Выберите топливо';
     if (!selectedRegion) newErrors.region = 'Выберите область';
     if (!formData.cityId) newErrors.city = 'Выберите город';
 
     const price = parseFloat(formData.startingPrice);
     const step = parseFloat(formData.minBidStep);
-
-    if (!formData.startingPrice) {
-      newErrors.price = 'Укажите начальную цену';
-    } else if (isNaN(price) || price <= 0) {
-      newErrors.price = 'Цена должна быть положительным числом';
-    }
-
-    if (!formData.minBidStep) {
-      newErrors.step = 'Укажите шаг ставки';
-    } else if (isNaN(step) || step <= 0) {
-      newErrors.step = 'Шаг должен быть положительным числом';
-    }
-
-    if (!formData.endTime) {
-      newErrors.endTime = 'Укажите время окончания';
-    } else {
-      const endTimeDate = new Date(formData.endTime);
-      const now = new Date();
-      if (endTimeDate <= now) {
-        newErrors.endTime = 'Время окончания должно быть в будущем';
-      }
-    }
-
-    if (!formData.description || formData.description.trim().length < 10) {
-      newErrors.description = 'Описание должно содержать минимум 10 символов';
-    }
+    if (!formData.startingPrice) newErrors.price = 'Укажите цену';
+    else if (isNaN(price) || price <= 0) newErrors.price = 'Цена > 0';
+    if (!formData.minBidStep) newErrors.step = 'Укажите шаг';
+    else if (isNaN(step) || step <= 0) newErrors.step = 'Шаг > 0';
+    if (!formData.endTime) newErrors.endTime = 'Укажите время';
+    else if (new Date(formData.endTime) <= new Date()) newErrors.endTime = 'Время в будущем';
+    if (!formData.description || formData.description.trim().length < 10) newErrors.description = 'Описание >= 10 символов';
 
     if (Object.keys(newErrors).length > 0) {
       setMsg({ text: Object.values(newErrors).join('. '), ok: false });
@@ -284,21 +194,16 @@ function CreateAuction() {
     }
 
     setIsSubmitting(true);
-    setMsg({ text: 'Загрузка фотографий (0/' + files.length + ')...', ok: true });
+    setMsg({ text: 'Загрузка фото...', ok: true });
 
     try {
       const uploadedUrls = [];
       for (let i = 0; i < files.length; i++) {
         const fd = new FormData();
         fd.append('file', files[i]);
-        const res = await axios.post('http://localhost:8080/api/files/upload', fd, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        const res = await axios.post('http://localhost:8080/api/files/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
         uploadedUrls.push(res.data.url);
-        setMsg({ text: `Загрузка фотографий (${i + 1}/${files.length})...`, ok: true });
       }
-
-      setMsg({ text: 'Фото загружены. Отправка лота на модерацию...', ok: true });
 
       const sorted = [...uploadedUrls];
       if (mainImageIndex >= 0 && mainImageIndex < sorted.length) {
@@ -307,60 +212,30 @@ function CreateAuction() {
       }
 
       const payload = { ...formData, regionId: selectedRegion, imageUrls: sorted };
-
       await axios.post('http://localhost:8080/api/auctions', payload);
 
-      // === ЛОГИКА УДАЛЕНИЯ СТАРОГО ЛОТА ===
       if (copyIdRef.current) {
-        try {
-          await axios.delete(`http://localhost:8080/api/auctions/${copyIdRef.current}`, {
-            params: { userId: formData.sellerId }
-          });
-          console.log("Старый лот #" + copyIdRef.current + " успешно удален.");
-        } catch (e) {
-          console.warn("Не удалось удалить старый лот", e);
-        }
-        copyIdRef.current = null; // Сбрасываем ref
+        try { await axios.delete(`http://localhost:8080/api/auctions/${copyIdRef.current}`, { params: { userId: formData.sellerId } }); } catch (e) {}
+        copyIdRef.current = null;
       }
-      // ====================================
 
-      setMsg({ text: 'Лот успешно отправлен на модерацию!', ok: true });
+      setMsg({ text: 'Лот отправлен на модерацию!', ok: true });
       setTimeout(() => { window.location.href = '/profile'; }, 2000);
-
     } catch (err) {
       setMsg({ text: 'Ошибка: ' + (err.response?.data || err.message), ok: false });
       setIsSubmitting(false);
     }
   };
 
-  // === ФОРМАТТЕР (Пробелы + Запятая) ===
   const formatSpaces = v => {
     if (!v) return '';
-
-    if (v.indexOf('.') === -1) {
-      const num = parseInt(v);
-      if (isNaN(num)) return v;
-      return num.toLocaleString('ru-RU');
-    }
-
+    if (v.indexOf('.') === -1) return parseInt(v).toLocaleString('ru-RU') || v;
     const parts = v.split('.');
-    const intPart = parseInt(parts[0]) || 0;
-    const decPart = parts[1] !== undefined ? parts[1] : '';
-
-    let formatted = intPart.toLocaleString('ru-RU');
-
-    if (decPart !== '') {
-      formatted += ',' + decPart;
-    } else if (v.endsWith('.')) {
-      formatted += ',';
-    }
-
-    return formatted;
+    return (parseInt(parts[0]) || 0).toLocaleString('ru-RU') + (parts[1] !== undefined ? ',' + parts[1] : '');
   };
 
   return (
       <div className="ca">
-
         <div className="ca-hero">
           <div className="ca-container">
             <p className="ca-eyebrow">Новый лот</p>
@@ -372,10 +247,16 @@ function CreateAuction() {
           <div className="ca-form-wrap">
             <form onSubmit={handleSubmit} className="ca-form">
 
-              {/* Автомобиль */}
               <section className="ca-section">
                 <p className="ca-section__title">Автомобиль</p>
+
+                <p className="ca-section__hint" style={{marginTop: '-1rem', marginBottom: '1rem', color: 'var(--text-3)'}}>
+                  Если вы не нашли нужную марку или модель в списке, выберите <strong>«Другое»</strong> и укажите подробности в описании.
+                </p>
+
                 <div className="ca-grid ca-grid--2">
+
+                  {/* БЛОК МАРКИ - Просто Select */}
                   <Field label="Марка" required>
                     <select className="ca-select" name="brandId" value={formData.brandId}
                             onChange={e => handleSelectChangeWithTrigger(e, setSelectedBrand)}>
@@ -384,6 +265,7 @@ function CreateAuction() {
                     </select>
                   </Field>
 
+                  {/* БЛОК МОДЕЛИ - Просто Select */}
                   <Field label="Модель" required>
                     <select className="ca-select" name="modelId" value={formData.modelId}
                             onChange={handleChange} disabled={!selectedBrand}>
@@ -405,16 +287,14 @@ function CreateAuction() {
                   </Field>
 
                   <Field label="КПП" required>
-                    <select className="ca-select" name="transmissionId" value={formData.transmissionId}
-                            onChange={handleChange}>
+                    <select className="ca-select" name="transmissionId" value={formData.transmissionId} onChange={handleChange}>
                       <option value="">Выберите КПП...</option>
                       {transmissions.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                   </Field>
 
                   <Field label="Тип топлива" required>
-                    <select className="ca-select" name="fuelTypeId" value={formData.fuelTypeId}
-                            onChange={handleChange}>
+                    <select className="ca-select" name="fuelTypeId" value={formData.fuelTypeId} onChange={handleChange}>
                       <option value="">Выберите топливо...</option>
                       {fuelTypes.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                     </select>
@@ -451,7 +331,6 @@ function CreateAuction() {
                     <input className="ca-input" type="text" inputMode="decimal" name="startingPrice"
                            placeholder="10 000" value={formatSpaces(formData.startingPrice)} onChange={handleNumericChange} />
                   </Field>
-
                   <Field label={<>Минимальный шаг (<BynIcon className="ca-label-icon" />)</>} required>
                     <input className="ca-input" type="text" inputMode="decimal" name="minBidStep"
                            placeholder="100" value={formatSpaces(formData.minBidStep)} onChange={handleNumericChange} />
@@ -477,31 +356,21 @@ function CreateAuction() {
               {/* Фотографии */}
               <section className="ca-section">
                 <p className="ca-section__title">Фотографии</p>
-                <p className="ca-section__hint">
-                  Кликните на фото, чтобы сделать его главным — оно будет отображаться на карточке в каталоге.
-                  <span className="hint-required"> *</span>
-                </p>
-
-                <div className="ca-dropzone"
-                     onClick={() => document.getElementById('ca-file-input').click()}>
+                <p className="ca-section__hint">Кликните на фото, чтобы сделать его главным.<span className="hint-required"> *</span></p>
+                <div className="ca-dropzone" onClick={() => document.getElementById('ca-file-input').click()}>
                   <span className="ca-dropzone__icon">+</span>
                   <p className="ca-dropzone__text">Нажмите для выбора фотографий</p>
                   <p className="ca-dropzone__hint">JPG · PNG · WEBP</p>
-                  <input id="ca-file-input" type="file" onChange={handleFileChange}
-                         accept="image/*" multiple style={{ display: 'none' }} />
+                  <input id="ca-file-input" type="file" onChange={handleFileChange} accept="image/*" multiple style={{ display: 'none' }} />
                 </div>
-
                 {files.length > 0 && (
                     <div className="ca-preview">
                       {files.map((file, i) => (
-                          <div key={i}
-                               className={`ca-thumb${i === mainImageIndex ? ' ca-thumb--main' : ''}`}
-                               onClick={() => setMainImageIndex(i)}
-                               title="Сделать главным">
+                          <div key={i} className={`ca-thumb${i === mainImageIndex ? ' ca-thumb--main' : ''}`}
+                               onClick={() => setMainImageIndex(i)} title="Сделать главным">
                             <img src={URL.createObjectURL(file)} alt="" />
                             {i === mainImageIndex && <span className="ca-thumb__badge">Главное</span>}
-                            <button type="button" className="ca-thumb__remove"
-                                    onClick={e => { e.stopPropagation(); removeFile(i); }}>×</button>
+                            <button type="button" className="ca-thumb__remove" onClick={e => { e.stopPropagation(); removeFile(i); }}>×</button>
                           </div>
                       ))}
                     </div>
@@ -510,12 +379,8 @@ function CreateAuction() {
 
               {/* Submit */}
               <div className="ca-submit">
-                {msg.text && (
-                    <p className={`ca-msg${msg.ok ? ' ca-msg--ok' : ' ca-msg--err'}`}>{msg.text}</p>
-                )}
-                <button type="submit"
-                        className={`ca-btn ca-btn--gold ca-btn--lg ca-btn--full${isSubmitting ? ' ca-btn--disabled' : ''}`}
-                        disabled={isSubmitting}>
+                {msg.text && (<p className={`ca-msg${msg.ok ? ' ca-msg--ok' : ' ca-msg--err'}`}>{msg.text}</p>)}
+                <button type="submit" className={`ca-btn ca-btn--gold ca-btn--lg ca-btn--full${isSubmitting ? ' ca-btn--disabled' : ''}`} disabled={isSubmitting}>
                   {isSubmitting ? 'Отправка...' : 'Опубликовать лот'}
                 </button>
               </div>
@@ -524,30 +389,15 @@ function CreateAuction() {
           </div>
         </main>
 
+        {/* Footer */}
         <footer className="ca-footer">
           <div className="ca-footer__grid">
-            <div>
-              <p className="ca-footer__wordmark">BiDrive</p>
-              <p className="ca-footer__desc">Платформа онлайн-аукционов автомобилей.</p>
-            </div>
-            <div>
-              <p className="ca-footer__col-title">Навигация</p>
-              <ul className="ca-footer__list">
-                <li><Link to="/catalog">Каталог</Link></li>
-              </ul>
-            </div>
-            <div>
-              <p className="ca-footer__col-title">Контакты</p>
-              <ul className="ca-footer__list">
-                <li><a href="mailto:support@bidrive.by">support@bidrive.by</a></li>
-              </ul>
-            </div>
+            <div><p className="ca-footer__wordmark">BiDrive</p><p className="ca-footer__desc">Платформа онлайн-аукционов автомобилей.</p></div>
+            <div><p className="ca-footer__col-title">Навигация</p><ul className="ca-footer__list"><li><Link to="/catalog">Каталог</Link></li></ul></div>
+            <div><p className="ca-footer__col-title">Контакты</p><ul className="ca-footer__list"><li><a href="mailto:support@bidrive.by">support@bidrive.by</a></li></ul></div>
           </div>
-          <div className="ca-footer__bottom">
-            <p>© 2026 BiDrive. Дипломный проект.</p>
-          </div>
+          <div className="ca-footer__bottom"><p>© 2026 BiDrive. Дипломный проект.</p></div>
         </footer>
-
       </div>
   );
 }

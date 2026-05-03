@@ -5,7 +5,6 @@ import AuctionCard from '../../components/AuctionCard';
 import './HomePage.css';
 
 /* ── SVG icons ── */
-// Исправлена стрелочная функция и закрытие тега svg
 const Ic = ({ children, size = 20 }) => (
     <svg width={size} height={size} fill="none" stroke="currentColor"
          strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -13,7 +12,6 @@ const Ic = ({ children, size = 20 }) => (
     </svg>
 );
 
-// Иконки теперь корректно возвращают JSX
 const ArrowRight = () => <Ic><path d="M5 12h14M12 5l7 7-7 7"/></Ic>;
 const IconShield = () => <Ic><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Ic>;
 const IconZap    = () => <Ic><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Ic>;
@@ -24,7 +22,6 @@ const IconSearch = () => <Ic><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35
 const IconGavel  = () => <Ic><path d="m14.5 2.5 7 7-10 10-7-7z"/><path d="M2 22l6-6"/></Ic>;
 const IconCheck  = () => <Ic><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Ic>;
 
-// Данные для блоков (исправлены поля icon)
 const ADVANTAGES = [
   { icon: <IconShield />, title: 'Проверенные лоты', desc: 'Каждое объявление проходит ручную модерацию' },
   { icon: <IconZap />,    title: 'Онлайн-торги',     desc: 'Ставки и обновления цен в реальном времени' },
@@ -46,12 +43,31 @@ export default function HomePage() {
   const [userEmail]            = useState(() => localStorage.getItem('userEmail'));
   const revealRefs             = useRef([]);
 
-  useEffect(() => {
+  // === ФУНКЦИЯ ЗАГРУЗКИ ЛОТОВ ===
+  const fetchLots = () => {
     axios.get('http://localhost:8080/api/auctions')
-        .then(r  => { setLots(r.data.slice(0, 6)); setLoading(false); })
-        .catch(() => { setError('Не удалось загрузить лоты.'); setLoading(false); });
+        .then(r  => {
+          setLots(r.data.slice(0, 6));
+          setLoading(false);
+        })
+        .catch(() => {
+          setError('Не удалось загрузить лоты.');
+          setLoading(false);
+        });
+  };
+
+  // === ЗАГРУЗКА И POLLING ===
+  useEffect(() => {
+    // 1. Первичная загрузка
+    fetchLots();
+
+    // 2. Запускаем автообновление каждые 10 секунд
+    const intervalId = setInterval(fetchLots, 10000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
+  // === ЛОГИКА АНИМАЦИИ ПОЯВЛЕНИЯ ===
   useEffect(() => {
     const io = new IntersectionObserver(
         entries => entries.forEach(e => {

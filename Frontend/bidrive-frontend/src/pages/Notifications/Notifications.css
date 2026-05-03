@@ -205,3 +205,61 @@
         align-items: flex-start;
     }
 }
+
+.nf-item--link {
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+}
+
+.nf-item--link:hover {
+    background: var(--bg-4); /* Чуть светлее при наведении */
+}
+
+/* Сохраняем стили непрочитанного для ссылки */
+.nf-item--link.nf-item--unread {
+    background: var(--bg-3);
+}
+
+/* === КНОПКА УДАЛЕНИЯ === */
+.nf-item__delete {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s, color 0.15s;
+
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+
+    background: transparent;
+    border: none;
+    color: var(--text-3);
+    font-size: 1.25rem; /* Размер крестика */
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.25rem;
+    z-index: 10;
+}
+
+.nf-item:hover .nf-item__delete {
+    opacity: 1;
+    visibility: visible;
+}
+
+.nf-item__delete:hover {
+    color: var(--red);
+}
+
+/* Сдвигаем контент, чтобы не налезал на крестик на мобильных или узких экранах */
+@media (max-width: 30rem) {
+    .nf-item__delete {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+/* Добавляем position: relative к .nf-item, если его еще нет */
+.nf-item {
+    position: relative; /* Нужно для позиционирования крестика */
+}

@@ -53,7 +53,6 @@ function Layout() {
     const [userEmail, setUserEmail] = useState(() => localStorage.getItem('userEmail'));
     const [userRole, setUserRole] = useState(() => {
         const r = localStorage.getItem('userRole');
-        // ИСПРАВЛЕНО: Явно указываем основание 10, чтобы не было предупреждений
         return r ? parseInt(r, 10) : null;
     });
 
@@ -66,7 +65,6 @@ function Layout() {
     const profileRef = useRef(null);
 
     useEffect(() => {
-        // ИСПРАВЛЕНО: Современный синтаксис scrollTo (объект вместо аргументов)
         window.scrollTo({ top: 0, left: 0 });
     }, [location.pathname]);
 
@@ -88,18 +86,35 @@ function Layout() {
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
+    // === ИЗМЕНЕНО: АВТООБНОВЛЕНИЕ УВЕДОМЛЕНИЙ (POLLING) ===
     useEffect(() => {
         const userId = localStorage.getItem('userId');
-        if (!userId) { setNotifCount(0); return; }
 
-        axios.get(`http://localhost:8080/api/notifications/user/${userId}`)
-            .then(r => {
-                // ИСПРАВЛЕНО: Проверка данных, чтобы убрать unknown
-                const data = r.data || [];
-                setNotifCount(data.filter(n => !n.isRead).length);
-            })
-            .catch(() => setNotifCount(0));
-    }, [location, userEmail]);
+        // Если пользователя нет, сбрасываем счетчик и выходим
+        if (!userId) {
+            setNotifCount(0);
+            return;
+        }
+
+        // Функция получения количества уведомлений
+        const fetchNotifCount = () => {
+            axios.get(`http://localhost:8080/api/notifications/user/${userId}`)
+                .then(r => {
+                    const data = r.data || [];
+                    setNotifCount(data.filter(n => !n.isRead).length);
+                })
+                .catch(() => setNotifCount(0));
+        };
+
+        // 1. Сразу вызываем при загрузке
+        fetchNotifCount();
+
+        // 2. Запускаем интервал каждые 30 секунд (30000 мс)
+        const intervalId = setInterval(fetchNotifCount, 30000);
+
+        // 3. Очищаем интервал при размонтировании или выходе
+        return () => clearInterval(intervalId);
+    }, [userEmail]); // Зависимость от userEmail, чтобы перезапустить таймер при логине/логауте
 
     useEffect(() => {
         const handler = (e) => {
