@@ -393,7 +393,7 @@ function CreateAuction() {
         <footer className="ca-footer">
           <div className="ca-footer__grid">
             <div><p className="ca-footer__wordmark">BiDrive</p><p className="ca-footer__desc">Платформа онлайн-аукционов автомобилей.</p></div>
-            <div><p className="ca-footer__col-title">Навигация</p><ul className="ca-footer__list"><li><Link to="/catalog">Каталог</Link></li></ul></div>
+            <div><p className="ca-footer__col-title">Навигация</p><ul className="ca-footer__list"><li><Link to="/catalog">Каталог</Link></li> <li><Link to="/rules">Правила платформы</Link></li></ul></div>
             <div><p className="ca-footer__col-title">Контакты</p><ul className="ca-footer__list"><li><a href="mailto:support@bidrive.by">support@bidrive.by</a></li></ul></div>
           </div>
           <div className="ca-footer__bottom"><p>© 2026 BiDrive. Дипломный проект.</p></div>

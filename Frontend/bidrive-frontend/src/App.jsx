@@ -12,6 +12,7 @@ import AdminPage from './pages/AdminPage/AdminPage';
 import Notifications from './pages/Notifications/Notifications';
 import './App.css';
 import NotFoundPage from './pages/NotFoundPage/NotFoundPage';
+import RulesPage from './pages/RulesPage/RulesPage';
 
 function App() {
   // === ОТКЛЮЧЕНИЕ СКРОЛЛА ДЛЯ ЧИСЛОВЫХ ПОЛЕЙ ===
@@ -44,6 +45,7 @@ function App() {
             <Route path="/create" element={<CreateAuction />} />
             <Route path="/auction/:id" element={<AuctionDetails />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/rules" element={<RulesPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

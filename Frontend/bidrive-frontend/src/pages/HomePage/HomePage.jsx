@@ -207,6 +207,7 @@ export default function HomePage() {
               <p className="hp-footer__col-title">Навигация</p>
               <ul className="hp-footer__list">
                 <li><Link to="/catalog">Каталог</Link></li>
+                <li><Link to="/rules">Правила платформы</Link></li>
                 <li>
                   <Link to={userEmail ? '/profile' : '/login'}>
                     {userEmail ? 'Личный кабинет' : 'Войти'}
