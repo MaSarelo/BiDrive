@@ -80,7 +80,7 @@ public class AuctionService {
         return history;
     }
 
-    // === 2. СОЗДАНИЕ АУКЦИОНА ===
+    // === 2. СОЗДАНИЕ АУКЦИОНА (ИСПРАВЛЕНО: добавлен параметр vin) ===
     @Transactional
     public Auction createAuction(
             Long sellerId,
@@ -95,7 +95,8 @@ public class AuctionService {
             BigDecimal minBidStep,
             Integer cityId,
             List<String> imageUrls,
-            LocalDateTime endTime
+            LocalDateTime endTime,
+            String vin  // <-- НОВЫЙ ПАРАМЕТР
     ) {
         User seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
@@ -123,6 +124,11 @@ public class AuctionService {
         auction.setDescription(description);
         auction.setEndTime(endTime);
 
+        // === ИСПРАВЛЕНИЕ: устанавливаем VIN ===
+        if (vin != null && !vin.trim().isEmpty()) {
+            auction.setVin(vin.trim().toUpperCase());
+        }
+
         auction.setStartingPrice(startingPrice);
         auction.setCurrentPrice(startingPrice);
         auction.setMinBidStep(minBidStep != null ? minBidStep : BigDecimal.valueOf(100));
@@ -144,7 +150,7 @@ public class AuctionService {
                 img.setIsMain(i == 0);
                 carImageRepository.save(img);
             }
-            savedAuction.setMainImageUrl(imageUrls.get(0));
+            savedAuction.setMainImageUrl(imageUrls.getFirst());
             auctionRepository.save(savedAuction);
         }
 
@@ -202,18 +208,16 @@ public class AuctionService {
         }
 
         // === НОВАЯ ЛОГИКА: УВЕДОМЛЕНИЕ О ПЕРЕБИТИИ ===
-        // 1. Находим ТЕКУЩЕГО лидера (до сохранения новой ставки)
         Optional<Bid> previousTopBid = bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId);
 
         if (previousTopBid.isPresent()) {
             User previousLeader = previousTopBid.get().getUser();
 
-            // 2. Если предыдущий лидер - не тот, кто делает ставку сейчас
             if (!previousLeader.getId().equals(userId)) {
                 Notification notif = new Notification();
                 notif.setUser(previousLeader);
                 notif.setType("BID_OUTBID");
-                notif.setAuctionId(auction.getId()); // Ссылка на лот
+                notif.setAuctionId(auction.getId());
                 notif.setMessage("⚠️ Вашу ставку перебили на лоте: " + auction.getBrand().getName() + " " + auction.getModel().getName());
                 notif.setIsRead(false);
                 notif.setCreatedAt(LocalDateTime.now());
@@ -298,7 +302,6 @@ public class AuctionService {
                     ? "Тел: " + winner.getPhone()
                     : "Email: " + winner.getEmail();
 
-            // 1. Уведомление ПОБЕДИТЕЛЮ
             String winnerMsg = String.format(
                     "Вы выиграли лот %s (%s г.) за %s BYN. Свяжитесь с продавцом: %s",
                     carName, auction.getYear(), price, sellerContact
@@ -313,7 +316,6 @@ public class AuctionService {
             notifWinner.setCreatedAt(LocalDateTime.now());
             notificationRepository.save(notifWinner);
 
-            // 2. Уведомление ПРОДАВЦУ
             String sellerMsg = String.format(
                     "Ваш лот %s (%s г.) продан за %s BYN. Свяжитесь с победителем: %s",
                     carName, auction.getYear(), price, winnerContact

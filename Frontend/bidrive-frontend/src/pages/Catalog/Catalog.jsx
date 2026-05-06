@@ -21,7 +21,7 @@ function Catalog() {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // === ИСПРАВЛЕНИЕ: Инициализация sortBy из URL ===
+  // === Инициализация sortBy из URL ===
   const [sortBy, setSortBy] = useState(() => {
     const param = searchParams.get('sortBy');
     return param || 'default';
@@ -34,6 +34,7 @@ function Catalog() {
   const [regions, setRegions] = useState([]);
   const [cities, setCities] = useState([]);
 
+  // === Инициализация фильтров из URL ===
   const [filters, setFilters] = useState(() => {
     const initial = { ...EMPTY };
     for (let key in EMPTY) {
@@ -155,11 +156,12 @@ function Catalog() {
     }
   }, [filters.regionId]);
 
-  // === ОБРАБОТКА ИЗМЕНЕНИЙ ПОЛЕЙ ===
+  // === ОБРАБОТКА ИЗМЕНЕНИЙ ПОЛЕЙ + СИНХРОНИЗАЦИЯ С URL ===
   const handleChange = e => {
     const { name, value } = e.target;
     const numericFields = ['priceFrom', 'priceTo', 'yearFrom', 'yearTo', 'mileageFrom', 'mileageTo'];
 
+    let processedValue = value;
     if (numericFields.includes(name)) {
       let raw = value.replace(/\D/g, '');
       if (name === 'yearFrom' || name === 'yearTo') {
@@ -169,26 +171,47 @@ function Catalog() {
           if (numVal > currentYear) raw = String(currentYear);
         }
       }
-      setFilters(p => ({ ...p, [name]: raw }));
-    } else {
-      setFilters(p => ({ ...p, [name]: value }));
+      processedValue = raw;
     }
+
+    // Обновляем состояние фильтров
+    setFilters(p => {
+      const newFilters = { ...p, [name]: processedValue };
+
+      // === СИНХРОНИЗАЦИЯ С URL: обновляем адресную строку ===
+      const newParams = new URLSearchParams(searchParams);
+      if (processedValue) {
+        newParams.set(name, processedValue);
+      } else {
+        newParams.delete(name);
+      }
+      setSearchParams(newParams, { replace: true });
+
+      return newFilters;
+    });
   };
 
-  // === ОБРАБОТКА ИЗМЕНЕНИЯ СОРТИРОВКИ (с сохранением в URL) ===
+  // === ОБРАБОТКА ИЗМЕНЕНИЯ СОРТИРОВКИ ===
   const handleSortChange = (e) => {
     const newSort = e.target.value;
-    setSortBy(newSort);
-    setCurrentPage(1);
 
-    // Сохраняем в URL: если 'default' — удаляем параметр, иначе добавляем
     const newParams = new URLSearchParams(searchParams);
+
+    // Обновляем параметр сортировки
     if (newSort === 'default') {
       newParams.delete('sortBy');
     } else {
       newParams.set('sortBy', newSort);
     }
+
+    // === FIX: Сбрасываем пагинацию в URL ===
+    newParams.delete('page');
+
     setSearchParams(newParams, { replace: true });
+
+    // Обновляем состояние ПОСЛЕ изменения URL
+    setSortBy(newSort);
+    setCurrentPage(1);
   };
 
   // === ФУНКЦИЯ СОРТИРОВКИ ===
@@ -198,25 +221,18 @@ function Catalog() {
     switch (sortBy) {
       case 'price_asc':
         return sorted.sort((a, b) => a.currentPrice - b.currentPrice);
-
       case 'price_desc':
         return sorted.sort((a, b) => b.currentPrice - a.currentPrice);
-
       case 'newest':
         return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
       case 'oldest':
         return sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
       case 'mileage_asc':
         return sorted.sort((a, b) => a.mileage - b.mileage);
-
       case 'year_desc':
         return sorted.sort((a, b) => b.year - a.year);
-
       case 'year_asc':
         return sorted.sort((a, b) => a.year - b.year);
-
       default:
         return sorted;
     }
@@ -225,11 +241,6 @@ function Catalog() {
   // === КНОПКА "НАЙТИ" ===
   const handleSearch = () => {
     setCurrentPage(1);
-    setSortBy('default');
-    // Удаляем sortBy из параметров при новом поиске
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete('sortBy');
-    setSearchParams(newParams, { replace: true });
     fetchAuctions(filters);
   };
 
@@ -266,6 +277,22 @@ function Catalog() {
     if (n % 10 === 1 && n % 100 !== 11) return 'лот';
     if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return 'лота';
     return 'лотов';
+  };
+
+  // === СИНХРОНИЗАЦИЯ ПАГИНАЦИИ С URL ===
+  useEffect(() => {
+    const pageParam = searchParams.get('page');
+    if (pageParam && parseInt(pageParam, 10) !== currentPage) {
+      setCurrentPage(parseInt(pageParam, 10));
+    }
+  }, [searchParams]);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', pageNumber.toString());
+    setSearchParams(newParams, { replace: true });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -583,7 +610,7 @@ function Catalog() {
                       <nav className="ct-pagination">
                         <button
                             className="ct-pagination__btn"
-                            onClick={() => paginate(currentPage - 1)}
+                            onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}
                         >
                           ‹
@@ -594,14 +621,14 @@ function Catalog() {
                                 className={`ct-pagination__btn ${
                                     currentPage === number ? 'active' : ''
                                 }`}
-                                onClick={() => paginate(number)}
+                                onClick={() => handlePageChange(number)}
                             >
                               {number}
                             </button>
                         ))}
                         <button
                             className="ct-pagination__btn"
-                            onClick={() => paginate(currentPage + 1)}
+                            onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === totalPages}
                         >
                           ›
@@ -637,10 +664,8 @@ function Catalog() {
             <div>
               <p className="ct-footer__col-title">Навигация</p>
               <ul className="ct-footer__list">
-                <li>
-                  <Link to="/catalog">Каталог</Link>
-                  <li><Link to="/rules">Правила платформы</Link></li>
-                </li>
+                <li><Link to="/catalog">Каталог</Link></li>
+                <li><Link to="/rules">Правила платформы</Link></li>
               </ul>
             </div>
             <div>

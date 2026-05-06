@@ -105,7 +105,8 @@ public class AuctionController {
                 request.getMinBidStep(),
                 request.getCityId(),
                 request.getImageUrls(),
-                request.getEndTime()
+                request.getEndTime(),
+                request.getVin()
         );
     }
 
@@ -127,6 +128,7 @@ public class AuctionController {
         private Integer cityId;
         private List<String> imageUrls;
         private LocalDateTime endTime;
+        private String vin;
 
     }
 

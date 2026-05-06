@@ -27,6 +27,7 @@ public class AuctionScheduler {
     @Autowired
     private BidRepository bidRepository;
 
+    // === ЗАВЕРШЕНИЕ АУКЦИОНОВ ПО ТАЙМЕРУ ===
     @Scheduled(fixedRate = 10000)
     @Transactional
     public void checkAuctions() {
@@ -37,17 +38,9 @@ public class AuctionScheduler {
         }
     }
 
-    @Scheduled(fixedRate = 10000)
-    @Transactional
-    public void startScheduledAuctions() {
-        List<Auction> toStart = auctionRepository.findByStatusAndStartTimeBefore("APPROVED", LocalDateTime.now());
-
-        for (Auction auction : toStart) {
-            System.out.println(">>> Старт аукциона ID: " + auction.getId());
-            auction.setStatus("ACTIVE");
-            auctionRepository.save(auction);
-        }
-    }
+    // === УДАЛЕНО: startScheduledAuctions() ===
+    // Этот метод использовал findByStatusAndStartTimeBefore, который больше не существует
+    // Логика авто-старта аукционов больше не требуется, так как аукционы стартуют сразу после одобрения
 
     private void finishAuction(Auction auction) {
         System.out.println(">>> Завершение аукциона ID: " + auction.getId());
@@ -61,7 +54,6 @@ public class AuctionScheduler {
             auction.setWinner(winner);
             auction.setCurrentPrice(lastBid.getAmount());
 
-            // === Безопасная логика контактов ===
             String sellerContact = (seller.getPhone() != null && !seller.getPhone().isEmpty())
                     ? "Тел: " + seller.getPhone()
                     : "Email: " + seller.getEmail();
@@ -73,7 +65,6 @@ public class AuctionScheduler {
             // Уведомление ПОБЕДИТЕЛЮ
             Notification notifWinner = new Notification();
             notifWinner.setUser(winner);
-            // === ВАЖНО: Добавляем ID аукциона ===
             notifWinner.setAuctionId(auction.getId());
             notifWinner.setMessage("🎉 Вы выиграли лот: " + auction.getBrand().getName() + " " + auction.getModel().getName() +
                     "! Свяжитесь с продавцом: " + seller.getFirstName() + " (" + sellerContact + ")");
@@ -84,7 +75,6 @@ public class AuctionScheduler {
             // Уведомление ПРОДАВЦУ
             Notification notifSeller = new Notification();
             notifSeller.setUser(seller);
-            // === ВАЖНО: Добавляем ID аукциона ===
             notifSeller.setAuctionId(auction.getId());
             notifSeller.setMessage("✅ Ваш лот продан: " + auction.getBrand().getName() + " " + auction.getModel().getName() +
                     ". Победитель: " + winner.getFirstName() + " (" + winnerContact + ")");
@@ -98,7 +88,7 @@ public class AuctionScheduler {
 
             Notification notifSeller = new Notification();
             notifSeller.setUser(auction.getSeller());
-            notifSeller.setAuctionId(auction.getId()); // На всякий случай и сюда добавим
+            notifSeller.setAuctionId(auction.getId());
             notifSeller.setMessage("⚠️ Время аукциона истекло, но ставок не было: " + auction.getBrand().getName());
             notifSeller.setCreatedAt(LocalDateTime.now());
             notifSeller.setType("AUCTION_UNSOLD");

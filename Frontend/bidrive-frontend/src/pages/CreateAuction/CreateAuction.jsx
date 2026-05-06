@@ -17,7 +17,7 @@ function CreateAuction() {
   const [formData, setFormData] = useState({
     sellerId: null, brandId: '', modelId: '', year: '', mileage: '',
     transmissionId: '', fuelTypeId: '', cityId: '',
-    description: '', startingPrice: '', minBidStep: '100', endTime: ''
+    description: '', startingPrice: '', minBidStep: '100', endTime: '', vin: ''
   });
 
   const [brands,        setBrands]        = useState([]);
@@ -192,6 +192,10 @@ function CreateAuction() {
       setMsg({ text: Object.values(newErrors).join('. '), ok: false });
       return;
     }
+    if (formData.vin && formData.vin.length !== 17) newErrors.vin = 'VIN должен содержать ровно 17 символов';
+    if (formData.vin && !/^[A-HJ-NPR-Z0-9]{17}$/i.test(formData.vin)) {
+      newErrors.vin = 'VIN может содержать только латинские буквы и цифры (кроме I, O, Q)';
+    }
 
     setIsSubmitting(true);
     setMsg({ text: 'Загрузка фото...', ok: true });
@@ -279,6 +283,13 @@ function CreateAuction() {
                       <option value="">Выберите год...</option>
                       {yearsList.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
+                  </Field>
+
+                  <Field label="VIN-код (17 символов)">
+                    <input className="ca-input" type="text" name="vin"
+                           placeholder="XTA210930Y2764409" maxLength="17"
+                           value={formData.vin}
+                           onChange={e => updateFormState('vin', e.target.value.toUpperCase())} />
                   </Field>
 
                   <Field label="Пробег (км)" required>

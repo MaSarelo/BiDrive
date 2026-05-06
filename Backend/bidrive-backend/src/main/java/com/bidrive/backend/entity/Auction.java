@@ -64,8 +64,8 @@ public class Auction {
     @Column(name = "moderation_status", length = 20)
     private String moderationStatus = "PENDING";
 
-    @Column(name = "start_time")
-    private LocalDateTime startTime;
+    @Column(name = "vin", length = 17)
+    private String vin;
 
     @Column(name = "end_time")
     private LocalDateTime endTime;
