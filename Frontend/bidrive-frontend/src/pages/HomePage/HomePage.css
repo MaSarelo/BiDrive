@@ -50,7 +50,7 @@ ul {
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  border: 1px solid transparent;
+  border: 0.0625rem solid transparent;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   text-decoration: none;
   white-space: nowrap;
@@ -106,7 +106,7 @@ ul {
   content: '';
   display: block;
   width: 1rem;
-  height: 1px;
+  height: 0.0625rem;
   background: var(--accent);
   flex-shrink: 0;
 }
@@ -135,7 +135,7 @@ ul {
 ═══════════════════════════════════════════ */
 .hp-hero {
   padding: 4rem 0 1.5rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0.0625rem solid var(--border);
   background: var(--bg);
 }
 
@@ -157,15 +157,16 @@ ul {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--accent);
-  border: 1px solid var(--accent-dim);
+  border: 0.0625rem solid var(--accent-dim);
   background: var(--accent-dim);
   padding: 0.375rem 0.875rem;
   border-radius: 6.1875rem;
   margin-bottom: 1.75rem;
 }
 
+/* === ОБНОВЛЁННЫЙ ЗАГОЛОВОК (2 строки, чуть компактнее) === */
 .hp-hero__h1 {
-  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.04em;
@@ -193,9 +194,9 @@ ul {
 .hp-hero-advantages {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
+  gap: 0.0625rem;
   background: var(--border);
-  border: 1px solid var(--border);
+  border: 0.0625rem solid var(--border);
   border-radius: 0.5rem;
   overflow: hidden;
   margin-top: 4rem;
@@ -279,7 +280,6 @@ ul {
   gap: 1rem;
 }
 
-/* Количество колонок задаётся через модификатор */
 .hp-grid--1 {
   grid-template-columns: 1fr;
 }
@@ -296,7 +296,7 @@ ul {
 .hp-skel {
   height: 22.5rem;
   background: var(--bg-2);
-  border: 1px solid var(--border);
+  border: 0.0625rem solid var(--border);
   border-radius: 0.5rem;
   overflow: hidden;
   position: relative;
@@ -350,7 +350,7 @@ ul {
 ═══════════════════════════════════════════ */
 .hp-how-section {
   padding: 4rem 0;
-  border-top: 1px solid var(--border);
+  border-top: 0.0625rem solid var(--border);
 }
 
 .hp-steps-grid {
@@ -364,7 +364,7 @@ ul {
   position: relative;
   padding: 1.5rem;
   background: var(--bg-2);
-  border: 1px solid var(--border);
+  border: 0.0625rem solid var(--border);
   border-radius: 0.5rem;
   transition: border-color 0.15s;
 }
@@ -373,14 +373,13 @@ ul {
   border-color: var(--accent);
 }
 
-/* Arrow between steps (except last) */
 .hp-step:not(:last-child)::after {
   content: '';
   position: absolute;
   top: 2rem;
   right: -0.5625rem;
   width: 1rem;
-  height: 1px;
+  height: 0.0625rem;
   background: var(--border-2);
   z-index: 1;
 }
@@ -397,7 +396,7 @@ ul {
   height: 2.25rem;
   border-radius: 0.375rem;
   background: var(--bg-3);
-  border: 1px solid var(--border);
+  border: 0.0625rem solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -429,7 +428,7 @@ ul {
 ═══════════════════════════════════════════ */
 .hp-cta {
   padding: 4rem 0;
-  border-top: 1px solid var(--border);
+  border-top: 0.0625rem solid var(--border);
 }
 
 .hp-cta__inner {
@@ -439,7 +438,7 @@ ul {
   gap: 2rem;
   padding: 2.5rem 3rem;
   background: var(--bg-2);
-  border: 1px solid var(--border);
+  border: 0.0625rem solid var(--border);
   border-radius: 0.5rem;
 }
 
@@ -480,7 +479,7 @@ ul {
 ═══════════════════════════════════════════ */
 .hp-footer {
   background: var(--bg-2);
-  border-top: 1px solid var(--border);
+  border-top: 0.0625rem solid var(--border);
   padding: 3rem 0 0;
 }
 
@@ -532,7 +531,7 @@ ul {
 }
 
 .hp-footer__bottom {
-  border-top: 1px solid var(--border);
+  border-top: 0.0625rem solid var(--border);
   padding: 1rem 0;
 }
 
@@ -599,5 +598,13 @@ ul {
   .hp-grid--2,
   .hp-grid--3 {
     grid-template-columns: 1fr;
+  }
+}
+
+/* === ДОПОЛНИТЕЛЬНО: ОЧЕНЬ МАЛЕНЬКИЕ ЭКРАНЫ === */
+@media (max-width: 36rem) {
+  .hp-hero__h1 {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    line-height: 1.2;
   }
 }

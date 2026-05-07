@@ -69,13 +69,33 @@ export default function RulesPage() {
                         </p>
                     </section>
 
-                    <div className="rp-note">
-                        <p>
-                            <strong>Важно:</strong> Данный проект является дипломной работой.
-                            Используя платформу BiDrive, вы соглашаетесь с условиями использования в рамках
-                            тестирования функционала.
+                    <section className="rp-section">
+                        <h2 className="rp-section__title">5. Договор купли-продажи</h2>
+                        <p className="rp-text">
+                            Для оформления сделки купли-продажи транспортного средства используется
+                            типовая форма договора, утверждённая постановлением МВД и Минюста
+                            Республики Беларусь от 01.11.2007 № 284/74.
                         </p>
-                    </div>
+
+                        <div className="rp-download-box">
+                            <a
+                                href="/documents/dogovor-kupli-prodazhi.pdf"
+                                download
+                                className="rp-download-btn"
+                            >
+                                📄 Скачать шаблон договора купли-продажи (PDF)
+                            </a>
+                            <p className="rp-download-hint">
+                                Откроется в новой вкладке. Распечатайте и заполните от руки в 3 экземплярах.
+                            </p>
+                        </div>
+
+                        <p className="rp-text" style={{ marginTop: '1rem', fontSize: '0.875rem' }}>
+                            <strong>Важно:</strong> Договор составляется в трёх экземплярах:
+                            один остаётся у продавца, второй — у покупателя, третий передаётся в РЭП ГАИ
+                            при регистрации транспортного средства.
+                        </p>
+                    </section>
 
                 </article>
 

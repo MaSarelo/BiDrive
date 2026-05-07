@@ -46,7 +46,7 @@ export default function HomePage() {
   // === ФУНКЦИЯ ЗАГРУЗКИ ЛОТОВ ===
   const fetchLots = () => {
     axios.get('http://localhost:8080/api/auctions')
-        .then(r  => {
+        .then(r => {
           setLots(r.data.slice(0, 6));
           setLoading(false);
         })
@@ -58,12 +58,8 @@ export default function HomePage() {
 
   // === ЗАГРУЗКА И POLLING ===
   useEffect(() => {
-    // 1. Первичная загрузка
     fetchLots();
-
-    // 2. Запускаем автообновление каждые 10 секунд
     const intervalId = setInterval(fetchLots, 10000);
-
     return () => clearInterval(intervalId);
   }, []);
 
@@ -91,9 +87,12 @@ export default function HomePage() {
 
             <div className="hp-hero__content">
               <span className="hp-hero__badge">Онлайн-аукцион · Беларусь</span>
+
+              {/* === ОБНОВЛЁННЫЙ ЗАГОЛОВОК (2 строки) === */}
               <h1 className="hp-hero__h1">
-                Прозрачные торги<br />проверенными<br />автомобилями
+                Аукцион проверенных <br /> автомобилей
               </h1>
+
               <p className="hp-hero__sub">
                 Надежная площадка для покупки и продажи авто с честной системой ставок и защитой участников.
               </p>
