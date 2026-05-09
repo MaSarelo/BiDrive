@@ -64,6 +64,11 @@ function AdminPage() {
     const [editingModelId, setEditingModelId] = useState(null);
     const [editingModelName, setEditingModelName] = useState('');
 
+    // === ПОИСК И ПАГИНАЦИЯ ПОЛЬЗОВАТЕЛЕЙ ===
+    const [searchUser, setSearchUser] = useState('');
+    const [userPage, setUserPage] = useState(1);
+    const USERS_PER_PAGE = 20;
+
     // === ЗАГРУЗКА ДАННЫХ ===
     useEffect(() => {
         fetchAuctions();
@@ -72,7 +77,6 @@ function AdminPage() {
         fetchReferenceData();
         setLoading(false);
 
-        // Автообновление статистики раз в минуту
         const intervalId = setInterval(fetchStats, 60000);
         return () => clearInterval(intervalId);
     }, []);
@@ -209,10 +213,33 @@ function AdminPage() {
             .then(() => { fetchReferenceData(); cancelEditModel(); fetchStats(); });
     };
 
+    // === ФИЛЬТРАЦИЯ И ПАГИНАЦИЯ ===
     const filteredBrands = brands.filter(b => b.name.toLowerCase().includes(searchBrand.toLowerCase()));
     const filteredModels = models.filter(m => m.name.toLowerCase().includes(searchModel.toLowerCase()) || m.brand?.name.toLowerCase().includes(searchModel.toLowerCase()));
     const filteredCities = cities.filter(c => c.name.toLowerCase().includes(searchCity.toLowerCase()) || c.region?.name.toLowerCase().includes(searchCity.toLowerCase()));
+
     const sortedUsers = [...users].sort(({ roleId: a }, { roleId: b }) => (b === 2 ? 1 : 0) - (a === 2 ? 1 : 0));
+
+    const searchedUsers = sortedUsers.filter(u => {
+        const query = searchUser.toLowerCase();
+        return (
+            u.firstName?.toLowerCase().includes(query) ||
+            u.lastName?.toLowerCase().includes(query) ||
+            u.email?.toLowerCase().includes(query)
+        );
+    });
+
+    const paginatedUsers = searchedUsers.slice(
+        (userPage - 1) * USERS_PER_PAGE,
+        userPage * USERS_PER_PAGE
+    );
+
+    const totalPages = Math.ceil(searchedUsers.length / USERS_PER_PAGE);
+
+    // Сброс страницы при изменении поиска
+    useEffect(() => {
+        setUserPage(1);
+    }, [searchUser]);
 
     if (loading) return <div className="ap-loading">Загрузка...</div>;
 
@@ -347,29 +374,92 @@ function AdminPage() {
                     )}
                 </section>
 
-                {/* === ПОЛЬЗОВАТЕЛИ === */}
+                {/* === ПОЛЬЗОВАТЕЛИ С ПОИСКОМ И ПАГИНАЦИЕЙ === */}
                 <section className="ap-section">
-                    <p className="ap-section-heading">Пользователи</p>
+                    <div className="ap-section-header">
+                        <p className="ap-section-heading">Пользователи</p>
+
+                        {/* Поиск по пользователям */}
+                        {/* Поиск по пользователям */}
+                        <div className={`ap-search-box ${searchUser ? 'has-value' : ''}`}>
+                            <input
+                                type="text"
+                                placeholder="Поиск пользователя..."
+                                value={searchUser}
+                                onChange={(e) => setSearchUser(e.target.value)}
+                                className="ap-search-input"
+                            />
+                            <svg
+                                className="ap-search-icon"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                            >
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="m21 21-4.35-4.35"/>
+                            </svg>
+                            {searchUser && (
+                                <button
+                                    onClick={() => setSearchUser('')}
+                                    className="ap-search-clear"
+                                    title="Очистить поиск"
+                                >
+                                    ×
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Пагинация */}
+                    {searchedUsers.length > USERS_PER_PAGE && (
+                        <div className="ap-pagination">
+                            <button
+                                onClick={() => setUserPage(p => Math.max(1, p - 1))}
+                                disabled={userPage === 1}
+                                className="ap-pagination-btn"
+                            >
+                                ← Назад
+                            </button>
+                            <span className="ap-pagination-info">
+                Страница {userPage} из {totalPages} ({searchedUsers.length} найдено)
+              </span>
+                            <button
+                                onClick={() => setUserPage(p => Math.min(totalPages, p + 1))}
+                                disabled={userPage >= totalPages}
+                                className="ap-pagination-btn"
+                            >
+                                Вперёд →
+                            </button>
+                        </div>
+                    )}
+
                     <div className="ap-users">
-                        {sortedUsers.map(u => (
-                            <div key={u.id} className="ap-user">
-                                <div className="ap-user__info">
-                                    <span className="ap-user__name">{u.firstName} {u.lastName}</span>
-                                    <span className="ap-user__email">{u.email}</span>
-                                    <div className="ap-user__tags">
-                                        {u.roleId === 2 && <span className="ap-tag ap-tag--admin">Админ</span>}
-                                        {u.isBlocked && <span className="ap-tag ap-tag--blocked">Заблокирован</span>}
+                        {paginatedUsers.length === 0 ? (
+                            <p className="ap-empty">Пользователи не найдены</p>
+                        ) : (
+                            paginatedUsers.map(u => (
+                                <div key={u.id} className="ap-user">
+                                    <div className="ap-user__info">
+                                        <span className="ap-user__name">{u.firstName} {u.lastName}</span>
+                                        <span className="ap-user__email">{u.email}</span>
+                                        <div className="ap-user__tags">
+                                            {u.roleId === 2 && <span className="ap-tag ap-tag--admin">Админ</span>}
+                                            {u.isBlocked && <span className="ap-tag ap-tag--blocked">Заблокирован</span>}
+                                        </div>
                                     </div>
+                                    {u.roleId !== 2 && (
+                                        u.isBlocked ? (
+                                            <button className="ap-btn ap-btn--unblock" onClick={() => handleBlock(u.id, false)}>Разблокировать</button>
+                                        ) : (
+                                            <button className="ap-btn ap-btn--block" onClick={() => handleBlock(u.id, true)}>Заблокировать</button>
+                                        )
+                                    )}
                                 </div>
-                                {u.roleId !== 2 && (
-                                    u.isBlocked ? (
-                                        <button className="ap-btn ap-btn--unblock" onClick={() => handleBlock(u.id, false)}>Разблокировать</button>
-                                    ) : (
-                                        <button className="ap-btn ap-btn--block" onClick={() => handleBlock(u.id, true)}>Заблокировать</button>
-                                    )
-                                )}
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </section>
 

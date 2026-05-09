@@ -533,6 +533,7 @@ ul {
 .hp-footer__bottom {
   border-top: 0.0625rem solid var(--border);
   padding: 1rem 0;
+  text-align: center;
 }
 
 .hp-footer__bottom p {

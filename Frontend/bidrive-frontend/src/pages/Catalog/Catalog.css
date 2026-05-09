@@ -524,6 +524,7 @@ ul {
   padding: 1rem 2.5rem;
   max-width: 90rem;
   margin: 0 auto;
+  text-align: center;
 }
 
 .ct-footer__bottom p {
