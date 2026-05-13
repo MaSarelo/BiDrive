@@ -46,6 +46,7 @@ function App() {
             <Route path="/auction/:id" element={<AuctionDetails />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/rules" element={<RulesPage />} />
+            <Route path="/auctions/:id" element={<AuctionDetails />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

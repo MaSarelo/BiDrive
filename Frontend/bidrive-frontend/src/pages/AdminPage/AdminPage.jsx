@@ -47,6 +47,7 @@ function AdminPage() {
     const [rejectError, setRejectError] = useState('');
     const [modal, setModal] = useState({ isOpen: false, type: '', id: null, name: '' });
     const [modalError, setModalError] = useState('');
+    const [viewingAuction, setViewingAuction] = useState(null); // Для просмотра деталей
 
     // === СПРАВОЧНИКИ ===
     const [brands, setBrands] = useState([]);
@@ -133,6 +134,16 @@ function AdminPage() {
         axios.get(`${API_URL}/api/admin/data/models`).then(r => setModels(r.data));
         axios.get(`${API_URL}/api/admin/data/cities`).then(r => setCities(r.data));
         axios.get(`${API_URL}/api/admin/data/regions`).then(r => setRegions(r.data));
+    };
+
+    // Загрузка деталей аукциона для просмотра
+    const fetchAuctionDetails = async (id) => {
+        try {
+            const res = await axios.get(`${API_URL}/api/auctions/${id}`);
+            setViewingAuction(res.data);
+        } catch (err) {
+            console.error('Ошибка загрузки деталей:', err);
+        }
     };
 
     // === ДЕЙСТВИЯ ===
@@ -245,6 +256,65 @@ function AdminPage() {
 
     return (
         <div className="ap">
+            {/* === МОДАЛКА ПРОСМОТРА ДЕТАЛЕЙ === */}
+            {viewingAuction && (
+                <div className="ap-modal-overlay" onClick={() => setViewingAuction(null)}>
+                    <div className="ap-modal ap-modal--large" onClick={e => e.stopPropagation()}>
+                        <div className="ap-modal__header">
+                            <h3 className="ap-modal__title">Детали лота #{viewingAuction.id}</h3>
+                            <button className="ap-modal__close" onClick={() => setViewingAuction(null)}>×</button>
+                        </div>
+                        <div className="ap-modal__content">
+                            <div className="ap-auction-detail">
+                                <div className="ap-auction-detail__images">
+                                    {viewingAuction.imageUrls && viewingAuction.imageUrls.length > 0 ? (
+                                        viewingAuction.imageUrls.map((url, idx) => (
+                                            <img key={idx} src={`${API_URL}${url}`} alt={`Фото ${idx + 1}`} className="ap-auction-detail__img" />
+                                        ))
+                                    ) : (
+                                        <div className="ap-auction-detail__no-img">Нет фото</div>
+                                    )}
+                                </div>
+                                <div className="ap-auction-detail__info">
+                                    <h4>{viewingAuction.brand?.name} {viewingAuction.model?.name}</h4>
+                                    <div className="ap-auction-detail__grid">
+                                        <div><strong>Год:</strong> {viewingAuction.year}</div>
+                                        <div><strong>Пробег:</strong> {viewingAuction.mileage?.toLocaleString()} км</div>
+                                        <div><strong>КПП:</strong> {viewingAuction.transmission?.name}</div>
+                                        <div><strong>Топливо:</strong> {viewingAuction.fuelType?.name}</div>
+                                        <div><strong>VIN:</strong> {viewingAuction.vin || 'Не указан'}</div>
+                                        <div><strong>Город:</strong> {viewingAuction.city?.name}</div>
+                                    </div>
+                                    <div className="ap-auction-detail__price">
+                                        <strong>Начальная цена:</strong> {viewingAuction.startingPrice?.toLocaleString()} BYN
+                                    </div>
+                                    <div className="ap-auction-detail__price">
+                                        <strong>Шаг ставки:</strong> {viewingAuction.minBidStep?.toLocaleString()} BYN
+                                    </div>
+                                    <div className="ap-auction-detail__time">
+                                        <strong>Окончание:</strong> {new Date(viewingAuction.endTime).toLocaleString('ru-RU')}
+                                    </div>
+                                    {viewingAuction.description && (
+                                        <div className="ap-auction-detail__desc">
+                                            <strong>Описание:</strong>
+                                            <p>{viewingAuction.description}</p>
+                                        </div>
+                                    )}
+                                    <div className="ap-auction-detail__seller">
+                                        <strong>Продавец:</strong> {viewingAuction.seller?.firstName} {viewingAuction.seller?.lastName}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="ap-modal__actions">
+                            <button className="ap-btn ap-btn--ghost" onClick={() => setViewingAuction(null)}>Закрыть</button>
+                            <button className="ap-btn ap-btn--green" onClick={() => { handleApprove(viewingAuction.id); setViewingAuction(null); }}>Одобрить</button>
+                            <button className="ap-btn ap-btn--red" onClick={() => { setViewingAuction(null); handleRejectInit(viewingAuction.id); }}>Отклонить</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* === МОДАЛКА ОТКЛОНЕНИЯ === */}
             {rejectingId && (
                 <div className="ap-modal-overlay" onClick={() => setRejectingId(null)}>
@@ -365,6 +435,9 @@ function AdminPage() {
                                         <p className="ap-card__price">Старт: {a.startingPrice?.toLocaleString()} BYN</p>
                                     </div>
                                     <div className="ap-card__actions">
+                                        <Link to={`/auctions/${a.id}`} className="ap-btn ap-btn--primary">
+                                            Просмотреть
+                                        </Link>
                                         <button className="ap-btn ap-btn--green" onClick={() => handleApprove(a.id)}>Одобрить</button>
                                         <button className="ap-btn ap-btn--red" onClick={() => handleRejectInit(a.id)}>Отклонить</button>
                                     </div>
@@ -379,7 +452,6 @@ function AdminPage() {
                     <div className="ap-section-header">
                         <p className="ap-section-heading">Пользователи</p>
 
-                        {/* Поиск по пользователям */}
                         {/* Поиск по пользователям */}
                         <div className={`ap-search-box ${searchUser ? 'has-value' : ''}`}>
                             <input

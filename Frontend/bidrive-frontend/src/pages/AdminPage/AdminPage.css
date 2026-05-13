@@ -789,3 +789,157 @@
     width: 100%;
   }
 }
+
+/* === МОДАЛКА ПРОСМОТРА ДЕТАЛЕЙ === */
+.ap-modal--large {
+  max-width: 60rem;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.ap-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 0.0625rem solid var(--border);
+}
+
+.ap-modal__close {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: all 0.15s;
+}
+
+.ap-modal__close:hover {
+  background: var(--bg-3);
+  color: var(--text);
+}
+
+.ap-modal__content {
+  margin-bottom: 1.5rem;
+}
+
+.ap-auction-detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.ap-auction-detail__images {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ap-auction-detail__img {
+  width: 100%;
+  border-radius: 0.375rem;
+  object-fit: cover;
+  max-height: 200px;
+}
+
+.ap-auction-detail__no-img {
+  background: var(--bg-3);
+  color: var(--text-3);
+  padding: 2rem;
+  text-align: center;
+  border-radius: 0.375rem;
+}
+
+.ap-auction-detail__info h4 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.ap-auction-detail__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.ap-auction-detail__grid div {
+  padding: 0.5rem;
+  background: var(--bg-3);
+  border-radius: 0.25rem;
+}
+
+.ap-auction-detail__grid strong {
+  color: var(--text-3);
+  display: block;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.ap-auction-detail__price,
+.ap-auction-detail__time,
+.ap-auction-detail__seller {
+  padding: 0.75rem;
+  background: var(--bg-3);
+  border-radius: 0.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.ap-auction-detail__price strong,
+.ap-auction-detail__time strong,
+.ap-auction-detail__seller strong {
+  color: var(--text-3);
+  display: block;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.ap-auction-detail__desc {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--bg-3);
+  border-radius: 0.25rem;
+}
+
+.ap-auction-detail__desc strong {
+  color: var(--text-3);
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.ap-auction-detail__desc p {
+  color: var(--text-2);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Адаптив для модального окна */
+@media (max-width: 48rem) {
+  .ap-auction-detail {
+    grid-template-columns: 1fr;
+  }
+
+  .ap-auction-detail__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ap-card__actions {
+    flex-direction: column;
+  }
+
+  .ap-card__actions .ap-btn {
+    width: 100%;
+  }
+}
