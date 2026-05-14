@@ -943,3 +943,8 @@
     width: 100%;
   }
 }
+
+/* === ДИАГРАММА ПО МЕСЯЦАМ === */
+.ap-chart-container + .ap-chart-container {
+  margin-top: 1rem;
+}

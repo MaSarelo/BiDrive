@@ -11,9 +11,14 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:8080', // оставьте http, если бэкенд не на HTTPS
+        target: 'http://localhost:8080',
         changeOrigin: true,
-        secure: false // критично для localhost с самоподписанным сертификатом
+        secure: false
+      },
+      '/uploads': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false
       }
     }
   }

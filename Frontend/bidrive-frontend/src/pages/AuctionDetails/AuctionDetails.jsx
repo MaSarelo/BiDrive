@@ -202,7 +202,8 @@ function AuctionDetails() {
     year,
     mileage,
     transmission,
-    fuelType
+    fuelType,
+    vin
   } = auction;
 
   const statusInfo = STATUS_MAP[status] ?? { label: status, cls: '' };
@@ -290,7 +291,8 @@ function AuctionDetails() {
               <div className="ad-gallery__main">
                 {currentImage ? (
                     <div onClick={() => { if(images && images.length > 0) openLightbox(currentIndex >= 0 ? currentIndex : 0); }} style={{ height: '100%', cursor: 'zoom-in' }}>
-                      <img src={`${API_URL}${currentImage.imageUrl}`} alt="Фото автомобиля" />
+                      {/* ИСПРАВЛЕНО: убрали ${API_URL} для проксирования через Vite */}
+                      <img src={currentImage.imageUrl} alt="Фото автомобиля" />
                       {images && images.length > 1 && (
                           <>
                             <button type="button" className="ad-gallery__nav ad-gallery__nav--prev" onClick={handlePrevImage} aria-label="Предыдущее фото">‹</button>
@@ -312,7 +314,8 @@ function AuctionDetails() {
                             onClick={() => setCurrentImage(img)}
                             aria-label={`Миниатюра ${img.displayOrder}`}
                         >
-                          <img src={`${API_URL}${img.imageUrl}`} alt="" />
+                          {/* ИСПРАВЛЕНО: убрали ${API_URL} для проксирования через Vite */}
+                          <img src={img.imageUrl} alt="" />
                         </button>
                     ))}
                   </div>
@@ -323,18 +326,31 @@ function AuctionDetails() {
             <div className="ad-specs">
               <p className="ad-section-heading">Технические характеристики</p>
               <div className="ad-specs__grid">
-                {[
-                  { label: 'Год выпуска', value: year ?? '—' },
-                  { label: 'Пробег',      value: mileage ? `${mileage.toLocaleString('ru-RU')} км` : '—' },
-                  { label: 'КПП',         value: transmission?.name || '—' },
-                  { label: 'Топливо',     value: fuelType?.name     || '—' },
-                ].map(s => (
-                    <div key={s.label} className="ad-spec">
-                      <span className="ad-spec__label">{s.label}</span>
-                      <span className="ad-spec__value">{s.value}</span>
-                    </div>
-                ))}
+                <div className="ad-spec">
+                  <span className="ad-spec__label">Год выпуска</span>
+                  <span className="ad-spec__value">{year ?? '—'}</span>
+                </div>
+                <div className="ad-spec">
+                  <span className="ad-spec__label">Пробег</span>
+                  <span className="ad-spec__value">{mileage ? `${mileage.toLocaleString('ru-RU')} км` : '—'}</span>
+                </div>
+                <div className="ad-spec">
+                  <span className="ad-spec__label">КПП</span>
+                  <span className="ad-spec__value">{transmission?.name || '—'}</span>
+                </div>
+                <div className="ad-spec">
+                  <span className="ad-spec__label">Топливо</span>
+                  <span className="ad-spec__value">{fuelType?.name || '—'}</span>
+                </div>
               </div>
+
+              {/* VIN-код на всю ширину */}
+              {vin && (
+                  <div className="ad-specs__vin">
+                    <span className="ad-specs__vin-label">VIN-код</span>
+                    <span className="ad-specs__vin-value">{vin}</span>
+                  </div>
+              )}
             </div>
 
             <div className="ad-seller">
@@ -441,7 +457,8 @@ function AuctionDetails() {
             <div className="ad-lightbox ad-lightbox--open" onClick={closeLightbox}>
               <button type="button" className="ad-lightbox__close" onClick={closeLightbox} aria-label="Закрыть">×</button>
               {images.length > 1 && <button type="button" className="ad-lightbox__nav ad-lightbox__nav--prev" onClick={(e) => { e.stopPropagation(); goToPrevLightbox(); }} aria-label="Предыдущее фото">‹</button>}
-              <img src={`${API_URL}${images[lightboxIndex]?.imageUrl}`} alt="Просмотр фото" className="ad-lightbox__img" onClick={(e) => e.stopPropagation()} />
+              {/* ИСПРАВЛЕНО: убрали ${API_URL} для проксирования через Vite */}
+              <img src={images[lightboxIndex]?.imageUrl} alt="Просмотр фото" className="ad-lightbox__img" onClick={(e) => e.stopPropagation()} />
               {images.length > 1 && <button type="button" className="ad-lightbox__nav ad-lightbox__nav--next" onClick={(e) => { e.stopPropagation(); goToNextLightbox(); }} aria-label="Следующее фото">›</button>}
               <div className="ad-lightbox__counter">{lightboxIndex + 1} / {images.length}</div>
             </div>

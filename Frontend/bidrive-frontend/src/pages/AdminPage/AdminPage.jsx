@@ -5,7 +5,8 @@ import BynIcon from '../../components/BynIcon';
 import './AdminPage.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const API_URL = 'http://localhost:8080';
+// ИСПРАВЛЕНО: Используем относительные пути для проксирования через Vite
+const API_BASE = '';
 
 const Field = ({ label, required, children }) => (
     <div className="ca-field">
@@ -83,25 +84,25 @@ function AdminPage() {
     }, []);
 
     const fetchAuctions = () => {
-        axios.get(`${API_URL}/api/auctions/pending`)
+        axios.get(`${API_BASE}/api/auctions/pending`)
             .then(r => setAuctions(r.data))
             .catch(err => console.error(err));
     };
 
     const fetchUsers = () => {
-        axios.get(`${API_URL}/api/users`)
+        axios.get(`${API_BASE}/api/users`)
             .then(r => setUsers(r.data))
             .catch(err => console.error(err));
     };
 
     const fetchStats = async () => {
         try {
-            const statsRes = await axios.get(`${API_URL}/api/admin/stats`);
+            const statsRes = await axios.get(`${API_BASE}/api/admin/stats`);
             setStats(statsRes.data);
 
             const [activeRes, pendingRes] = await Promise.all([
-                axios.get(`${API_URL}/api/auctions`).catch(() => ({ data: [] })),
-                axios.get(`${API_URL}/api/auctions/pending`).catch(() => ({ data: [] }))
+                axios.get(`${API_BASE}/api/auctions`).catch(() => ({ data: [] })),
+                axios.get(`${API_BASE}/api/auctions/pending`).catch(() => ({ data: [] }))
             ]);
 
             const allAuctions = [...(activeRes.data || []), ...(pendingRes.data || [])];
@@ -130,16 +131,16 @@ function AdminPage() {
     };
 
     const fetchReferenceData = () => {
-        axios.get(`${API_URL}/api/admin/data/brands`).then(r => setBrands(r.data));
-        axios.get(`${API_URL}/api/admin/data/models`).then(r => setModels(r.data));
-        axios.get(`${API_URL}/api/admin/data/cities`).then(r => setCities(r.data));
-        axios.get(`${API_URL}/api/admin/data/regions`).then(r => setRegions(r.data));
+        axios.get(`${API_BASE}/api/admin/data/brands`).then(r => setBrands(r.data));
+        axios.get(`${API_BASE}/api/admin/data/models`).then(r => setModels(r.data));
+        axios.get(`${API_BASE}/api/admin/data/cities`).then(r => setCities(r.data));
+        axios.get(`${API_BASE}/api/admin/data/regions`).then(r => setRegions(r.data));
     };
 
     // Загрузка деталей аукциона для просмотра
     const fetchAuctionDetails = async (id) => {
         try {
-            const res = await axios.get(`${API_URL}/api/auctions/${id}`);
+            const res = await axios.get(`${API_BASE}/api/auctions/${id}`);
             setViewingAuction(res.data);
         } catch (err) {
             console.error('Ошибка загрузки деталей:', err);
@@ -148,7 +149,7 @@ function AdminPage() {
 
     // === ДЕЙСТВИЯ ===
     const handleApprove = (id) => {
-        axios.put(`${API_URL}/api/auctions/${id}/approve`)
+        axios.put(`${API_BASE}/api/auctions/${id}/approve`)
             .then(() => { setAuctions(prev => prev.filter(a => a.id !== id)); fetchStats(); })
             .catch(err => console.error(err));
     };
@@ -161,13 +162,13 @@ function AdminPage() {
 
     const handleRejectConfirm = () => {
         if (!rejectReason.trim()) { setRejectError('Укажите причину'); return; }
-        axios.post(`${API_URL}/api/auctions/${rejectingId}/reject`, null, { params: { reason: rejectReason } })
+        axios.post(`${API_BASE}/api/auctions/${rejectingId}/reject`, null, { params: { reason: rejectReason } })
             .then(() => { setAuctions(prev => prev.filter(a => a.id !== rejectingId)); setRejectingId(null); fetchStats(); })
             .catch(err => console.error(err));
     };
 
     const handleBlock = (userId, isBlocked) => {
-        axios.put(`${API_URL}/api/users/${userId}/block`, null, { params: { isBlocked } })
+        axios.put(`${API_BASE}/api/users/${userId}/block`, null, { params: { isBlocked } })
             .then(() => { setUsers(prev => prev.map(u => u.id === userId ? { ...u, isBlocked } : u)); fetchStats(); })
             .catch(err => console.error(err));
     };
@@ -178,9 +179,9 @@ function AdminPage() {
     const handleConfirmDelete = () => {
         const { type, id } = modal;
         let request;
-        if (type === 'brand') request = axios.delete(`${API_URL}/api/admin/data/brands/${id}`);
-        if (type === 'model') request = axios.delete(`${API_URL}/api/admin/data/models/${id}`);
-        if (type === 'city') request = axios.delete(`${API_URL}/api/admin/data/cities/${id}`);
+        if (type === 'brand') request = axios.delete(`${API_BASE}/api/admin/data/brands/${id}`);
+        if (type === 'model') request = axios.delete(`${API_BASE}/api/admin/data/models/${id}`);
+        if (type === 'city') request = axios.delete(`${API_BASE}/api/admin/data/cities/${id}`);
         if (request) {
             request.then(() => { fetchReferenceData(); closeModal(); fetchStats(); })
                 .catch(err => setModalError(err.response?.data || 'Ошибка'));
@@ -190,21 +191,21 @@ function AdminPage() {
     const handleAddBrand = (e) => {
         e.preventDefault();
         if (!newBrand.trim()) return;
-        axios.post(`${API_URL}/api/admin/data/brands`, { name: newBrand })
+        axios.post(`${API_BASE}/api/admin/data/brands`, { name: newBrand })
             .then(() => { setNewBrand(''); fetchReferenceData(); fetchStats(); });
     };
 
     const handleAddModel = (e) => {
         e.preventDefault();
         if (!newModel.name || !newModel.brandId) return;
-        axios.post(`${API_URL}/api/admin/data/models`, null, { params: newModel })
+        axios.post(`${API_BASE}/api/admin/data/models`, null, { params: newModel })
             .then(() => { setNewModel({ name: '', brandId: '' }); fetchReferenceData(); fetchStats(); });
     };
 
     const handleAddCity = (e) => {
         e.preventDefault();
         if (!newCity.name || !newCity.regionId) return;
-        axios.post(`${API_URL}/api/admin/data/cities`, null, { params: newCity })
+        axios.post(`${API_BASE}/api/admin/data/cities`, null, { params: newCity })
             .then(() => { setNewCity({ name: '', regionId: '' }); fetchReferenceData(); fetchStats(); });
     };
 
@@ -212,7 +213,7 @@ function AdminPage() {
     const cancelEditBrand = () => { setEditingBrandId(null); setEditingBrandName(''); };
     const saveBrand = (id) => {
         if (!editingBrandName.trim()) return;
-        axios.put(`${API_URL}/api/admin/data/brands/${id}`, { name: editingBrandName })
+        axios.put(`${API_BASE}/api/admin/data/brands/${id}`, { name: editingBrandName })
             .then(() => { fetchReferenceData(); cancelEditBrand(); fetchStats(); });
     };
 
@@ -220,7 +221,7 @@ function AdminPage() {
     const cancelEditModel = () => { setEditingModelId(null); setEditingModelName(''); };
     const saveModel = (id) => {
         if (!editingModelName.trim()) return;
-        axios.put(`${API_URL}/api/admin/data/models/${id}`, null, { params: { name: editingModelName } })
+        axios.put(`${API_BASE}/api/admin/data/models/${id}`, null, { params: { name: editingModelName } })
             .then(() => { fetchReferenceData(); cancelEditModel(); fetchStats(); });
     };
 
@@ -269,7 +270,7 @@ function AdminPage() {
                                 <div className="ap-auction-detail__images">
                                     {viewingAuction.imageUrls && viewingAuction.imageUrls.length > 0 ? (
                                         viewingAuction.imageUrls.map((url, idx) => (
-                                            <img key={idx} src={`${API_URL}${url}`} alt={`Фото ${idx + 1}`} className="ap-auction-detail__img" />
+                                            <img key={idx} src={url} alt={`Фото ${idx + 1}`} className="ap-auction-detail__img" />
                                         ))
                                     ) : (
                                         <div className="ap-auction-detail__no-img">Нет фото</div>
@@ -421,7 +422,7 @@ function AdminPage() {
                                 <article key={a.id} className="ap-card">
                                     <div className="ap-card__left">
                                         {a.mainImageUrl ? (
-                                            <img src={`${API_URL}${a.mainImageUrl}`} alt="Фото" className="ap-card__img" />
+                                            <img src={a.mainImageUrl} alt="Фото" className="ap-card__img" />
                                         ) : (
                                             <div className="ap-card__img ap-card__img--empty">Нет фото</div>
                                         )}
@@ -452,7 +453,6 @@ function AdminPage() {
                     <div className="ap-section-header">
                         <p className="ap-section-heading">Пользователи</p>
 
-                        {/* Поиск по пользователям */}
                         <div className={`ap-search-box ${searchUser ? 'has-value' : ''}`}>
                             <input
                                 type="text"
@@ -485,7 +485,6 @@ function AdminPage() {
                         </div>
                     </div>
 
-                    {/* Пагинация */}
                     {searchedUsers.length > USERS_PER_PAGE && (
                         <div className="ap-pagination">
                             <button
@@ -496,8 +495,8 @@ function AdminPage() {
                                 ← Назад
                             </button>
                             <span className="ap-pagination-info">
-                Страница {userPage} из {totalPages} ({searchedUsers.length} найдено)
-              </span>
+                                Страница {userPage} из {totalPages} ({searchedUsers.length} найдено)
+                            </span>
                             <button
                                 onClick={() => setUserPage(p => Math.min(totalPages, p + 1))}
                                 disabled={userPage >= totalPages}

@@ -26,9 +26,8 @@ function AuctionCard({ auction }) {
     endTime
   } = auction || {}; // Добавил fallback {} на случай, если auction пустой
 
-  const imageUrl = mainImageUrl
-      ? `http://localhost:8080${mainImageUrl}`
-      : null;
+  // ИСПРАВЛЕНО: убрали http://localhost:8080 для проксирования через Vite
+  const imageUrl = mainImageUrl || null;
 
   const status = STATUS_MAP[statusKey] ?? { label: statusKey, cls: '' };
 

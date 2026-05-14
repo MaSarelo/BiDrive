@@ -3,6 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Profile.css';
 
+// ИСПРАВЛЕНО: Используем относительные пути для проксирования через Vite
+const API_BASE = '';
+
 const STATUS_MAP = {
     ACTIVE:   { label: 'Активен',     cls: 'pf-badge--active'   },
     DRAFT:    { label: 'Черновик',    cls: 'pf-badge--draft'    },
@@ -26,7 +29,8 @@ function Profile() {
 
     useEffect(() => {
         if (!currentUserId) return;
-        axios.get(`http://localhost:8080/api/auctions/my?sellerId=${currentUserId}`)
+        // ИСПРАВЛЕНО: относительный путь для проксирования
+        axios.get(`${API_BASE}/api/auctions/my?sellerId=${currentUserId}`)
             .then(r => { setAuctions(r.data); setLoading(false); })
             .catch(err => { console.error(err); setLoading(false); });
     }, [currentUserId]);
@@ -38,7 +42,8 @@ function Profile() {
     const confirmDelete = async () => {
         if (!deleteModal.id) return;
         try {
-            await axios.delete(`http://localhost:8080/api/auctions/${deleteModal.id}`, { params: { userId: currentUserId } });
+            // ИСПРАВЛЕНО: относительный путь для проксирования
+            await axios.delete(`${API_BASE}/api/auctions/${deleteModal.id}`, { params: { userId: currentUserId } });
             setAuctions(p => p.filter(a => a.id !== deleteModal.id));
             closeDeleteModal();
         } catch (err) {
@@ -55,7 +60,8 @@ function Profile() {
     const confirmFinish = async () => {
         if (!finishModal.id) return;
         try {
-            await axios.put(`http://localhost:8080/api/auctions/${finishModal.id}/finish`, null, { params: { userId: currentUserId } });
+            // ИСПРАВЛЕНО: относительный путь для проксирования
+            await axios.put(`${API_BASE}/api/auctions/${finishModal.id}/finish`, null, { params: { userId: currentUserId } });
             setAuctions(p => p.map(a => a.id === finishModal.id ? { ...a, status: 'FINISHED' } : a));
             closeFinishModal();
         } catch (err) {
@@ -153,8 +159,8 @@ function Profile() {
                     <div className="pf-grid">
                         {auctions.map(a => {
                             const st = STATUS_MAP[a.status] ?? { label: a.status, cls: '' };
-                            const img = a.mainImageUrl
-                                ? `http://localhost:8080${a.mainImageUrl}` : null;
+                            // ИСПРАВЛЕНО: убрали http://localhost:8080 для проксирования через Vite
+                            const img = a.mainImageUrl || null;
 
                             const canRelist = (a.status === 'FINISHED' || a.status === 'COMPLETED') && !a.winner;
                             const canDelete = a.status !== 'ACTIVE';
