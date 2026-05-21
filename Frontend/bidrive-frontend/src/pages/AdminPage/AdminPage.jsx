@@ -5,7 +5,6 @@ import BynIcon from '../../components/BynIcon';
 import './AdminPage.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-// ИСПРАВЛЕНО: Используем относительные пути для проксирования через Vite
 const API_BASE = '';
 
 const Field = ({ label, required, children }) => (
@@ -22,11 +21,17 @@ function AdminPage() {
     const [brandStats, setBrandStats] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // === АДАПТИВНЫЕ ЦВЕТА ДЛЯ ДИАГРАММЫ ===
+    // === TOAST ===
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+    const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+    };
+
+    // === THEME ===
     const [isLightTheme, setIsLightTheme] = useState(() =>
         document.documentElement.classList.contains('light-theme') || localStorage.getItem('theme') === 'light'
     );
-
     useEffect(() => {
         const observer = new MutationObserver(() => {
             setIsLightTheme(document.documentElement.classList.contains('light-theme'));
@@ -34,7 +39,6 @@ function AdminPage() {
         observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
         return () => observer.disconnect();
     }, []);
-
     const axisColor = isLightTheme ? '#1F2328' : '#F0F6FC';
     const gridColor = isLightTheme ? 'rgba(31, 35, 40, 0.15)' : '#30363D';
     const tooltipBg = isLightTheme ? '#FFFFFF' : '#161B22';
@@ -42,15 +46,16 @@ function AdminPage() {
     const cursorColor = isLightTheme ? '#F6F8FA' : '#21262D';
     const legendColor = isLightTheme ? '#656D76' : '#8B949E';
 
-    // === МОДАЛКИ ===
+    // === MODALS ===
     const [rejectingId, setRejectingId] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
     const [rejectError, setRejectError] = useState('');
     const [modal, setModal] = useState({ isOpen: false, type: '', id: null, name: '' });
     const [modalError, setModalError] = useState('');
-    const [viewingAuction, setViewingAuction] = useState(null); // Для просмотра деталей
+    const [viewingAuction, setViewingAuction] = useState(null);
+    const [roleModal, setRoleModal] = useState({ isOpen: false, userId: null, newRoleId: null });
 
-    // === СПРАВОЧНИКИ ===
+    // === REFERENCES ===
     const [brands, setBrands] = useState([]);
     const [models, setModels] = useState([]);
     const [cities, setCities] = useState([]);
@@ -66,68 +71,41 @@ function AdminPage() {
     const [editingModelId, setEditingModelId] = useState(null);
     const [editingModelName, setEditingModelName] = useState('');
 
-    // === ПОИСК И ПАГИНАЦИЯ ПОЛЬЗОВАТЕЛЕЙ ===
+    // === USERS ===
     const [searchUser, setSearchUser] = useState('');
     const [userPage, setUserPage] = useState(1);
-    const USERS_PER_PAGE = 20;
+    const USERS_PER_PAGE = 10;
 
-    // === ЗАГРУЗКА ДАННЫХ ===
+    // === DATA LOADING ===
     useEffect(() => {
         fetchAuctions();
         fetchUsers();
         fetchStats();
         fetchReferenceData();
         setLoading(false);
-
         const intervalId = setInterval(fetchStats, 60000);
         return () => clearInterval(intervalId);
     }, []);
 
-    const fetchAuctions = () => {
-        axios.get(`${API_BASE}/api/auctions/pending`)
-            .then(r => setAuctions(r.data))
-            .catch(err => console.error(err));
-    };
-
-    const fetchUsers = () => {
-        axios.get(`${API_BASE}/api/users`)
-            .then(r => setUsers(r.data))
-            .catch(err => console.error(err));
-    };
+    const fetchAuctions = () => axios.get(`${API_BASE}/api/auctions/pending`).then(r => setAuctions(r.data)).catch(console.error);
+    const fetchUsers = () => axios.get(`${API_BASE}/api/users`).then(r => setUsers(r.data)).catch(console.error);
 
     const fetchStats = async () => {
         try {
             const statsRes = await axios.get(`${API_BASE}/api/admin/stats`);
             setStats(statsRes.data);
-
             const [activeRes, pendingRes] = await Promise.all([
                 axios.get(`${API_BASE}/api/auctions`).catch(() => ({ data: [] })),
                 axios.get(`${API_BASE}/api/auctions/pending`).catch(() => ({ data: [] }))
             ]);
-
             const allAuctions = [...(activeRes.data || []), ...(pendingRes.data || [])];
             const brandCount = {};
-
-            allAuctions.forEach(a => {
-                const name = a.brand?.name || 'Без марки';
-                brandCount[name] = (brandCount[name] || 0) + 1;
-            });
-
-            const sortedBrands = Object.entries(brandCount)
-                .map(([name, value]) => ({ name, value }))
-                .sort((a, b) => b.value - a.value);
-
-            const top5 = sortedBrands.slice(0, 5);
-            const others = sortedBrands.slice(5);
-            const othersValue = others.reduce((sum, item) => sum + item.value, 0);
-
-            setBrandStats([
-                ...top5,
-                ...(othersValue > 0 ? [{ name: 'Другие', value: othersValue }] : [])
-            ]);
-        } catch (err) {
-            console.error('Ошибка загрузки статистики:', err);
-        }
+            allAuctions.forEach(a => { const name = a.brand?.name || 'Без марки'; brandCount[name] = (brandCount[name] || 0) + 1; });
+            const sorted = Object.entries(brandCount).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+            const top5 = sorted.slice(0, 5);
+            const othersValue = sorted.slice(5).reduce((s, i) => s + i.value, 0);
+            setBrandStats([...top5, ...(othersValue > 0 ? [{ name: 'Другие', value: othersValue }] : [])]);
+        } catch (err) { console.error('Ошибка статистики:', err); }
     };
 
     const fetchReferenceData = () => {
@@ -137,40 +115,43 @@ function AdminPage() {
         axios.get(`${API_BASE}/api/admin/data/regions`).then(r => setRegions(r.data));
     };
 
-    // Загрузка деталей аукциона для просмотра
-    const fetchAuctionDetails = async (id) => {
-        try {
-            const res = await axios.get(`${API_BASE}/api/auctions/${id}`);
-            setViewingAuction(res.data);
-        } catch (err) {
-            console.error('Ошибка загрузки деталей:', err);
-        }
-    };
-
-    // === ДЕЙСТВИЯ ===
+    // === ACTIONS ===
     const handleApprove = (id) => {
         axios.put(`${API_BASE}/api/auctions/${id}/approve`)
-            .then(() => { setAuctions(prev => prev.filter(a => a.id !== id)); fetchStats(); })
-            .catch(err => console.error(err));
+            .then(() => { setAuctions(p => p.filter(a => a.id !== id)); fetchStats(); showToast('Лот одобрен', 'success'); })
+            .catch(() => showToast('Ошибка при одобрении', 'error'));
     };
 
-    const handleRejectInit = (id) => {
-        setRejectingId(id);
-        setRejectReason('');
-        setRejectError('');
-    };
-
+    const handleRejectInit = (id) => { setRejectingId(id); setRejectReason(''); setRejectError(''); };
     const handleRejectConfirm = () => {
         if (!rejectReason.trim()) { setRejectError('Укажите причину'); return; }
         axios.post(`${API_BASE}/api/auctions/${rejectingId}/reject`, null, { params: { reason: rejectReason } })
-            .then(() => { setAuctions(prev => prev.filter(a => a.id !== rejectingId)); setRejectingId(null); fetchStats(); })
-            .catch(err => console.error(err));
+            .then(() => { setAuctions(p => p.filter(a => a.id !== rejectingId)); setRejectingId(null); fetchStats(); showToast('Лот отклонён', 'success'); })
+            .catch(() => showToast('Ошибка при отклонении', 'error'));
     };
 
     const handleBlock = (userId, isBlocked) => {
         axios.put(`${API_BASE}/api/users/${userId}/block`, null, { params: { isBlocked } })
-            .then(() => { setUsers(prev => prev.map(u => u.id === userId ? { ...u, isBlocked } : u)); fetchStats(); })
-            .catch(err => console.error(err));
+            .then(() => { setUsers(p => p.map(u => u.id === userId ? { ...u, isBlocked } : u)); fetchStats(); showToast(`Пользователь ${isBlocked ? 'заблокирован' : 'разблокирован'}`, 'success'); })
+            .catch(() => showToast('Ошибка при изменении статуса', 'error'));
+    };
+
+    const openRoleModal = (userId, newRoleId) => setRoleModal({ isOpen: true, userId, newRoleId });
+    const confirmRoleChange = () => {
+        const { userId, newRoleId } = roleModal;
+        if (!userId || !newRoleId) return;
+        axios.put(`${API_BASE}/api/users/${userId}/role`, null, { params: { roleId: newRoleId } })
+            .then(() => {
+                setUsers(p => p.map(u => u.id === userId ? { ...u, roleId: newRoleId } : u));
+                fetchStats();
+                showToast('Роль пользователя успешно изменена', 'success');
+                setRoleModal({ isOpen: false, userId: null, newRoleId: null });
+            })
+            .catch(err => {
+                showToast(err.response?.data || 'Ошибка при смене роли', 'error');
+                fetchUsers();
+                setRoleModal({ isOpen: false, userId: null, newRoleId: null });
+            });
     };
 
     const openDeleteModal = (type, id, name) => setModal({ isOpen: true, type, id, name });
@@ -183,8 +164,8 @@ function AdminPage() {
         if (type === 'model') request = axios.delete(`${API_BASE}/api/admin/data/models/${id}`);
         if (type === 'city') request = axios.delete(`${API_BASE}/api/admin/data/cities/${id}`);
         if (request) {
-            request.then(() => { fetchReferenceData(); closeModal(); fetchStats(); })
-                .catch(err => setModalError(err.response?.data || 'Ошибка'));
+            request.then(() => { fetchReferenceData(); closeModal(); fetchStats(); showToast('Элемент удалён', 'success'); })
+                .catch(err => { setModalError(err.response?.data || 'Ошибка'); showToast('Ошибка при удалении', 'error'); });
         }
     };
 
@@ -192,21 +173,19 @@ function AdminPage() {
         e.preventDefault();
         if (!newBrand.trim()) return;
         axios.post(`${API_BASE}/api/admin/data/brands`, { name: newBrand })
-            .then(() => { setNewBrand(''); fetchReferenceData(); fetchStats(); });
+            .then(() => { setNewBrand(''); fetchReferenceData(); fetchStats(); showToast('Марка добавлена', 'success'); });
     };
-
     const handleAddModel = (e) => {
         e.preventDefault();
         if (!newModel.name || !newModel.brandId) return;
         axios.post(`${API_BASE}/api/admin/data/models`, null, { params: newModel })
-            .then(() => { setNewModel({ name: '', brandId: '' }); fetchReferenceData(); fetchStats(); });
+            .then(() => { setNewModel({ name: '', brandId: '' }); fetchReferenceData(); fetchStats(); showToast('Модель добавлена', 'success'); });
     };
-
     const handleAddCity = (e) => {
         e.preventDefault();
         if (!newCity.name || !newCity.regionId) return;
         axios.post(`${API_BASE}/api/admin/data/cities`, null, { params: newCity })
-            .then(() => { setNewCity({ name: '', regionId: '' }); fetchReferenceData(); fetchStats(); });
+            .then(() => { setNewCity({ name: '', regionId: '' }); fetchReferenceData(); fetchStats(); showToast('Город добавлен', 'success'); });
     };
 
     const startEditBrand = (b) => { setEditingBrandId(b.id); setEditingBrandName(b.name); };
@@ -214,50 +193,35 @@ function AdminPage() {
     const saveBrand = (id) => {
         if (!editingBrandName.trim()) return;
         axios.put(`${API_BASE}/api/admin/data/brands/${id}`, { name: editingBrandName })
-            .then(() => { fetchReferenceData(); cancelEditBrand(); fetchStats(); });
+            .then(() => { fetchReferenceData(); cancelEditBrand(); fetchStats(); showToast('Марка обновлена', 'success'); });
     };
-
     const startEditModel = (m) => { setEditingModelId(m.id); setEditingModelName(m.name); };
     const cancelEditModel = () => { setEditingModelId(null); setEditingModelName(''); };
     const saveModel = (id) => {
         if (!editingModelName.trim()) return;
         axios.put(`${API_BASE}/api/admin/data/models/${id}`, null, { params: { name: editingModelName } })
-            .then(() => { fetchReferenceData(); cancelEditModel(); fetchStats(); });
+            .then(() => { fetchReferenceData(); cancelEditModel(); fetchStats(); showToast('Модель обновлена', 'success'); });
     };
 
-    // === ФИЛЬТРАЦИЯ И ПАГИНАЦИЯ ===
+    // === FILTERS & PAGINATION ===
     const filteredBrands = brands.filter(b => b.name.toLowerCase().includes(searchBrand.toLowerCase()));
     const filteredModels = models.filter(m => m.name.toLowerCase().includes(searchModel.toLowerCase()) || m.brand?.name.toLowerCase().includes(searchModel.toLowerCase()));
     const filteredCities = cities.filter(c => c.name.toLowerCase().includes(searchCity.toLowerCase()) || c.region?.name.toLowerCase().includes(searchCity.toLowerCase()));
-
     const sortedUsers = [...users].sort(({ roleId: a }, { roleId: b }) => (b === 2 ? 1 : 0) - (a === 2 ? 1 : 0));
-
     const searchedUsers = sortedUsers.filter(u => {
-        const query = searchUser.toLowerCase();
-        return (
-            u.firstName?.toLowerCase().includes(query) ||
-            u.lastName?.toLowerCase().includes(query) ||
-            u.email?.toLowerCase().includes(query)
-        );
+        const q = searchUser.toLowerCase();
+        return u.firstName?.toLowerCase().includes(q) || u.lastName?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
     });
-
-    const paginatedUsers = searchedUsers.slice(
-        (userPage - 1) * USERS_PER_PAGE,
-        userPage * USERS_PER_PAGE
-    );
-
+    const paginatedUsers = searchedUsers.slice((userPage - 1) * USERS_PER_PAGE, userPage * USERS_PER_PAGE);
     const totalPages = Math.ceil(searchedUsers.length / USERS_PER_PAGE);
 
-    // Сброс страницы при изменении поиска
-    useEffect(() => {
-        setUserPage(1);
-    }, [searchUser]);
+    useEffect(() => { setUserPage(1); }, [searchUser]);
 
     if (loading) return <div className="ap-loading">Загрузка...</div>;
 
     return (
         <div className="ap">
-            {/* === МОДАЛКА ПРОСМОТРА ДЕТАЛЕЙ === */}
+            {/* === MODALS === */}
             {viewingAuction && (
                 <div className="ap-modal-overlay" onClick={() => setViewingAuction(null)}>
                     <div className="ap-modal ap-modal--large" onClick={e => e.stopPropagation()}>
@@ -268,13 +232,9 @@ function AdminPage() {
                         <div className="ap-modal__content">
                             <div className="ap-auction-detail">
                                 <div className="ap-auction-detail__images">
-                                    {viewingAuction.imageUrls && viewingAuction.imageUrls.length > 0 ? (
-                                        viewingAuction.imageUrls.map((url, idx) => (
-                                            <img key={idx} src={url} alt={`Фото ${idx + 1}`} className="ap-auction-detail__img" />
-                                        ))
-                                    ) : (
-                                        <div className="ap-auction-detail__no-img">Нет фото</div>
-                                    )}
+                                    {viewingAuction.imageUrls?.length > 0 ? viewingAuction.imageUrls.map((url, idx) => (
+                                        <img key={idx} src={url} alt={`Фото ${idx + 1}`} className="ap-auction-detail__img" />
+                                    )) : <div className="ap-auction-detail__no-img">Нет фото</div>}
                                 </div>
                                 <div className="ap-auction-detail__info">
                                     <h4>{viewingAuction.brand?.name} {viewingAuction.model?.name}</h4>
@@ -286,24 +246,11 @@ function AdminPage() {
                                         <div><strong>VIN:</strong> {viewingAuction.vin || 'Не указан'}</div>
                                         <div><strong>Город:</strong> {viewingAuction.city?.name}</div>
                                     </div>
-                                    <div className="ap-auction-detail__price">
-                                        <strong>Начальная цена:</strong> {viewingAuction.startingPrice?.toLocaleString()} BYN
-                                    </div>
-                                    <div className="ap-auction-detail__price">
-                                        <strong>Шаг ставки:</strong> {viewingAuction.minBidStep?.toLocaleString()} BYN
-                                    </div>
-                                    <div className="ap-auction-detail__time">
-                                        <strong>Окончание:</strong> {new Date(viewingAuction.endTime).toLocaleString('ru-RU')}
-                                    </div>
-                                    {viewingAuction.description && (
-                                        <div className="ap-auction-detail__desc">
-                                            <strong>Описание:</strong>
-                                            <p>{viewingAuction.description}</p>
-                                        </div>
-                                    )}
-                                    <div className="ap-auction-detail__seller">
-                                        <strong>Продавец:</strong> {viewingAuction.seller?.firstName} {viewingAuction.seller?.lastName}
-                                    </div>
+                                    <div className="ap-auction-detail__price"><strong>Начальная цена:</strong> {viewingAuction.startingPrice?.toLocaleString()} BYN</div>
+                                    <div className="ap-auction-detail__price"><strong>Шаг ставки:</strong> {viewingAuction.minBidStep?.toLocaleString()} BYN</div>
+                                    <div className="ap-auction-detail__time"><strong>Окончание:</strong> {new Date(viewingAuction.endTime).toLocaleString('ru-RU')}</div>
+                                    {viewingAuction.description && <div className="ap-auction-detail__desc"><strong>Описание:</strong><p>{viewingAuction.description}</p></div>}
+                                    <div className="ap-auction-detail__seller"><strong>Продавец:</strong> {viewingAuction.seller?.firstName} {viewingAuction.seller?.lastName}</div>
                                 </div>
                             </div>
                         </div>
@@ -316,7 +263,6 @@ function AdminPage() {
                 </div>
             )}
 
-            {/* === МОДАЛКА ОТКЛОНЕНИЯ === */}
             {rejectingId && (
                 <div className="ap-modal-overlay" onClick={() => setRejectingId(null)}>
                     <div className="ap-modal" onClick={e => e.stopPropagation()}>
@@ -331,7 +277,6 @@ function AdminPage() {
                 </div>
             )}
 
-            {/* === МОДАЛКА УДАЛЕНИЯ === */}
             {modal.isOpen && (
                 <div className="ap-modal-overlay" onClick={closeModal}>
                     <div className="ap-modal" onClick={e => e.stopPropagation()}>
@@ -339,6 +284,21 @@ function AdminPage() {
                         <div className="ap-modal__actions">
                             <button className="ap-btn ap-btn--ghost" onClick={closeModal}>Отмена</button>
                             <button className="ap-btn ap-btn--red" onClick={handleConfirmDelete}>Удалить</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {roleModal.isOpen && (
+                <div className="ap-modal-overlay" onClick={() => setRoleModal({ isOpen: false, userId: null, newRoleId: null })}>
+                    <div className="ap-modal" onClick={e => e.stopPropagation()}>
+                        <h3 className="ap-modal__title">Изменить роль?</h3>
+                        <p className="ap-modal__text">
+                            Пользователю будут назначены права <strong>{roleModal.newRoleId === 2 ? 'администратора' : 'обычного пользователя'}</strong>.
+                        </p>
+                        <div className="ap-modal__actions">
+                            <button className="ap-btn ap-btn--ghost" onClick={() => setRoleModal({ isOpen: false, userId: null, newRoleId: null })}>Отмена</button>
+                            <button className="ap-btn ap-btn--primary" onClick={confirmRoleChange}>Подтвердить</button>
                         </div>
                     </div>
                 </div>
@@ -352,93 +312,55 @@ function AdminPage() {
             </header>
 
             <main className="ap-main">
-                {/* === СТАТИСТИКА И ДИАГРАММА === */}
+                {/* === STATS === */}
                 <section className="ap-section">
                     <p className="ap-section-heading">Статистика платформы</p>
-
                     {stats && (
                         <>
                             <div className="ap-stats-grid">
-                                <div className="ap-stat-card">
-                                    <span className="ap-stat-card__value">{stats.totalUsers}</span>
-                                    <span className="ap-stat-card__label">Пользователей</span>
-                                </div>
-                                <div className="ap-stat-card">
-                                    <span className="ap-stat-card__value">{stats.activeAuctions}</span>
-                                    <span className="ap-stat-card__label">Активных аукционов</span>
-                                </div>
-                                <div className="ap-stat-card">
-                                    <span className="ap-stat-card__value">{stats.totalBids}</span>
-                                    <span className="ap-stat-card__label">Всего ставок</span>
-                                </div>
-                                <div className="ap-stat-card">
-                                    <span className="ap-stat-card__value">{stats.totalTurnover?.toLocaleString('ru-RU')}<BynIcon className="ap-currency-icon" /></span>
-                                    <span className="ap-stat-card__label">Оборот</span>
-                                </div>
+                                <div className="ap-stat-card"><span className="ap-stat-card__value">{stats.totalUsers}</span><span className="ap-stat-card__label">Пользователей</span></div>
+                                <div className="ap-stat-card"><span className="ap-stat-card__value">{stats.activeAuctions}</span><span className="ap-stat-card__label">Активных аукционов</span></div>
+                                <div className="ap-stat-card"><span className="ap-stat-card__value">{stats.totalBids}</span><span className="ap-stat-card__label">Всего ставок</span></div>
+                                <div className="ap-stat-card"><span className="ap-stat-card__value">{stats.totalTurnover?.toLocaleString('ru-RU')}<BynIcon className="ap-currency-icon" /></span><span className="ap-stat-card__label">Оборот</span></div>
                             </div>
-
-                            {/* === ДИАГРАММА ТОП-5 МАРОК === */}
                             <div className="ap-chart-container">
                                 <h3 className="ap-chart-title">Топ-5 марок автомобилей на платформе</h3>
                                 {brandStats.length > 0 ? (
                                     <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart
-                                            data={brandStats}
-                                            layout="vertical"
-                                            margin={{ top: 20, right: 30, left: 80, bottom: 5 }}
-                                        >
+                                        <BarChart data={brandStats} layout="vertical" margin={{ top: 20, right: 30, left: 80, bottom: 5 }}>
                                             <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
                                             <XAxis type="number" stroke={axisColor} allowDecimals={false} />
                                             <YAxis type="category" dataKey="name" stroke={axisColor} width={70} />
-                                            <Tooltip
-                                                contentStyle={{ backgroundColor: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: '6px', color: axisColor }}
-                                                cursor={{ fill: cursorColor }}
-                                            />
+                                            <Tooltip contentStyle={{ backgroundColor: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: '6px', color: axisColor }} cursor={{ fill: cursorColor }} />
                                             <Legend wrapperStyle={{ color: legendColor, fontSize: '0.75rem' }} />
                                             <Bar dataKey="value" fill="#3B82F6" radius={[0, 4, 4, 0]} maxBarSize={30} name="Количество лотов" />
                                         </BarChart>
                                     </ResponsiveContainer>
-                                ) : (
-                                    <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B949E' }}>
-                                        Нет данных о марках автомобилей
-                                    </div>
-                                )}
+                                ) : <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B949E' }}>Нет данных</div>}
                             </div>
                         </>
                     )}
                 </section>
 
-                {/* === МОДЕРАЦИЯ ЛОТОВ === */}
+                {/* === MODERATION === */}
                 <section className="ap-section">
                     <p className="ap-section-heading">Модерация лотов</p>
                     {auctions.length === 0 ? (
-                        <div className="ap-empty">
-                            <div className="ap-empty__icon">✓</div>
-                            <p>Нет лотов на проверке</p>
-                        </div>
+                        <div className="ap-empty"><div className="ap-empty__icon">✓</div><p>Нет лотов на проверке</p></div>
                     ) : (
                         <div className="ap-list">
                             {auctions.map(a => (
                                 <article key={a.id} className="ap-card">
                                     <div className="ap-card__left">
-                                        {a.mainImageUrl ? (
-                                            <img src={a.mainImageUrl} alt="Фото" className="ap-card__img" />
-                                        ) : (
-                                            <div className="ap-card__img ap-card__img--empty">Нет фото</div>
-                                        )}
+                                        {a.mainImageUrl ? <img src={a.mainImageUrl} alt="Фото" className="ap-card__img" /> : <div className="ap-card__img ap-card__img--empty">Нет фото</div>}
                                     </div>
                                     <div className="ap-card__body">
                                         <h3 className="ap-card__title">{a.brand?.name} {a.model?.name}</h3>
-                                        <div className="ap-card__meta">
-                                            <span>Год: {a.year}</span>
-                                            <span>Пробег: {a.mileage?.toLocaleString()} км</span>
-                                        </div>
+                                        <div className="ap-card__meta"><span>Год: {a.year}</span><span>Пробег: {a.mileage?.toLocaleString()} км</span></div>
                                         <p className="ap-card__price">Старт: {a.startingPrice?.toLocaleString()} BYN</p>
                                     </div>
                                     <div className="ap-card__actions">
-                                        <Link to={`/auctions/${a.id}`} className="ap-btn ap-btn--primary">
-                                            Просмотреть
-                                        </Link>
+                                        <Link to={`/auctions/${a.id}`} className="ap-btn ap-btn--primary">Просмотреть</Link>
                                         <button className="ap-btn ap-btn--green" onClick={() => handleApprove(a.id)}>Одобрить</button>
                                         <button className="ap-btn ap-btn--red" onClick={() => handleRejectInit(a.id)}>Отклонить</button>
                                     </div>
@@ -448,97 +370,60 @@ function AdminPage() {
                     )}
                 </section>
 
-                {/* === ПОЛЬЗОВАТЕЛИ С ПОИСКОМ И ПАГИНАЦИЕЙ === */}
+                {/* === USERS === */}
                 <section className="ap-section">
                     <div className="ap-section-header">
                         <p className="ap-section-heading">Пользователи</p>
-
                         <div className={`ap-search-box ${searchUser ? 'has-value' : ''}`}>
-                            <input
-                                type="text"
-                                placeholder="Поиск пользователя..."
-                                value={searchUser}
-                                onChange={(e) => setSearchUser(e.target.value)}
-                                className="ap-search-input"
-                            />
-                            <svg
-                                className="ap-search-icon"
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                            >
-                                <circle cx="11" cy="11" r="8"/>
-                                <path d="m21 21-4.35-4.35"/>
-                            </svg>
-                            {searchUser && (
-                                <button
-                                    onClick={() => setSearchUser('')}
-                                    className="ap-search-clear"
-                                    title="Очистить поиск"
-                                >
-                                    ×
-                                </button>
-                            )}
+                            <input type="text" placeholder="Поиск пользователя..." value={searchUser} onChange={e => setSearchUser(e.target.value)} className="ap-search-input" />
+                            <svg className="ap-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                            {searchUser && <button onClick={() => setSearchUser('')} className="ap-search-clear">×</button>}
                         </div>
                     </div>
-
                     {searchedUsers.length > USERS_PER_PAGE && (
                         <div className="ap-pagination">
-                            <button
-                                onClick={() => setUserPage(p => Math.max(1, p - 1))}
-                                disabled={userPage === 1}
-                                className="ap-pagination-btn"
-                            >
-                                ← Назад
-                            </button>
-                            <span className="ap-pagination-info">
-                                Страница {userPage} из {totalPages} ({searchedUsers.length} найдено)
-                            </span>
-                            <button
-                                onClick={() => setUserPage(p => Math.min(totalPages, p + 1))}
-                                disabled={userPage >= totalPages}
-                                className="ap-pagination-btn"
-                            >
-                                Вперёд →
-                            </button>
+                            <button onClick={() => setUserPage(p => Math.max(1, p - 1))} disabled={userPage === 1} className="ap-pagination-btn">← Назад</button>
+                            <span className="ap-pagination-info">Страница {userPage} из {totalPages} ({searchedUsers.length} найдено)</span>
+                            <button onClick={() => setUserPage(p => Math.min(totalPages, p + 1))} disabled={userPage >= totalPages} className="ap-pagination-btn">Вперёд →</button>
                         </div>
                     )}
-
                     <div className="ap-users">
-                        {paginatedUsers.length === 0 ? (
-                            <p className="ap-empty">Пользователи не найдены</p>
-                        ) : (
-                            paginatedUsers.map(u => (
-                                <div key={u.id} className="ap-user">
-                                    <div className="ap-user__info">
-                                        <span className="ap-user__name">{u.firstName} {u.lastName}</span>
-                                        <span className="ap-user__email">{u.email}</span>
-                                        <div className="ap-user__tags">
-                                            {u.roleId === 2 && <span className="ap-tag ap-tag--admin">Админ</span>}
-                                            {u.isBlocked && <span className="ap-tag ap-tag--blocked">Заблокирован</span>}
-                                        </div>
+                        {paginatedUsers.length === 0 ? <p className="ap-empty">Пользователи не найдены</p> : paginatedUsers.map(u => (
+                            <div key={u.id} className="ap-user">
+                                <div className="ap-user__info">
+                                    <span className="ap-user__name">{u.firstName} {u.lastName}</span>
+                                    <span className="ap-user__email">{u.email}</span>
+                                    <div className="ap-user__tags">
+                                        {u.roleId === 2 && <span className="ap-tag ap-tag--admin">Админ</span>}
+                                        {u.isBlocked && <span className="ap-tag ap-tag--blocked">Заблокирован</span>}
                                     </div>
+                                </div>
+                                <div className="ap-user__actions">
                                     {u.roleId !== 2 && (
                                         u.isBlocked ? (
-                                            <button className="ap-btn ap-btn--unblock" onClick={() => handleBlock(u.id, false)}>Разблокировать</button>
+                                            <button className="ap-user__unblock-btn" onClick={() => handleBlock(u.id, false)}>
+                                                Разблокировать
+                                            </button>
                                         ) : (
-                                            <button className="ap-btn ap-btn--block" onClick={() => handleBlock(u.id, true)}>Заблокировать</button>
+                                            <button className="ap-user__block-btn" onClick={() => handleBlock(u.id, true)}>Заблокировать</button>
                                         )
                                     )}
+                                    {u.id.toString() !== localStorage.getItem('userId') && (
+                                        <select className="ap-user__role-select" value={u.roleId} onChange={e => openRoleModal(u.id, parseInt(e.target.value))}>
+                                            <option value={1}>Пользователь</option>
+                                            <option value={2}>Администратор</option>
+                                        </select>
+                                    )}
                                 </div>
-                            ))
-                        )}
+                            </div>
+                        ))}
                     </div>
                 </section>
 
-                {/* === СПРАВОЧНИКИ === */}
+                {/* === REFERENCES === */}
                 <section className="ap-section">
                     <p className="ap-section-heading">Справочники</p>
                     <div className="ap-reference">
-                        {/* Марки */}
                         <div className="ap-ref-col">
                             <h3 className="ap-ref-col__title">Марки автомобилей</h3>
                             <form className="ap-ref-form" onSubmit={handleAddBrand}>
@@ -559,7 +444,7 @@ function AdminPage() {
                                             <>
                                                 <span>{b.name}</span>
                                                 <div className="ap-ref-actions">
-                                                    <button className="ap-ref-edit-btn" onClick={() => startEditBrand(b)} title="Ред.">✎</button>
+                                                    <button className="ap-ref-edit-btn" onClick={() => startEditBrand(b)}>✎</button>
                                                     <button className="ap-ref-del" onClick={() => openDeleteModal('brand', b.id, b.name)}>×</button>
                                                 </div>
                                             </>
@@ -568,8 +453,6 @@ function AdminPage() {
                                 ))}
                             </ul>
                         </div>
-
-                        {/* Модели */}
                         <div className="ap-ref-col">
                             <h3 className="ap-ref-col__title">Модели</h3>
                             <form className="ap-ref-form" onSubmit={handleAddModel}>
@@ -603,8 +486,6 @@ function AdminPage() {
                                 ))}
                             </ul>
                         </div>
-
-                        {/* Города */}
                         <div className="ap-ref-col">
                             <h3 className="ap-ref-col__title">Города</h3>
                             <form className="ap-ref-form" onSubmit={handleAddCity}>
@@ -628,6 +509,15 @@ function AdminPage() {
                     </div>
                 </section>
             </main>
+
+            {/* === TOAST === */}
+            {toast.show && (
+                <div className={`ap-toast ap-toast--${toast.type}`}>
+                    <span className="ap-toast__icon">{toast.type === 'success' ? '✓' : '✕'}</span>
+                    <span className="ap-toast__message">{toast.message}</span>
+                    <button className="ap-toast__close" onClick={() => setToast({ ...toast, show: false })}>×</button>
+                </div>
+            )}
         </div>
     );
 }

@@ -18,6 +18,7 @@
   --font: 'Inter', system-ui, sans-serif;
 }
 
+/* === СБРОС И БАЗА === */
 *,
 *::before,
 *::after {
@@ -60,7 +61,7 @@
 .ap-back {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--text-3);
+  color: var(--text-2);
   text-decoration: none;
   transition: color 0.15s;
 }
@@ -170,7 +171,7 @@
   padding-bottom: 0.75rem;
 }
 
-/* === МОДЕРАЦИЯ (КАРТОЧКИ ЛОТОВ) === */
+/* === КАРТОЧКИ ЛОТОВ === */
 .ap-list {
   display: flex;
   flex-direction: column;
@@ -302,18 +303,6 @@
   background: var(--bg-4);
 }
 
-.ap-btn--block {
-  background: var(--red-dim);
-  color: var(--red);
-  border-color: rgba(248, 81, 73, 0.3);
-}
-
-.ap-btn--unblock {
-  background: var(--accent-dim);
-  color: var(--accent);
-  border-color: rgba(59, 130, 246, 0.3);
-}
-
 .ap-btn--primary {
   background: var(--accent);
   color: #fff;
@@ -391,7 +380,101 @@
 
 .ap-tag--admin {
   color: var(--accent);
-  background: var(--accent-dim);
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.ap-user__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-shrink: 0;
+}
+
+/* === СЕЛЕКТ РОЛЕЙ === */
+.ap-user__role-select {
+  min-width: 140px;
+  padding: 0.5rem 2.25rem 0.5rem 0.875rem;
+  background: var(--bg-3);
+  /* ЯВНО СВЕТЛЫЙ треугольник (белый) */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23FFFFFF'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.625rem 0.375rem;
+  border: 0.0625rem solid var(--border-2);
+  border-radius: 0.375rem;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.ap-user__role-select:hover {
+  border-color: var(--border-2);
+  background-color: var(--bg-4);
+}
+
+.ap-user__role-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 0.1875rem rgba(59, 130, 246, 0.1);
+}
+
+.ap-user__role-select option {
+  background: var(--bg-3);
+  color: var(--text);
+  padding: 0.5rem;
+}
+
+/* === КНОПКА БЛОКИРОВКИ === */
+.ap-user__block-btn {
+  min-width: 140px;
+  padding: 0.5rem 1rem;
+  background: var(--red-dim);
+  border: 0.0625rem solid rgba(248, 81, 73, 0.3);
+  border-radius: 0.375rem;
+  color: var(--red);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ap-user__block-btn:hover {
+  background: rgba(248, 81, 73, 0.25);
+  border-color: rgba(248, 81, 73, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(248, 81, 73, 0.2);
+}
+
+/* === КНОПКА РАЗБЛОКИРОВКИ === */
+.ap-user__unblock-btn {
+  min-width: 140px;
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.15);
+  border: 0.0625rem solid rgba(59, 130, 246, 0.3);
+  border-radius: 0.375rem;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ap-user__unblock-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }
 
 /* === СПРАВОЧНИКИ === */
@@ -539,7 +622,7 @@
   line-height: 1;
 }
 
-/* === МОДАЛКИ === */
+/* === МОДАЛЬНЫЕ ОКНА === */
 .ap-modal-overlay {
   position: fixed;
   inset: 0;
@@ -624,173 +707,6 @@
   gap: 0.75rem;
 }
 
-/* === ЗАГЛУШКИ === */
-.ap-empty {
-  text-align: center;
-  padding: 3.75rem 1.25rem;
-  color: var(--text-3);
-  background: var(--bg-2);
-  border: 0.0625rem solid var(--border);
-  border-radius: 0.375rem;
-}
-
-.ap-empty__icon {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.ap-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 50vh;
-  color: var(--text-3);
-  font-size: 0.875rem;
-}
-
-/* === АДАПТИВ === */
-@media (max-width: 64rem) {
-  .ap-reference {
-    grid-template-columns: 1fr;
-  }
-
-  .ap-card {
-    flex-direction: column;
-  }
-
-  .ap-card__left {
-    width: 100%;
-    height: 11.25rem;
-  }
-
-  .ap-card__actions {
-    flex-direction: row;
-    flex-wrap: wrap;
-    border-left: none;
-    border-top: 0.0625rem solid var(--border);
-  }
-}
-
-@media (max-width: 48rem) {
-  .ap-header {
-    padding: 1rem 1.25rem;
-  }
-
-  .ap-main {
-    padding: 1.5rem 1.25rem 3rem;
-  }
-
-  .ap-stats-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .ap-user {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-@media (max-width: 36rem) {
-  .ap-stats-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* === ПОИСК ПОЛЬЗОВАТЕЛЕЙ === */
-.ap-section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.ap-search-box {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 280px;
-}
-
-.ap-search-input {
-  width: 100%;
-  padding: 0.5rem 1rem 0.5rem 2.5rem;
-  border: 0.0625rem solid var(--border);
-  border-radius: 0.375rem;
-  background: var(--bg-3);
-  color: var(--text);
-  font-size: 0.875rem;
-  transition: all 0.2s;
-}
-
-.ap-search-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  background: var(--bg-4);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.ap-search-input::placeholder {
-  color: var(--text-3);
-}
-
-.ap-search-icon {
-  position: absolute;
-  left: 0.75rem;
-  color: var(--text-3);
-  pointer-events: none;
-  transition: color 0.2s;
-}
-
-.ap-search-input:focus + .ap-search-icon {
-  color: var(--accent);
-}
-
-.ap-search-clear {
-  position: absolute;
-  right: 0.5rem;
-  width: 1.5rem;
-  height: 1.5rem;
-  background: var(--text-3);
-  color: var(--bg);
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.2s;
-}
-
-.ap-search-clear:hover {
-  background: var(--red);
-  color: #fff;
-  transform: scale(1.1);
-}
-
-.ap-search-box.has-value .ap-search-clear {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Адаптив */
-@media (max-width: 48rem) {
-  .ap-section-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .ap-search-box {
-    width: 100%;
-  }
-}
-
-/* === МОДАЛКА ПРОСМОТРА ДЕТАЛЕЙ === */
 .ap-modal--large {
   max-width: 60rem;
   width: 90%;
@@ -832,6 +748,7 @@
   margin-bottom: 1.5rem;
 }
 
+/* === ДЕТАЛИ ЛОТА В МОДАЛКЕ === */
 .ap-auction-detail {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -925,8 +842,285 @@
   white-space: pre-wrap;
 }
 
-/* Адаптив для модального окна */
+/* === ЗАГЛУШКИ === */
+.ap-empty {
+  text-align: center;
+  padding: 3.75rem 1.25rem;
+  color: var(--text-3);
+  background: var(--bg-2);
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.375rem;
+}
+
+.ap-empty__icon {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.ap-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  color: var(--text-3);
+  font-size: 0.875rem;
+}
+
+/* === ПОИСК === */
+.ap-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ap-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 280px;
+}
+
+.ap-search-input {
+  width: 100%;
+  padding: 0.5rem 1rem 0.5rem 2.5rem;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--bg-3);
+  color: var(--text);
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.ap-search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-4);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.ap-search-input::placeholder {
+  color: var(--text-3);
+}
+
+.ap-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--text-3);
+  pointer-events: none;
+  transition: color 0.2s;
+}
+
+.ap-search-input:focus + .ap-search-icon {
+  color: var(--accent);
+}
+
+.ap-search-clear {
+  position: absolute;
+  right: 0.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: var(--text-3);
+  color: var(--bg);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s;
+}
+
+.ap-search-clear:hover {
+  background: var(--red);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.ap-search-box.has-value .ap-search-clear {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* === ПАГИНАЦИЯ === */
+.ap-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  padding: 0.5rem 0;
+  border-top: 0.0625rem solid var(--border);
+  border-bottom: 0.0625rem solid var(--border);
+}
+
+.ap-pagination-btn {
+  padding: 0.375rem 0.75rem;
+  background: var(--bg-3);
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.25rem;
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ap-pagination-btn:hover:not(:disabled) {
+  background: var(--bg-4);
+}
+
+.ap-pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ap-pagination-info {
+  font-size: 0.8125rem;
+  color: var(--text-3);
+}
+
+/* === TOAST УВЕДОМЛЕНИЯ === */
+.ap-toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.3);
+  animation: ap-toast-in 0.2s ease-out, ap-toast-out 0.2s ease-in 2.8s forwards;
+  max-width: 22rem;
+}
+
+@keyframes ap-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ap-toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+.ap-toast--success {
+  border-left: 3px solid var(--green);
+}
+
+.ap-toast--error {
+  border-left: 3px solid var(--red);
+}
+
+.ap-toast__icon {
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ap-toast--success .ap-toast__icon {
+  color: var(--green);
+}
+
+.ap-toast--error .ap-toast__icon {
+  color: var(--red);
+}
+
+.ap-toast__message {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  flex: 1;
+  line-height: 1.4;
+}
+
+.ap-toast--success .ap-toast__message {
+  color: var(--text);
+}
+
+.ap-toast__close {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 1.125rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.ap-toast__close:hover {
+  color: var(--text);
+}
+
+/* === АДАПТИВНОСТЬ === */
+@media (max-width: 64rem) {
+  .ap-reference {
+    grid-template-columns: 1fr;
+  }
+
+  .ap-card {
+    flex-direction: column;
+  }
+
+  .ap-card__left {
+    width: 100%;
+    height: 11.25rem;
+  }
+
+  .ap-card__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-left: none;
+    border-top: 0.0625rem solid var(--border);
+  }
+}
+
 @media (max-width: 48rem) {
+  .ap-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .ap-main {
+    padding: 1.5rem 1.25rem 3rem;
+  }
+
+  .ap-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ap-user {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.875rem;
+  }
+
+  .ap-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ap-search-box {
+    width: 100%;
+  }
+
   .ap-auction-detail {
     grid-template-columns: 1fr;
   }
@@ -942,9 +1136,37 @@
   .ap-card__actions .ap-btn {
     width: 100%;
   }
+
+  .ap-toast {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    max-width: none;
+  }
+
+  .ap-user__actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .ap-user__role-select,
+  .ap-user__block-btn,
+  .ap-user__unblock-btn {
+    width: 100%;
+  }
 }
 
-/* === ДИАГРАММА ПО МЕСЯЦАМ === */
-.ap-chart-container + .ap-chart-container {
-  margin-top: 1rem;
+@media (max-width: 36rem) {
+  .ap-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Переопределение для светлой темы оформления */
+.light-theme .ap-user__role-select {
+  background: var(--bg-3);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%230D1117'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.625rem 0.375rem;
 }
