@@ -80,7 +80,7 @@ public class AuctionService {
         return history;
     }
 
-    // === 2. СОЗДАНИЕ АУКЦИОНА (ИСПРАВЛЕНО: добавлен параметр vin) ===
+    // === 2. СОЗДАНИЕ АУКЦИОНА ===
     @Transactional
     public Auction createAuction(
             Long sellerId,
@@ -96,7 +96,7 @@ public class AuctionService {
             Integer cityId,
             List<String> imageUrls,
             LocalDateTime endTime,
-            String vin  // <-- НОВЫЙ ПАРАМЕТР
+            String vin
     ) {
         User seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
@@ -124,7 +124,6 @@ public class AuctionService {
         auction.setDescription(description);
         auction.setEndTime(endTime);
 
-        // === ИСПРАВЛЕНИЕ: устанавливаем VIN ===
         if (vin != null && !vin.trim().isEmpty()) {
             auction.setVin(vin.trim().toUpperCase());
         }
@@ -157,7 +156,7 @@ public class AuctionService {
         return savedAuction;
     }
 
-    // === 3. ОДОБРЕНИЕ АУКЦИОНА (АДМИН) ===
+    // === 3. ОДОБРЕНИЕ АУКЦИОНА ===
     @Transactional
     public void approveAuction(Long auctionId) {
         Auction auction = auctionRepository.findById(auctionId)
@@ -180,7 +179,7 @@ public class AuctionService {
         }
     }
 
-    // === 4. СТАВКА (ОБНОВЛЕНО: УВЕДОМЛЕНИЕ О ПЕРЕБИТИИ) ===
+    // === 4. СТАВКА ===
     @Transactional
     public Bid placeBid(Long auctionId, Long userId, BigDecimal amount) {
         Auction auction = auctionRepository.findById(auctionId)
@@ -207,7 +206,6 @@ public class AuctionService {
             throw new RuntimeException(String.format("Минимальный шаг ставки: %s BYN.", minStep));
         }
 
-        // === НОВАЯ ЛОГИКА: УВЕДОМЛЕНИЕ О ПЕРЕБИТИИ ===
         Optional<Bid> previousTopBid = bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId);
 
         if (previousTopBid.isPresent()) {
@@ -253,7 +251,7 @@ public class AuctionService {
         auctionRepository.delete(auction);
     }
 
-    // === 6. Публикация (из Профиля пользователя) ===
+    // === 6. Публикация ===
     @Transactional
     public void publishAuction(Long auctionId, Long requestingUserId) {
         Auction auction = auctionRepository.findById(auctionId)

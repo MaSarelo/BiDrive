@@ -5,7 +5,7 @@ import BynIcon from '../../components/BynIcon';
 import './AdminPage.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const API_BASE = '';
+const API_BASE = 'http://localhost:8080';
 
 const Field = ({ label, required, children }) => (
     <div className="ca-field">
@@ -19,7 +19,12 @@ function AdminPage() {
     const [users, setUsers] = useState([]);
     const [stats, setStats] = useState(null);
     const [brandStats, setBrandStats] = useState([]);
+    const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // === ПАГИНАЦИЯ ЗАПРОСОВ ===
+    const [requestPage, setRequestPage] = useState(1);
+    const REQUESTS_PER_PAGE = 10;
 
     // === TOAST ===
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -39,6 +44,10 @@ function AdminPage() {
         observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
         return () => observer.disconnect();
     }, []);
+
+    // === УДАЛЕНО: принудительная тёмная тема ===
+    // Теперь админка использует тему, выбранную пользователем
+
     const axisColor = isLightTheme ? '#1F2328' : '#F0F6FC';
     const gridColor = isLightTheme ? 'rgba(31, 35, 40, 0.15)' : '#30363D';
     const tooltipBg = isLightTheme ? '#FFFFFF' : '#161B22';
@@ -54,6 +63,7 @@ function AdminPage() {
     const [modalError, setModalError] = useState('');
     const [viewingAuction, setViewingAuction] = useState(null);
     const [roleModal, setRoleModal] = useState({ isOpen: false, userId: null, newRoleId: null });
+    const [viewingRequestAuction, setViewingRequestAuction] = useState(null);
 
     // === REFERENCES ===
     const [brands, setBrands] = useState([]);
@@ -82,8 +92,13 @@ function AdminPage() {
         fetchUsers();
         fetchStats();
         fetchReferenceData();
+        fetchRequests();
         setLoading(false);
-        const intervalId = setInterval(fetchStats, 60000);
+
+        const intervalId = setInterval(() => {
+            fetchStats();
+            fetchRequests();
+        }, 30000);
         return () => clearInterval(intervalId);
     }, []);
 
@@ -106,6 +121,25 @@ function AdminPage() {
             const othersValue = sorted.slice(5).reduce((s, i) => s + i.value, 0);
             setBrandStats([...top5, ...(othersValue > 0 ? [{ name: 'Другие', value: othersValue }] : [])]);
         } catch (err) { console.error('Ошибка статистики:', err); }
+    };
+
+    const fetchRequests = () => {
+        axios.get(`${API_BASE}/api/admin/requests`)
+            .then(r => {
+                setRequests(r.data);
+                setRequestPage(1); // Сброс на 1-ю страницу при новых данных
+            })
+            .catch(err => console.error('Ошибка загрузки запросов:', err));
+    };
+
+    const fetchAuctionDetailsForRequest = async (auctionId) => {
+        try {
+            const res = await axios.get(`${API_BASE}/api/auctions/${auctionId}`);
+            setViewingRequestAuction(res.data);
+        } catch (err) {
+            console.error('Ошибка загрузки деталей:', err);
+            showToast('Не удалось загрузить детали лота', 'error');
+        }
     };
 
     const fetchReferenceData = () => {
@@ -215,6 +249,13 @@ function AdminPage() {
     const paginatedUsers = searchedUsers.slice((userPage - 1) * USERS_PER_PAGE, userPage * USERS_PER_PAGE);
     const totalPages = Math.ceil(searchedUsers.length / USERS_PER_PAGE);
 
+    // === ПАГИНАЦИЯ ЗАПРОСОВ ===
+    const paginatedRequests = requests.slice(
+        (requestPage - 1) * REQUESTS_PER_PAGE,
+        requestPage * REQUESTS_PER_PAGE
+    );
+    const totalRequestPages = Math.ceil(requests.length / REQUESTS_PER_PAGE);
+
     useEffect(() => { setUserPage(1); }, [searchUser]);
 
     if (loading) return <div className="ap-loading">Загрузка...</div>;
@@ -304,6 +345,50 @@ function AdminPage() {
                 </div>
             )}
 
+            {/* === МОДАЛКА ПРОСМОТРА ЛОТА ИЗ ЗАПРОСА НА ПРОДЛЕНИЕ === */}
+            {viewingRequestAuction && (
+                <div className="ap-modal-overlay" onClick={() => setViewingRequestAuction(null)}>
+                    <div className="ap-modal ap-modal--large" onClick={e => e.stopPropagation()}>
+                        <div className="ap-modal__header">
+                            <h3 className="ap-modal__title">Детали лота #{viewingRequestAuction.id}</h3>
+                            <button className="ap-modal__close" onClick={() => setViewingRequestAuction(null)}>×</button>
+                        </div>
+                        <div className="ap-modal__content">
+                            <div className="ap-auction-detail">
+                                <div className="ap-auction-detail__images">
+                                    {viewingRequestAuction.images && viewingRequestAuction.images.length > 0 ? (
+                                        viewingRequestAuction.images.map((img, idx) => (
+                                            <img key={idx} src={img.imageUrl} alt={`Фото ${idx + 1}`} className="ap-auction-detail__img" />
+                                        ))
+                                    ) : (
+                                        <div className="ap-auction-detail__no-img">Нет фото</div>
+                                    )}
+                                </div>
+                                <div className="ap-auction-detail__info">
+                                    <h4>{viewingRequestAuction.brand?.name} {viewingRequestAuction.model?.name}</h4>
+                                    <div className="ap-auction-detail__grid">
+                                        <div><strong>Год:</strong> {viewingRequestAuction.year}</div>
+                                        <div><strong>Пробег:</strong> {viewingRequestAuction.mileage?.toLocaleString()} км</div>
+                                        <div><strong>КПП:</strong> {viewingRequestAuction.transmission?.name}</div>
+                                        <div><strong>Топливо:</strong> {viewingRequestAuction.fuelType?.name}</div>
+                                        <div><strong>VIN:</strong> {viewingRequestAuction.vin || 'Не указан'}</div>
+                                        <div><strong>Город:</strong> {viewingRequestAuction.city?.name}</div>
+                                    </div>
+                                    <div className="ap-auction-detail__price"><strong>Начальная цена:</strong> {viewingRequestAuction.startingPrice?.toLocaleString()} BYN</div>
+                                    <div className="ap-auction-detail__price"><strong>Шаг ставки:</strong> {viewingRequestAuction.minBidStep?.toLocaleString()} BYN</div>
+                                    <div className="ap-auction-detail__time"><strong>Окончание:</strong> {new Date(viewingRequestAuction.endTime).toLocaleString('ru-RU')}</div>
+                                    {viewingRequestAuction.description && <div className="ap-auction-detail__desc"><strong>Описание:</strong><p>{viewingRequestAuction.description}</p></div>}
+                                    <div className="ap-auction-detail__seller"><strong>Продавец:</strong> {viewingRequestAuction.seller?.firstName} {viewingRequestAuction.seller?.lastName}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="ap-modal__actions">
+                            <button className="ap-btn ap-btn--ghost" onClick={() => setViewingRequestAuction(null)}>Закрыть</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <header className="ap-header">
                 <div className="ap-header__inner">
                     <h1 className="ap-title">Панель администратора</h1>
@@ -341,6 +426,84 @@ function AdminPage() {
                         </>
                     )}
                 </section>
+
+                {/* === ЗАПРОСЫ НА ПРОДЛЕНИЕ (С ПАГИНАЦИЕЙ) === */}
+                {requests.length > 0 && (
+                    <section className="ap-section">
+                        <p className="ap-section-heading">Запросы на рассмотрение ({requests.length})</p>
+
+                        <div className="ap-requests-list">
+                            {paginatedRequests.map(req => (
+                                <div key={req.id} className="ap-request-card">
+                                    <div className="ap-request-card__info">
+                                        <h4>{req.carName}</h4>
+                                        <p className="ap-request-card__meta">
+                                            Продавец: <strong>{req.sellerName}</strong>
+                                        </p>
+                                        <p className="ap-request-card__meta">
+                                            Причина: {req.reason || "Не указана"}
+                                        </p>
+                                        <p className="ap-request-card__meta">
+                                            Запрошено: {new Date(req.createdAt).toLocaleString('ru-RU')}
+                                        </p>
+                                        <button
+                                            className="ap-btn ap-btn--ghost"
+                                            style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                                            onClick={() => fetchAuctionDetailsForRequest(req.auctionId)}
+                                        >
+                                            👁 Просмотреть лот
+                                        </button>
+                                    </div>
+                                    <div className="ap-request-card__actions">
+                                        <button
+                                            className="ap-btn ap-btn--green"
+                                            onClick={() => {
+                                                axios.post(`${API_BASE}/api/admin/requests/${req.id}/approve`)
+                                                    .then(() => { fetchRequests(); showToast('Аукцион продлён на 24 часа', 'success'); })
+                                                    .catch(() => showToast('❌ Ошибка при одобрении', 'error'));
+                                            }}
+                                        >
+                                            ✔ Одобрить
+                                        </button>
+                                        <button
+                                            className="ap-btn ap-btn--red"
+                                            onClick={() => {
+                                                axios.post(`${API_BASE}/api/admin/requests/${req.id}/reject`)
+                                                    .then(() => { fetchRequests(); showToast('Запрос отклонён', 'success'); })
+                                                    .catch(() => showToast('❌ Ошибка при отклонении', 'error'));
+                                            }}
+                                        >
+                                            ✕ Отклонить
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Пагинация */}
+                        {totalRequestPages > 1 && (
+                            <div className="ap-pagination">
+                                <button
+                                    onClick={() => setRequestPage(p => Math.max(1, p - 1))}
+                                    disabled={requestPage === 1}
+                                    className="ap-pagination-btn"
+                                >
+                                    ← Назад
+                                </button>
+                                <span className="ap-pagination-info">
+                                    Страница {requestPage} из {totalRequestPages}
+                                </span>
+                                <button
+                                    onClick={() => setRequestPage(p => Math.min(totalRequestPages, p + 1))}
+                                    disabled={requestPage >= totalRequestPages}
+                                    className="ap-pagination-btn"
+                                >
+                                    Вперёд →
+                                </button>
+                            </div>
+                        )}
+                    </section>
+                )}
 
                 {/* === MODERATION === */}
                 <section className="ap-section">

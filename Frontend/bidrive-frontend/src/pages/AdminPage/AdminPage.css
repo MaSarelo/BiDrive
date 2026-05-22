@@ -1170,3 +1170,57 @@
   background-position: right 0.75rem center;
   background-size: 0.625rem 0.375rem;
 }
+
+/* === ЗАПРОСЫ НА ПРОДЛЕНИЕ === */
+.ap-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ap-request-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 0.375rem;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ap-request-card__info h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.ap-request-card__meta {
+  margin: 0.25rem 0;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.ap-request-card__meta strong {
+  color: var(--text);
+}
+
+.ap-request-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Адаптив */
+@media (max-width: 48rem) {
+  .ap-request-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ap-request-card__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

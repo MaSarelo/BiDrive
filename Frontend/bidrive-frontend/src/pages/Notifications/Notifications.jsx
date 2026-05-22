@@ -40,30 +40,52 @@ export function Notifications() {
     } catch (err) { console.error("Ошибка при прочтении", err); }
   };
 
-  // === НОВЫЙ МЕТОД: Удаление уведомления ===
+  // === УДАЛЕНИЕ УВЕДОМЛЕНИЯ ===
   const handleDelete = async (e, id, isRead) => {
-    e.preventDefault(); // Чтобы не сработал переход по ссылке
-    e.stopPropagation(); // Остановка всплытия
+    e.preventDefault();
+    e.stopPropagation();
 
     try {
       await axios.delete(`http://localhost:8080/api/notifications/${id}`);
-
-      // 1. Удаляем из списка
       setNotifications(prev => prev.filter(n => n.id !== id));
-
-      // 2. Если оно было непрочитанным, уменьшаем счетчик
       if (!isRead) {
         setNotifCount(prev => Math.max(0, prev - 1));
       }
-
     } catch (err) {
       console.error("Ошибка удаления", err);
     }
   };
 
+  // === ФОРМАТИРОВАНИЕ ДАТЫ ===
   const fmt = d => new Date(d).toLocaleString('ru-RU', {
     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
   });
+
+  // === ОЧИСТКА СООБЩЕНИЯ ОТ МАРКЕРОВ ===
+  const cleanMessage = (message) => {
+    // Удаляем маркеры вида [EXTEND:123] или [REJECT:123] в начале сообщения
+    return message.replace(/^\[(EXTEND|REJECT):\d+\]\s*/, '');
+  };
+
+  // === ОПРЕДЕЛЕНИЕ ИКОНКИ ПО ТИПУ ===
+  const getIconForType = (type) => {
+    switch (type) {
+      case 'WIN':
+      case 'AUCTION_WON':
+        return '🏆';
+      case 'SALE':
+      case 'AUCTION_SOLD':
+        return '💰';
+      case 'BID_OUTBID':
+        return '⚔️';
+      case 'AUCTION_EXTENDED':
+        return '⏰'; // Продление аукциона
+      case 'AUCTION_EXTENSION_REJECTED':
+        return '❌'; // Отклонение продления
+      default:
+        return '🔔';
+    }
+  };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -96,17 +118,14 @@ export function Notifications() {
             ) : (
                 <div className="nf-list">
                   {notifications.map(n => {
-                    // Логика иконок
-                    let icon = '🔔';
-                    if (n.type === 'WIN' || n.type === 'AUCTION_WON') icon = '🏆';
-                    if (n.type === 'SALE' || n.type === 'AUCTION_SOLD') icon = '💰';
-                    if (n.type === 'BID_OUTBID') icon = '⚔️';
+                    const icon = getIconForType(n.type);
+                    const displayMessage = cleanMessage(n.message);
 
                     const content = (
                         <>
                           <div className="nf-item__icon">{icon}</div>
                           <div className="nf-item__content">
-                            <p className="nf-item__msg">{n.message}</p>
+                            <p className="nf-item__msg">{displayMessage}</p>
                             <span className="nf-item__time">{fmt(n.createdAt)}</span>
                           </div>
 
@@ -123,12 +142,12 @@ export function Notifications() {
                         </>
                     );
 
-                    // Если есть ID аукциона — ссылка
+                    // Если есть ID аукциона — ссылка на лот
                     if (n.auctionId) {
                       return (
                           <Link
                               key={n.id}
-                              to={`/auction/${n.auctionId}`}
+                              to={`/auctions/${n.auctionId}`}
                               className={`nf-item nf-item--link${n.isRead ? '' : ' nf-item--unread'}`}
                               onClick={() => handleMarkAsRead(n)}
                           >

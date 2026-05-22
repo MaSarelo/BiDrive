@@ -40,8 +40,5 @@ public class Notification {
 
     public Notification() {}
 
-    // Убрал геттер/сеттер для Auction, так как поля нет
-    // public Auction getAuction() { return auction; }
-    // public void setAuction(Auction auction) { this.auction = auction; }
 
 }

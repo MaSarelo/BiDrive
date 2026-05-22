@@ -35,6 +35,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/transmissions/**").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers("/api/files/**").permitAll()
+                        .requestMatchers("/api/admin/requests/**").permitAll()
                         .requestMatchers("/api/admin/**").permitAll()
                         .requestMatchers("/api/notifications/**").permitAll()
                         .requestMatchers("/api/currency/rate").permitAll()
