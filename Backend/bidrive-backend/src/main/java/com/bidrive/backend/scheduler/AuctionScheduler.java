@@ -27,20 +27,14 @@ public class AuctionScheduler {
     @Autowired
     private BidRepository bidRepository;
 
-    // === ЗАВЕРШЕНИЕ АУКЦИОНОВ ПО ТАЙМЕРУ ===
     @Scheduled(fixedRate = 10000)
     @Transactional
     public void checkAuctions() {
         List<Auction> expiredAuctions = auctionRepository.findByStatusAndEndTimeBefore("ACTIVE", LocalDateTime.now());
-
         for (Auction auction : expiredAuctions) {
             finishAuction(auction);
         }
     }
-
-    // === УДАЛЕНО: startScheduledAuctions() ===
-    // Этот метод использовал findByStatusAndStartTimeBefore, который больше не существует
-    // Логика авто-старта аукционов больше не требуется, так как аукционы стартуют сразу после одобрения
 
     private void finishAuction(Auction auction) {
         System.out.println(">>> Завершение аукциона ID: " + auction.getId());
@@ -54,38 +48,28 @@ public class AuctionScheduler {
             auction.setWinner(winner);
             auction.setCurrentPrice(lastBid.getAmount());
 
-            String sellerContact = (seller.getPhone() != null && !seller.getPhone().isEmpty())
-                    ? "Тел: " + seller.getPhone()
-                    : "Email: " + seller.getEmail();
+            // === ФОРМАТ: TEMPLATE:{TYPE}:{AUCTION_ID}:{CONTACT_USER_ID} ===
 
-            String winnerContact = (winner.getPhone() != null && !winner.getPhone().isEmpty())
-                    ? "Тел: " + winner.getPhone()
-                    : "Email: " + winner.getEmail();
-
-            // Уведомление ПОБЕДИТЕЛЮ
+            // Уведомление ПОБЕДИТЕЛЮ (контакт = продавец)
             Notification notifWinner = new Notification();
             notifWinner.setUser(winner);
             notifWinner.setAuctionId(auction.getId());
-            notifWinner.setMessage("🎉 Вы выиграли лот: " + auction.getBrand().getName() + " " + auction.getModel().getName() +
-                    "! Свяжитесь с продавцом: " + seller.getFirstName() + " (" + sellerContact + ")");
+            notifWinner.setMessage("TEMPLATE:AUCTION_WON:" + auction.getId() + ":" + seller.getId());
             notifWinner.setCreatedAt(LocalDateTime.now());
             notifWinner.setType("AUCTION_WON");
             notificationRepository.save(notifWinner);
 
-            // Уведомление ПРОДАВЦУ
+            // Уведомление ПРОДАВЦУ (контакт = победитель)
             Notification notifSeller = new Notification();
             notifSeller.setUser(seller);
             notifSeller.setAuctionId(auction.getId());
-            notifSeller.setMessage("✅ Ваш лот продан: " + auction.getBrand().getName() + " " + auction.getModel().getName() +
-                    ". Победитель: " + winner.getFirstName() + " (" + winnerContact + ")");
+            notifSeller.setMessage("TEMPLATE:AUCTION_SOLD:" + auction.getId() + ":" + winner.getId());
             notifSeller.setCreatedAt(LocalDateTime.now());
             notifSeller.setType("AUCTION_SOLD");
             notificationRepository.save(notifSeller);
 
             System.out.println(">>> Победитель: " + winner.getEmail());
         } else {
-            System.out.println(">>> Ставок не было. Лот закрыт без продажи.");
-
             Notification notifSeller = new Notification();
             notifSeller.setUser(auction.getSeller());
             notifSeller.setAuctionId(auction.getId());
