@@ -5,7 +5,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.JsonIgnore; // Импорт
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,7 +19,6 @@ import lombok.Setter;
 @Table(name = "auctions")
 public class Auction {
 
-    // Геттеры и сеттеры
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -81,16 +84,19 @@ public class Auction {
     @Column(name = "main_image_url")
     private String mainImageUrl;
 
-    // Фото
-    @OneToMany(mappedBy = "auction", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    // === 🔥 ИСПРАВЛЕНО: добавлен orphanRemoval = true и инициализация ArrayList ===
+    @OneToMany(
+            mappedBy = "auction",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,      // ← КЛЮЧЕВОЕ: Hibernate сам удалит orphan'ы
+            fetch = FetchType.EAGER
+    )
     @JsonManagedReference
-    private List<CarImage> images;
+    private List<CarImage> images = new ArrayList<>();  // ← Инициализация!
 
-    // Важно: геттер для bids нужен для Scheduler, а сетчик нужен для JPA
-    // === ИСПРАВЛЕНО: Добавлен @JsonIgnore ===
     @OneToMany(mappedBy = "auction", fetch = FetchType.LAZY)
-    @JsonIgnore // <--- ЭТО РЕШАЕТ ПРОБЛЕМУ РЕКУРСИИ
-    private List<Bid> bids;
+    @JsonIgnore
+    private List<Bid> bids = new ArrayList<>();
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -98,11 +104,19 @@ public class Auction {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Геттер и сеттер
     @Column(name = "rejection_reason")
     private String rejectionReason;
 
-    // Конструктор
-    public Auction() {}
+    @JsonProperty("imageUrls")
+    public List<String> getImageUrlsList() {
+        if (this.images == null || this.images.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return this.images.stream()
+                .sorted(Comparator.comparingInt(CarImage::getDisplayOrder))
+                .map(CarImage::getImageUrl)
+                .collect(Collectors.toList());
+    }
 
+    public Auction() {}
 }

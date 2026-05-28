@@ -3,10 +3,12 @@ package com.bidrive.backend.controller;
 import com.bidrive.backend.entity.Auction;
 import com.bidrive.backend.repository.AuctionRepository;
 import com.bidrive.backend.service.AuctionService;
+import com.bidrive.backend.dto.AuctionUpdateRequest;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import com.bidrive.backend.dto.BidHistoryDTO;
 
@@ -176,5 +178,19 @@ public class AuctionController {
         auctionRepository.save(auction);
 
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateAuction(
+            @PathVariable Long id,
+            @RequestBody AuctionUpdateRequest request,
+            @RequestParam Long userId // ID пользователя, который редактирует
+    ) {
+        try {
+            auctionService.updateAuction(id, userId, request);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

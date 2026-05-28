@@ -13,43 +13,61 @@ const Field = ({ label, required, children }) => (
 
 function CreateAuction() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  const editId = searchParams.get('editId');
+  const copyId = searchParams.get('copyId');
+  const isEditMode = !!editId;
+  const isCopyMode = !!copyId;
 
   const [formData, setFormData] = useState({
-    sellerId: null, brandId: '', modelId: '', year: '', mileage: '',
-    transmissionId: '', fuelTypeId: '', cityId: '',
-    description: '', startingPrice: '', minBidStep: '100', endTime: '', vin: ''
+    sellerId: null,
+    brandId: '',
+    modelId: '',
+    year: '',
+    mileage: '',
+    transmissionId: '',
+    fuelTypeId: '',
+    cityId: '',
+    description: '',
+    startingPrice: '',
+    minBidStep: '100',
+    endTime: '',
+    vin: ''
   });
 
-  const [brands,        setBrands]        = useState([]);
-  const [models,        setModels]        = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [models, setModels] = useState([]);
   const [transmissions, setTransmissions] = useState([]);
-  const [fuelTypes,     setFuelTypes]     = useState([]);
-  const [regions,       setRegions]       = useState([]);
-  const [cities,        setCities]        = useState([]);
+  const [fuelTypes, setFuelTypes] = useState([]);
+  const [regions, setRegions] = useState([]);
+  const [cities, setCities] = useState([]);
 
-  const [selectedBrand,  setSelectedBrand]  = useState('');
+  const [selectedBrand, setSelectedBrand] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
 
-  const [files,          setFiles]          = useState([]);
+  const [imageUrls, setImageUrls] = useState([]);
+  const [files, setFiles] = useState([]);
   const [mainImageIndex, setMainImageIndex] = useState(0);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [msg,          setMsg]          = useState({ text: '', ok: true });
+  const [msg, setMsg] = useState({ text: '', ok: true });
+  const [isEditModeLoading, setIsEditModeLoading] = useState(false);
 
-  const navigate = useNavigate();
-  const copyIdRef = useRef(null);
+  // === НОВОЕ: один флаг для отслеживания, что данные копии загружены ===
+  const copyDataLoadedRef = useRef(false);
 
   const currentYear = new Date().getFullYear();
   const yearsList = [];
-  for (let y = currentYear + 1; y >= 1980; y--) {
-    yearsList.push(y);
-  }
+  for (let y = currentYear + 1; y >= 1980; y--) yearsList.push(y);
 
+  // Инициализация
   useEffect(() => {
     const id = localStorage.getItem('userId');
     if (id) setFormData(p => ({ ...p, sellerId: parseInt(id) }));
   }, []);
 
+  // Загрузка справочников
   useEffect(() => {
     axios.get('http://localhost:8080/api/brands').then(r => setBrands(r.data)).catch(console.error);
     axios.get('http://localhost:8080/api/regions').then(r => setRegions(r.data)).catch(console.error);
@@ -57,75 +75,151 @@ function CreateAuction() {
     axios.get('http://localhost:8080/api/fuel-types').then(r => setFuelTypes(r.data)).catch(console.error);
   }, []);
 
+  // === ЗАГРУЗКА ДАННЫХ ПРИ КОПИРОВАНИИ (УПРОЩЁННО) ===
   useEffect(() => {
-    const processParams = async () => {
-      const copyId = searchParams.get('copyId');
-      if (copyId) {
-        copyIdRef.current = copyId;
-        try {
-          const res = await axios.get(`http://localhost:8080/api/auctions/${copyId}`);
-          const a = res.data;
-          setFormData({
-            sellerId: parseInt(localStorage.getItem('userId')),
-            brandId: a.brand?.id || '',
-            modelId: a.model?.id || '',
-            year: a.year || '',
-            mileage: String(a.mileage || ''),
-            transmissionId: a.transmission?.id || '',
-            fuelTypeId: a.fuelType?.id || '',
-            cityId: a.city?.id || '',
-            description: a.description || '',
-            startingPrice: String(a.startingPrice || ''),
-            minBidStep: String(a.minBidStep || '100'),
-            endTime: ''
-          });
-          if (a.brand?.id) setSelectedBrand(String(a.brand.id));
-          if (a.city?.region?.id) setSelectedRegion(String(a.city.region.id));
-          setSearchParams({}, { replace: true });
-        } catch (err) {
-          console.error("Ошибка копирования", err);
-          alert("Не удалось загрузить данные.");
+    if (!isCopyMode || !copyId || copyDataLoadedRef.current) return;
+
+    const loadCopyData = async () => {
+      try {
+        const res = await axios.get(`http://localhost:8080/api/auctions/${copyId}`);
+        const a = res.data;
+
+        // === 1. Сразу заполняем ВСЕ поля формы (включая modelId и cityId) ===
+        setFormData({
+          sellerId: parseInt(localStorage.getItem('userId')),
+          brandId: a.brand?.id ? String(a.brand.id) : '',
+          modelId: a.model?.id ? String(a.model.id) : '',  // ← ЗАПОЛНЯЕМ СРАЗУ!
+          year: a.year ?? '',
+          mileage: a.mileage != null ? String(a.mileage) : '',
+          transmissionId: a.transmission?.id ? String(a.transmission.id) : '',
+          fuelTypeId: a.fuelType?.id ? String(a.fuelType.id) : '',
+          cityId: a.city?.id ? String(a.city.id) : '',      // ← ЗАПОЛНЯЕМ СРАЗУ!
+          description: a.description ?? '',
+          startingPrice: a.startingPrice != null ? String(a.startingPrice) : '',
+          minBidStep: a.minBidStep != null ? String(a.minBidStep) : '100',
+          endTime: '',
+          vin: a.vin ?? ''
+        });
+
+        // === 2. Устанавливаем триггеры для каскадных справочников ===
+        if (a.brand?.id) setSelectedBrand(String(a.brand.id));
+        if (a.city?.region?.id) setSelectedRegion(String(a.city.region.id));
+
+        // === 3. Загружаем фото ===
+        if (a.imageUrls && a.imageUrls.length > 0) {
+          setImageUrls(a.imageUrls);
         }
+
+        // === 4. Помечаем, что данные загружены ===
+        copyDataLoadedRef.current = true;
+
+      } catch (err) {
+        console.error("Ошибка копирования лота", err);
+        setMsg({ text: "Не удалось загрузить данные для копирования", ok: false });
       }
     };
-    processParams();
-  }, [searchParams]);
+    loadCopyData();
+  }, [isCopyMode, copyId]);
 
+  // === Загрузка моделей при изменении бренда ===
   useEffect(() => {
     if (selectedBrand) {
       axios.get(`http://localhost:8080/api/models/by-brand?brandId=${selectedBrand}`)
-          .then(r => setModels(r.data)).catch(() => setModels([]));
-    } else { setModels([]); }
+          .then(r => setModels(r.data))
+          .catch(() => setModels([]));
+    } else {
+      setModels([]);
+      // Если бренд очищен, очищаем и модель
+      if (formData.modelId) {
+        setFormData(prev => ({ ...prev, modelId: '' }));
+      }
+    }
   }, [selectedBrand]);
 
+  // === Загрузка городов при изменении региона ===
   useEffect(() => {
     if (selectedRegion) {
       axios.get(`http://localhost:8080/api/cities/by-region?regionId=${selectedRegion}`)
-          .then(r => setCities(r.data)).catch(() => setCities([]));
-    } else { setCities([]); }
+          .then(r => setCities(r.data))
+          .catch(() => setCities([]));
+    } else {
+      setCities([]);
+      if (formData.cityId) {
+        setFormData(prev => ({ ...prev, cityId: '' }));
+      }
+    }
   }, [selectedRegion]);
+
+  // === Загрузка данных при редактировании (без изменений) ===
+  useEffect(() => {
+    const loadEditData = async () => {
+      if (!isEditMode || !editId) return;
+      setIsEditModeLoading(true);
+      try {
+        const res = await axios.get(`http://localhost:8080/api/auctions/${editId}`);
+        const a = res.data;
+        if (a.seller?.id !== parseInt(localStorage.getItem('userId'))) {
+          setMsg({ text: 'Вы не можете редактировать этот лот', ok: false });
+          setIsEditModeLoading(false); return;
+        }
+        if (a.status !== 'PENDING' && a.status !== 'ACTIVE') {
+          setMsg({ text: 'Редактирование доступно только для лотов на модерации или активных', ok: false });
+          setIsEditModeLoading(false); return;
+        }
+        if (a.hasBids) {
+          setMsg({ text: 'Нельзя редактировать лот, на который уже есть ставки', ok: false });
+          setIsEditModeLoading(false); return;
+        }
+
+        setFormData({
+          sellerId: a.seller?.id ?? null,
+          brandId: a.brand?.id != null ? String(a.brand.id) : '',
+          modelId: a.model?.id != null ? String(a.model.id) : '',
+          year: a.year ?? '',
+          mileage: a.mileage != null ? String(a.mileage) : '',
+          transmissionId: a.transmission?.id != null ? String(a.transmission.id) : '',
+          fuelTypeId: a.fuelType?.id != null ? String(a.fuelType.id) : '',
+          cityId: a.city?.id != null ? String(a.city.id) : '',
+          description: a.description ?? '',
+          startingPrice: a.startingPrice != null ? String(a.startingPrice) : '',
+          minBidStep: a.minBidStep != null ? String(a.minBidStep) : '100',
+          endTime: a.endTime ? a.endTime.slice(0, 16) : '',
+          vin: a.vin ?? ''
+        });
+
+        if (a.brand?.id) setSelectedBrand(String(a.brand.id));
+        if (a.city?.region?.id) setSelectedRegion(String(a.city.region.id));
+
+        if (a.imageUrls && a.imageUrls.length > 0) {
+          setImageUrls(a.imageUrls);
+          setFiles([]);
+        } else {
+          setImageUrls([]);
+        }
+      } catch (err) {
+        console.error("Ошибка загрузки лота", err);
+        setMsg({ text: "Не удалось загрузить данные лота", ok: false });
+        navigate('/profile');
+      } finally {
+        setIsEditModeLoading(false);
+      }
+    };
+    loadEditData();
+  }, [isEditMode, editId, navigate]);
 
   const updateFormState = (name, value) => {
     setFormData(p => ({ ...p, [name]: value }));
-    const newParams = new URLSearchParams(searchParams);
-    if (value) { newParams.set(name, value); } else { newParams.delete(name); }
-    setSearchParams(newParams, { replace: true });
   };
 
   const handleChange = e => {
     const { name, value } = e.target;
     updateFormState(name, value);
-    if (e.target.tagName === 'TEXTAREA') {
-      e.target.style.height = 'auto';
-      e.target.style.height = e.target.scrollHeight + 'px';
-    }
   };
 
   const handleNumericChange = e => {
     const { name, value } = e.target;
     if (name === 'mileage') {
-      const raw = value.replace(/\D/g, '');
-      updateFormState(name, raw);
+      updateFormState(name, value.replace(/\D/g, ''));
     } else {
       let val = value.replace(',', '.').replace(/[^\d.]/g, '');
       const parts = val.split('.');
@@ -152,14 +246,22 @@ function CreateAuction() {
       });
       if (newFiles.length > 0) {
         setFiles(p => [...p, ...newFiles]);
-        setMsg({ text: '', ok: true });
       }
     }
   };
 
   const removeFile = i => {
     setFiles(p => p.filter((_, idx) => idx !== i));
-    if (mainImageIndex === i) setMainImageIndex(0);
+  };
+
+  const removeExistingImage = (indexToRemove) => {
+    setImageUrls(prev => prev.filter((_, idx) => idx !== indexToRemove));
+    if (mainImageIndex === indexToRemove) setMainImageIndex(0);
+    else if (mainImageIndex > indexToRemove) setMainImageIndex(prev => prev - 1);
+  };
+
+  const setAsMain = (index) => {
+    setMainImageIndex(index);
   };
 
   const handleSubmit = async e => {
@@ -167,7 +269,9 @@ function CreateAuction() {
     if (!formData.sellerId) { setMsg({ text: 'Войдите в аккаунт', ok: false }); return; }
 
     const newErrors = {};
-    if (files.length === 0) newErrors.files = 'Добавьте фото';
+    if (imageUrls.length + files.length === 0) {
+      newErrors.files = 'Добавьте хотя бы одно фото';
+    }
     if (!formData.brandId) newErrors.brand = 'Выберите марку';
     if (!formData.modelId) newErrors.model = 'Выберите модель';
     if (!formData.year) newErrors.year = 'Выберите год';
@@ -193,39 +297,74 @@ function CreateAuction() {
       return;
     }
     if (formData.vin && formData.vin.length !== 17) newErrors.vin = 'VIN должен содержать ровно 17 символов';
-    if (formData.vin && !/^[A-HJ-NPR-Z0-9]{17}$/i.test(formData.vin)) {
-      newErrors.vin = 'VIN может содержать только латинские буквы и цифры (кроме I, O, Q)';
-    }
 
     setIsSubmitting(true);
-    setMsg({ text: 'Загрузка фото...', ok: true });
+    setMsg({ text: 'Сохранение...', ok: true });
 
     try {
-      const uploadedUrls = [];
-      for (let i = 0; i < files.length; i++) {
-        const fd = new FormData();
-        fd.append('file', files[i]);
-        const res = await axios.post('http://localhost:8080/api/files/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-        uploadedUrls.push(res.data.url);
+      let newUploadedUrls = [];
+      if (files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+          const fd = new FormData();
+          fd.append('file', files[i]);
+          const res = await axios.post('http://localhost:8080/api/files/upload', fd, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+          newUploadedUrls.push(res.data.url);
+        }
       }
 
-      const sorted = [...uploadedUrls];
-      if (mainImageIndex >= 0 && mainImageIndex < sorted.length) {
-        const main = sorted.splice(mainImageIndex, 1)[0];
-        sorted.unshift(main);
+      const finalImageUrls = [...imageUrls, ...newUploadedUrls];
+
+      if (mainImageIndex >= 0 && mainImageIndex < finalImageUrls.length && mainImageIndex !== 0) {
+        const main = finalImageUrls.splice(mainImageIndex, 1)[0];
+        finalImageUrls.unshift(main);
       }
 
-      const payload = { ...formData, regionId: selectedRegion, imageUrls: sorted };
-      await axios.post('http://localhost:8080/api/auctions', payload);
+      const cleanPayload = (data) => {
+        const cleaned = { ...data };
+        ['year', 'mileage', 'transmissionId', 'fuelTypeId', 'cityId', 'brandId', 'modelId'].forEach(key => {
+          const val = cleaned[key];
+          if (val === '' || val === null || val === undefined) {
+            cleaned[key] = null;
+          } else {
+            const num = Number(val);
+            cleaned[key] = !isNaN(num) ? num : val;
+          }
+        });
+        if (cleaned.startingPrice === '') cleaned.startingPrice = null;
+        else if (cleaned.startingPrice !== null) cleaned.startingPrice = parseFloat(cleaned.startingPrice);
+        if (cleaned.minBidStep === '') cleaned.minBidStep = null;
+        else if (cleaned.minBidStep !== null) cleaned.minBidStep = parseFloat(cleaned.minBidStep);
+        return cleaned;
+      };
 
-      if (copyIdRef.current) {
-        try { await axios.delete(`http://localhost:8080/api/auctions/${copyIdRef.current}`, { params: { userId: formData.sellerId } }); } catch (e) {}
-        copyIdRef.current = null;
+      const payload = cleanPayload({ ...formData, regionId: selectedRegion ? Number(selectedRegion) : null, imageUrls: finalImageUrls });
+
+      if (isEditMode) {
+        await axios.put(`http://localhost:8080/api/auctions/${editId}`, payload, {
+          params: { userId: formData.sellerId }
+        });
+        setMsg({ text: 'Лот успешно обновлён!', ok: true });
+      } else {
+        await axios.post('http://localhost:8080/api/auctions', payload);
+
+        // Удаляем исходный лот при копировании
+        if (copyDataLoadedRef.current && copyId) {
+          try {
+            await axios.delete(`http://localhost:8080/api/auctions/${copyId}`, {
+              params: { userId: formData.sellerId }
+            });
+          } catch (e) {
+            console.error('Не удалось удалить исходный лот:', e);
+          }
+        }
+        setMsg({ text: 'Лот отправлен на модерацию!', ok: true });
       }
+      setTimeout(() => { navigate('/profile'); }, 2000);
 
-      setMsg({ text: 'Лот отправлен на модерацию!', ok: true });
-      setTimeout(() => { window.location.href = '/profile'; }, 2000);
     } catch (err) {
+      console.error('Ошибка при сохранении:', err.response?.data || err.message);
       setMsg({ text: 'Ошибка: ' + (err.response?.data || err.message), ok: false });
       setIsSubmitting(false);
     }
@@ -238,169 +377,186 @@ function CreateAuction() {
     return (parseInt(parts[0]) || 0).toLocaleString('ru-RU') + (parts[1] !== undefined ? ',' + parts[1] : '');
   };
 
+  let pageTitle = 'Выставить автомобиль на аукцион';
+  let pageEyebrow = 'Новый лот';
+  if (isEditMode) {
+    pageTitle = 'Редактирование лота';
+    pageEyebrow = 'Редактирование';
+  } else if (isCopyMode) {
+    pageTitle = 'Выставить повторно';
+    pageEyebrow = 'Копирование лота';
+  }
+
+  if ((isEditMode || isCopyMode) && isEditModeLoading) {
+    return (
+        <div className="ca">
+          <div className="ca-hero"><div className="ca-container"><h1 className="ca-title">Загрузка...</h1></div></div>
+          <main className="ca-container ca-body"><p style={{ textAlign: 'center' }}>Загружаем данные лота...</p></main>
+        </div>
+    );
+  }
+
   return (
       <div className="ca">
         <div className="ca-hero">
           <div className="ca-container">
-            <p className="ca-eyebrow">Новый лот</p>
-            <h1 className="ca-title">Выставить автомобиль<br />на аукцион</h1>
+            <p className="ca-eyebrow">{pageEyebrow}</p>
+            <h1 className="ca-title">{pageTitle}</h1>
           </div>
         </div>
 
         <main className="ca-container ca-body">
           <div className="ca-form-wrap">
             <form onSubmit={handleSubmit} className="ca-form">
-
               <section className="ca-section">
                 <p className="ca-section__title">Автомобиль</p>
-
-                <p className="ca-section__hint" style={{marginTop: '-1rem', marginBottom: '1rem', color: 'var(--text-3)'}}>
-                  Если вы не нашли нужную марку или модель в списке, выберите <strong>«Другое»</strong> и укажите подробности в описании.
-                </p>
-
                 <div className="ca-grid ca-grid--2">
-
-                  {/* БЛОК МАРКИ - Просто Select */}
                   <Field label="Марка" required>
-                    <select className="ca-select" name="brandId" value={formData.brandId}
-                            onChange={e => handleSelectChangeWithTrigger(e, setSelectedBrand)}>
+                    <select
+                        className="ca-select"
+                        name="brandId"
+                        value={formData.brandId || ''}
+                        onChange={e => handleSelectChangeWithTrigger(e, setSelectedBrand)}
+                        disabled={isEditMode}
+                        key={`brand-select-${formData.brandId}`}
+                    >
                       <option value="">Выберите марку...</option>
-                      {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      {brands.map(b => <option key={b.id} value={String(b.id)}>{b.name}</option>)}
                     </select>
                   </Field>
-
-                  {/* БЛОК МОДЕЛИ - Просто Select */}
                   <Field label="Модель" required>
-                    <select className="ca-select" name="modelId" value={formData.modelId}
-                            onChange={handleChange} disabled={!selectedBrand}>
+                    <select
+                        className="ca-select"
+                        name="modelId"
+                        value={formData.modelId || ''}
+                        onChange={handleChange}
+                        disabled={!selectedBrand || isEditMode}
+                        // === КЛЮЧЕВОЕ: key меняется при изменении бренда И модели ===
+                        key={`model-select-${selectedBrand}-${formData.modelId}`}
+                    >
                       <option value="">Выберите модель...</option>
-                      {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      {models.map(m => (
+                          <option key={m.id} value={String(m.id)}>
+                            {m.name}
+                          </option>
+                      ))}
                     </select>
                   </Field>
-
                   <Field label="Год выпуска" required>
-                    <select className="ca-select" name="year" value={formData.year} onChange={handleChange}>
+                    <select className="ca-select" name="year" value={formData.year || ''} onChange={handleChange} disabled={isEditMode}>
                       <option value="">Выберите год...</option>
                       {yearsList.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                   </Field>
-
                   <Field label="VIN-код (17 символов)">
-                    <input className="ca-input" type="text" name="vin"
-                           placeholder="XTA210930Y2764409" maxLength="17"
-                           value={formData.vin}
-                           onChange={e => updateFormState('vin', e.target.value.toUpperCase())} />
+                    <input className="ca-input" type="text" name="vin" placeholder="XTA210930Y2764409" maxLength="17" value={formData.vin || ''} onChange={e => updateFormState('vin', e.target.value.toUpperCase())} disabled={isEditMode} />
                   </Field>
-
                   <Field label="Пробег (км)" required>
-                    <input className="ca-input" type="text" inputMode="numeric" name="mileage"
-                           placeholder="50 000" value={formatSpaces(formData.mileage)} onChange={handleNumericChange} />
+                    <input className="ca-input" type="text" inputMode="numeric" name="mileage" placeholder="50 000" value={formatSpaces(formData.mileage)} onChange={handleNumericChange} />
                   </Field>
-
                   <Field label="КПП" required>
-                    <select className="ca-select" name="transmissionId" value={formData.transmissionId} onChange={handleChange}>
+                    <select className="ca-select" name="transmissionId" value={formData.transmissionId || ''} onChange={handleChange}>
                       <option value="">Выберите КПП...</option>
-                      {transmissions.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      {transmissions.map(t => <option key={t.id} value={String(t.id)}>{t.name}</option>)}
                     </select>
                   </Field>
-
                   <Field label="Тип топлива" required>
-                    <select className="ca-select" name="fuelTypeId" value={formData.fuelTypeId} onChange={handleChange}>
+                    <select className="ca-select" name="fuelTypeId" value={formData.fuelTypeId || ''} onChange={handleChange}>
                       <option value="">Выберите топливо...</option>
-                      {fuelTypes.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                      {fuelTypes.map(f => <option key={f.id} value={String(f.id)}>{f.name}</option>)}
                     </select>
                   </Field>
                 </div>
               </section>
 
-              {/* Местоположение */}
               <section className="ca-section">
                 <p className="ca-section__title">Местоположение</p>
                 <div className="ca-grid ca-grid--2">
                   <Field label="Область" required>
-                    <select className="ca-select" name="regionId" value={selectedRegion}
-                            onChange={e => handleSelectChangeWithTrigger(e, setSelectedRegion)}>
+                    <select className="ca-select" name="regionId" value={selectedRegion || ''} onChange={e => handleSelectChangeWithTrigger(e, setSelectedRegion)} disabled={isEditMode}>
                       <option value="">Выберите область...</option>
-                      {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                      {regions.map(r => <option key={r.id} value={String(r.id)}>{r.name}</option>)}
                     </select>
                   </Field>
                   <Field label="Город" required>
-                    <select className="ca-select" name="cityId" value={formData.cityId}
-                            onChange={handleChange} disabled={!selectedRegion}>
+                    <select className="ca-select" name="cityId" value={formData.cityId || ''} onChange={handleChange} disabled={!selectedRegion || isEditMode}
+                            key={`city-select-${selectedRegion}-${formData.cityId}`}
+                    >
                       <option value="">Выберите город...</option>
-                      {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {cities.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
                     </select>
                   </Field>
                 </div>
               </section>
 
-              {/* Параметры торгов */}
               <section className="ca-section">
                 <p className="ca-section__title">Параметры торгов</p>
                 <div className="ca-grid ca-grid--3">
-                  <Field label={<>Начальная цена (<BynIcon className="ca-label-icon" />)</>} required>
-                    <input className="ca-input" type="text" inputMode="decimal" name="startingPrice"
-                           placeholder="10 000" value={formatSpaces(formData.startingPrice)} onChange={handleNumericChange} />
+                  <Field label="Начальная цена (BYN)" required>
+                    <input className="ca-input" type="text" inputMode="decimal" name="startingPrice" placeholder="10 000" value={formatSpaces(formData.startingPrice)} onChange={handleNumericChange} />
                   </Field>
-                  <Field label={<>Минимальный шаг (<BynIcon className="ca-label-icon" />)</>} required>
-                    <input className="ca-input" type="text" inputMode="decimal" name="minBidStep"
-                           placeholder="100" value={formatSpaces(formData.minBidStep)} onChange={handleNumericChange} />
+                  <Field label="Минимальный шаг (BYN)" required>
+                    <input className="ca-input" type="text" inputMode="decimal" name="minBidStep" placeholder="100" value={formatSpaces(formData.minBidStep)} onChange={handleNumericChange} />
                   </Field>
                   <Field label="Дата и время окончания" required>
-                    <input className="ca-input" type="datetime-local" name="endTime"
-                           value={formData.endTime} onChange={handleChange}
-                           min={minDateTime} max="2099-12-31T23:59" />
+                    <input className="ca-input" type="datetime-local" name="endTime" value={formData.endTime || ''} onChange={handleChange} min={minDateTime} max="2099-12-31T23:59" />
                   </Field>
                 </div>
               </section>
 
-              {/* Описание */}
               <section className="ca-section">
                 <p className="ca-section__title">Описание</p>
                 <Field label="Подробно опишите состояние автомобиля" required>
-                  <textarea className="ca-textarea" name="description" rows="4"
-                            placeholder="Состояние кузова, салона, техническое обслуживание..."
-                            value={formData.description} onChange={handleChange} />
+                  <textarea className="ca-textarea" name="description" rows="4" placeholder="Состояние кузова, салона..." value={formData.description || ''} onChange={handleChange} />
                 </Field>
               </section>
 
-              {/* Фотографии */}
               <section className="ca-section">
                 <p className="ca-section__title">Фотографии</p>
-                <p className="ca-section__hint">Кликните на фото, чтобы сделать его главным.<span className="hint-required"> *</span></p>
+                <p className="ca-section__hint">Кликните на фото, чтобы сделать его главным. <span style={{color:'red'}}>*</span></p>
+
+                {imageUrls.length > 0 && (
+                    <div className="ca-preview" style={{ marginBottom: '1rem' }}>
+                      {imageUrls.map((url, i) => (
+                          <div key={`existing-${i}`} className={`ca-thumb${i === mainImageIndex ? ' ca-thumb--main' : ''}`} onClick={() => setAsMain(i)}>
+                            <img src={url} alt="" />
+                            {i === mainImageIndex && <span className="ca-thumb__badge">Главное</span>}
+                            <button type="button" className="ca-thumb__remove" onClick={(e) => { e.stopPropagation(); removeExistingImage(i); }}>×</button>
+                          </div>
+                      ))}
+                    </div>
+                )}
+
+                {files.length > 0 && (
+                    <div className="ca-preview">
+                      {files.map((file, i) => (
+                          <div key={`file-${i}`} className={`ca-thumb${(i + imageUrls.length) === mainImageIndex ? ' ca-thumb--main' : ''}`} onClick={() => setAsMain(i + imageUrls.length)}>
+                            <img src={URL.createObjectURL(file)} alt="" />
+                            {(i + imageUrls.length) === mainImageIndex && <span className="ca-thumb__badge">Главное</span>}
+                            <button type="button" className="ca-thumb__remove" onClick={e => { e.stopPropagation(); removeFile(i); }}>×</button>
+                          </div>
+                      ))}
+                    </div>
+                )}
+
                 <div className="ca-dropzone" onClick={() => document.getElementById('ca-file-input').click()}>
                   <span className="ca-dropzone__icon">+</span>
                   <p className="ca-dropzone__text">Нажмите для выбора фотографий</p>
                   <p className="ca-dropzone__hint">JPG · PNG · WEBP</p>
                   <input id="ca-file-input" type="file" onChange={handleFileChange} accept="image/*" multiple style={{ display: 'none' }} />
                 </div>
-                {files.length > 0 && (
-                    <div className="ca-preview">
-                      {files.map((file, i) => (
-                          <div key={i} className={`ca-thumb${i === mainImageIndex ? ' ca-thumb--main' : ''}`}
-                               onClick={() => setMainImageIndex(i)} title="Сделать главным">
-                            <img src={URL.createObjectURL(file)} alt="" />
-                            {i === mainImageIndex && <span className="ca-thumb__badge">Главное</span>}
-                            <button type="button" className="ca-thumb__remove" onClick={e => { e.stopPropagation(); removeFile(i); }}>×</button>
-                          </div>
-                      ))}
-                    </div>
-                )}
               </section>
 
-              {/* Submit */}
               <div className="ca-submit">
                 {msg.text && (<p className={`ca-msg${msg.ok ? ' ca-msg--ok' : ' ca-msg--err'}`}>{msg.text}</p>)}
                 <button type="submit" className={`ca-btn ca-btn--gold ca-btn--lg ca-btn--full${isSubmitting ? ' ca-btn--disabled' : ''}`} disabled={isSubmitting}>
-                  {isSubmitting ? 'Отправка...' : 'Опубликовать лот'}
+                  {isSubmitting ? 'Сохранение...' : (isEditMode ? 'Сохранить изменения' : 'Опубликовать лот')}
                 </button>
               </div>
-
             </form>
           </div>
         </main>
 
-        {/* Footer */}
         <footer className="ca-footer">
           <div className="ca-footer__grid">
             <div><p className="ca-footer__wordmark">BiDrive</p><p className="ca-footer__desc">Платформа онлайн-аукционов автомобилей.</p></div>

@@ -1,6 +1,9 @@
 package com.bidrive.backend.service;
 
 import com.bidrive.backend.dto.BidHistoryDTO;
+import com.bidrive.backend.dto.AuctionUpdateRequest;
+import com.bidrive.backend.entity.CarImage;
+import com.bidrive.backend.repository.CarImageRepository;
 import com.bidrive.backend.entity.*;
 import com.bidrive.backend.repository.*;
 import org.slf4j.Logger;
@@ -156,9 +159,36 @@ public class AuctionService {
 
     @Transactional
     public void deleteAuction(Long auctionId, Long requestingUserId) {
-        Auction auction = auctionRepository.findById(auctionId).orElseThrow(() -> new RuntimeException("Лот не найден"));
-        if (!auction.getSeller().getId().equals(requestingUserId)) throw new RuntimeException("Вы не можете удалить чужой лот");
-        if ("ACTIVE".equals(auction.getStatus())) throw new RuntimeException("Нельзя удалить активный аукцион");
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new RuntimeException("Лот не найден"));
+
+        // 1. Проверка прав
+        if (!auction.getSeller().getId().equals(requestingUserId)) {
+            throw new RuntimeException("Вы не можете удалить чужой лот");
+        }
+
+        // 2. Логика удаления по статусам
+        if ("PENDING".equals(auction.getStatus())) {
+            // Если на модерации — удаляем смело
+            auctionRepository.delete(auction);
+            return;
+        }
+
+        if ("ACTIVE".equals(auction.getStatus())) {
+            // Если в каталоге — проверяем наличие ставок
+            boolean hasBids = bidRepository.existsByAuctionId(auctionId);
+
+            if (hasBids) {
+                // Если ставки есть — ЗАПРЕЩАЕМ удаление (защита покупателей)
+                throw new RuntimeException("Нельзя удалить лот, на который уже есть ставки");
+            }
+
+            // Если ставок нет — РАЗРЕШАЕМ удаление (продавец передумал)
+            auctionRepository.delete(auction);
+            return;
+        }
+
+        // Для статусов FINISHED или REJECTED удаление тоже возможно
         auctionRepository.delete(auction);
     }
 
@@ -210,5 +240,71 @@ public class AuctionService {
         } else {
             log.info("Аукцион {} завершен без ставок.", auctionId);
         }
+    }
+
+    // === ОБНОВЛЕНИЕ АУКЦИОНА (ДЛЯ РЕДАКТИРОВАНИЯ) ===
+    // === ОБНОВЛЕНИЕ АУКЦИОНА (ДЛЯ РЕДАКТИРОВАНИЯ) ===
+    @Transactional
+    public void updateAuction(Long auctionId, Long requestingUserId, AuctionUpdateRequest request) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new RuntimeException("Лот не найден"));
+
+        if (!auction.getSeller().getId().equals(requestingUserId)) {
+            throw new RuntimeException("Вы не можете редактировать чужой лот");
+        }
+        if (!"PENDING".equals(auction.getStatus()) && !"ACTIVE".equals(auction.getStatus())) {
+            throw new RuntimeException("Редактирование доступно только для лотов на модерации или активных");
+        }
+        if (bidRepository.existsByAuctionId(auctionId)) {
+            throw new RuntimeException("Нельзя редактировать лот, на который уже есть ставки");
+        }
+
+        // Обновление текстовых полей
+        if (request.getBrandId() != null) auction.setBrand(brandRepository.findById(request.getBrandId()).orElseThrow());
+        if (request.getModelId() != null) auction.setModel(modelRepository.findById(request.getModelId()).orElseThrow());
+        if (request.getYear() != null) auction.setYear(request.getYear());
+        if (request.getMileage() != null) auction.setMileage(request.getMileage());
+        if (request.getTransmissionId() != null) auction.setTransmission(transmissionRepository.findById(request.getTransmissionId()).orElseThrow());
+        if (request.getFuelTypeId() != null) auction.setFuelType(fuelTypeRepository.findById(request.getFuelTypeId()).orElseThrow());
+        if (request.getCityId() != null) auction.setCity(cityRepository.findById(request.getCityId()).orElseThrow());
+        if (request.getDescription() != null) auction.setDescription(request.getDescription());
+        if (request.getStartingPrice() != null) {
+            auction.setStartingPrice(request.getStartingPrice());
+            auction.setCurrentPrice(request.getStartingPrice());
+        }
+        if (request.getMinBidStep() != null) auction.setMinBidStep(request.getMinBidStep());
+        if (request.getEndTime() != null) auction.setEndTime(request.getEndTime());
+        if (request.getVin() != null && !request.getVin().trim().isEmpty()) {
+            auction.setVin(request.getVin().trim().toUpperCase());
+        }
+
+        // === 🔥 ОБНОВЛЕНИЕ ФОТО (НАТИВНЫЙ ПОДХОД HIBERNATE) ===
+        if (request.getImageUrls() != null) {
+            // 1. Очищаем коллекцию в памяти.
+            //    Благодаря orphanRemoval=true Hibernate САМ сделает DELETE
+            //    из таблицы car_images для всех старых записей при save().
+            auction.getImages().clear();
+
+            // 2. Добавляем новые картинки в коллекцию.
+            //    Hibernate при save() сделает INSERT.
+            for (int i = 0; i < request.getImageUrls().size(); i++) {
+                CarImage img = new CarImage();
+                img.setAuction(auction);
+                img.setImageUrl(request.getImageUrls().get(i));
+                img.setDisplayOrder(i + 1);
+                img.setIsMain(i == 0);
+                auction.getImages().add(img);  // ← add() вместо save()
+            }
+
+            // 3. Обновляем главное фото
+            if (!request.getImageUrls().isEmpty()) {
+                auction.setMainImageUrl(request.getImageUrls().getFirst());
+            } else {
+                auction.setMainImageUrl(null);
+            }
+        }
+
+        auction.setUpdatedAt(LocalDateTime.now());
+        auctionRepository.save(auction);
     }
 }

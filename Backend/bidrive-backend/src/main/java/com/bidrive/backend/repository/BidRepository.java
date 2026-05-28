@@ -17,4 +17,6 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
 
     // Найти ставки пользователя по аукциону
     List<Bid> findByAuctionIdAndUserId(Long auctionId, Long userId);
+
+    boolean existsByAuctionId(Long auctionId);
 }
