@@ -220,8 +220,8 @@ public class AuctionService {
             // === ФОРМАТ: TEMPLATE:{TYPE}:{AUCTION_ID}:{CONTACT_USER_ID} ===
             Notification notifWinner = new Notification();
             notifWinner.setUser(winner);
-            notifWinner.setType("WIN");
-            notifWinner.setMessage("TEMPLATE:WIN:" + auction.getId() + ":" + seller.getId());
+            notifWinner.setType("AUCTION_WON");
+            notifWinner.setMessage("TEMPLATE:AUCTION_WON:" + auction.getId() + ":" + seller.getId());
             notifWinner.setAuctionId(auction.getId());
             notifWinner.setIsRead(false);
             notifWinner.setCreatedAt(LocalDateTime.now());
@@ -229,8 +229,8 @@ public class AuctionService {
 
             Notification notifSeller = new Notification();
             notifSeller.setUser(seller);
-            notifSeller.setType("SALE");
-            notifSeller.setMessage("TEMPLATE:SALE:" + auction.getId() + ":" + winner.getId());
+            notifSeller.setType("AUCTION_SOLD");
+            notifSeller.setMessage("TEMPLATE:AUCTION_SOLD:" + auction.getId() + ":" + winner.getId());
             notifSeller.setAuctionId(auction.getId());
             notifSeller.setIsRead(false);
             notifSeller.setCreatedAt(LocalDateTime.now());

@@ -492,10 +492,10 @@ function CreateAuction() {
               <section className="ca-section">
                 <p className="ca-section__title">Параметры торгов</p>
                 <div className="ca-grid ca-grid--3">
-                  <Field label="Начальная цена (BYN)" required>
+                  <Field label={<>Начальная цена (<BynIcon />)</>} required>
                     <input className="ca-input" type="text" inputMode="decimal" name="startingPrice" placeholder="10 000" value={formatSpaces(formData.startingPrice)} onChange={handleNumericChange} />
                   </Field>
-                  <Field label="Минимальный шаг (BYN)" required>
+                  <Field label={<>Минимальный шаг (<BynIcon />)</>} required>
                     <input className="ca-input" type="text" inputMode="decimal" name="minBidStep" placeholder="100" value={formatSpaces(formData.minBidStep)} onChange={handleNumericChange} />
                   </Field>
                   <Field label="Дата и время окончания" required>
@@ -559,11 +559,32 @@ function CreateAuction() {
 
         <footer className="ca-footer">
           <div className="ca-footer__grid">
-            <div><p className="ca-footer__wordmark">BiDrive</p><p className="ca-footer__desc">Платформа онлайн-аукционов автомобилей.</p></div>
-            <div><p className="ca-footer__col-title">Навигация</p><ul className="ca-footer__list"><li><Link to="/catalog">Каталог</Link></li> <li><Link to="/rules">Правила платформы</Link></li></ul></div>
-            <div><p className="ca-footer__col-title">Контакты</p><ul className="ca-footer__list"><li><a href="mailto:support@bidrive.by">support@bidrive.by</a></li></ul></div>
+            <div>
+              <p className="ca-footer__wordmark">BiDrive</p>
+              <p className="ca-footer__desc">Платформа онлайн-аукционов автомобилей.</p>
+            </div>
+
+            {/* === Блок навигации === */}
+            <div>
+              <p className="ca-footer__col-title">Навигация</p>
+              <ul className="ca-footer__list">
+                <li><Link to="/catalog">Каталог</Link></li>
+                {/* === Ссылка на правила платформы === */}
+                <li><Link to="/rules" className="ca-footer__rules-link">Правила платформы</Link></li>
+              </ul>
+            </div>
+
+            {/* === Блок контактов === */}
+            <div>
+              <p className="ca-footer__col-title">Контакты</p>
+              <ul className="ca-footer__list">
+                <li><a href="mailto:support@bidrive.by">support@bidrive.by</a></li>
+              </ul>
+            </div>
           </div>
-          <div className="ca-footer__bottom"><p>© 2026 BiDrive. Дипломный проект.</p></div>
+          <div className="ca-footer__bottom">
+            <p>© {new Date().getFullYear()} BiDrive. Дипломный проект.</p>
+          </div>
         </footer>
       </div>
   );

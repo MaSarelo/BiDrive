@@ -80,7 +80,7 @@
 }
 
 .ca-hero {
-  padding: 3.25rem 0 2.25rem;
+  padding: 2.25rem 0 2.25rem;
   border-bottom: 0.0625rem solid var(--border);
 }
 
@@ -702,4 +702,23 @@
     background: #fff;
     color: #000;
   }
+}
+
+/* === Уменьшение иконки рубля в лейблах полей цены === */
+.ca-label .byn-icon,
+.ca-label svg {
+  width: 0.65em;
+  height: 0.65em;
+  vertical-align: baseline;
+  margin: 0 0.1em;
+  color: var(--text-3);
+  flex-shrink: 0;
+  display: inline-block;
+  line-height: 1;
+}
+
+/* Для светлой темы — чуть темнее иконка для контраста */
+.light-theme .ca-label .byn-icon,
+.light-theme .ca-label svg {
+  color: var(--text-2);
 }

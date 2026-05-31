@@ -32,15 +32,11 @@ const validateEmail = (email) => {
 };
 
 const validatePhone = (phone) => {
-    // Телефон не обязателен, '+375 (' считается пустым
     if (!phone || phone.trim() === '' || phone === '+375 (') return null;
-
-    // Строгая проверка: только полный формат +375 (XX) XXX-XX-XX
     const fullMask = /^\+375 \(\d{2}\) \d{3}-\d{2}-\d{2}$/;
     if (!fullMask.test(phone)) {
         return 'Введите полный номер: +375 (XX) XXX-XX-XX';
     }
-
     return null;
 };
 
@@ -55,7 +51,6 @@ const validatePassword = (password, isConfirm = false, currentPassword = '') => 
     }
     return null;
 };
-// =========================
 
 function Profile() {
     const [auctions, setAuctions] = useState([]);
@@ -63,7 +58,7 @@ function Profile() {
     const currentUserId = localStorage.getItem('userId');
     const navigate = useNavigate();
 
-    const [finishModal, setFinishModal] = useState({ open: false, id: null });
+    const [finishModal, setFinishModal] = useState({ open: false, id: null, error: '' });
     const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
     const [editProfileModal, setEditProfileModal] = useState(false);
 
@@ -103,7 +98,6 @@ function Profile() {
                 const phone = r.data.phone || '';
                 const digitsOnly = phone.replace(/\D/g, '');
                 const formattedPhone = digitsOnly ? formatPhone(digitsOnly) : '+375 (';
-
                 setUserData({
                     firstName: r.data.firstName || '',
                     lastName: r.data.lastName || '',
@@ -148,13 +142,12 @@ function Profile() {
             setAuctions(p => p.filter(a => a.id !== deleteModal.id));
             closeDeleteModal();
         } catch (err) {
-            alert('Ошибка: ' + (err.response?.data || 'Нет прав'));
-            closeDeleteModal();
+            setDeleteModal({ open: true, id: deleteModal.id, error: err.response?.data || 'Ошибка при удалении' });
         }
     };
 
-    const openFinishModal = (id) => setFinishModal({ open: true, id });
-    const closeFinishModal = () => setFinishModal({ open: false, id: null });
+    const openFinishModal = (id) => setFinishModal({ open: true, id, error: '' });
+    const closeFinishModal = () => setFinishModal({ open: false, id: null, error: '' });
 
     const confirmFinish = async () => {
         if (!finishModal.id) return;
@@ -163,8 +156,18 @@ function Profile() {
             setAuctions(p => p.map(a => a.id === finishModal.id ? { ...a, status: 'FINISHED' } : a));
             closeFinishModal();
         } catch (err) {
-            alert('Ошибка: ' + (err.response?.data || 'Нет прав'));
-            closeFinishModal();
+            const errorMsg = err.response?.data || '';
+            let userMessage = '';
+
+            if (errorMsg.includes('ставк')) {
+                userMessage = 'Вы не можете завершить торги, так как на лот уже есть ставки. Дождитесь окончания времени аукциона или обратитесь в поддержку.';
+            } else if (errorMsg.includes('прав') || errorMsg.includes('owner')) {
+                userMessage = 'Только владелец лота может завершить торги';
+            } else {
+                userMessage = 'Не удалось завершить торги: ' + (errorMsg || 'Вы не можете завершить торги, так как на лот уже есть ставки. Дождитесь окончания времени аукциона.');
+            }
+
+            setFinishModal({ open: true, id: finishModal.id, error: userMessage });
         }
     };
 
@@ -284,15 +287,11 @@ function Profile() {
                                         value={userData.phone}
                                         onChange={e => {
                                             const val = e.target.value;
-                                            // === КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ===
-                                            // Если длина уменьшилась (Backspace/Delete) — разрешаем удаление структурных символов
                                             if (val.length < userData.phone.length) {
-                                                // Не даём стереть код страны полностью
                                                 const min = '+375 (';
                                                 setUserData({...userData, phone: val.length < min.length ? min : val});
                                                 return;
                                             }
-                                            // При вводе применяем маску
                                             setUserData({...userData, phone: formatPhone(val)});
                                         }}
                                         placeholder="+375 (29) 123-45-67"
@@ -340,10 +339,26 @@ function Profile() {
                 <div className="pf-modal-overlay" onClick={closeFinishModal}>
                     <div className="pf-modal" onClick={e => e.stopPropagation()}>
                         <h3 className="pf-modal__title">Завершить торги?</h3>
-                        <p className="pf-modal__text">Победитель будет определен по последней ставке. Это действие нельзя отменить.</p>
+
+                        {finishModal.error && (
+                            <div className="pf-modal__error" style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fff5f5', border: '1px solid #feb2b2', borderRadius: '4px', color: '#c53030', fontSize: '0.9rem' }}>
+                                ⚠️ {finishModal.error}
+                            </div>
+                        )}
+
+                        <p className="pf-modal__text">
+                            {finishModal.error
+                                ? ''
+                                : 'Вы подтверждаете досрочное завершение торгов. Лот перейдёт в статус «Завершён», новые ставки приниматься не будут.'
+                            }
+                        </p>
                         <div className="pf-modal__actions">
-                            <button className="pf-btn pf-btn--ghost" onClick={closeFinishModal}>Отмена</button>
-                            <button className="pf-btn pf-btn--finish" onClick={confirmFinish}>Завершить</button>
+                            <button className="pf-btn pf-btn--ghost" onClick={closeFinishModal}>
+                                Закрыть
+                            </button>
+                            {!finishModal.error && (
+                                <button className="pf-btn pf-btn--finish" onClick={confirmFinish}>Завершить</button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -353,7 +368,9 @@ function Profile() {
                 <div className="pf-modal-overlay" onClick={closeDeleteModal}>
                     <div className="pf-modal" onClick={e => e.stopPropagation()}>
                         <h3 className="pf-modal__title pf-modal__title--danger">Удалить лот?</h3>
-                        <p className="pf-modal__text">Это действие необратимо. Фотографии и данные лота будут удалены без возможности восстановления.</p>
+                        <p className="pf-modal__text">
+                            Это действие необратимо. Фотографии и данные лота будут удалены без возможности восстановления.
+                        </p>
                         <div className="pf-modal__actions">
                             <button className="pf-btn pf-btn--ghost" onClick={closeDeleteModal}>Отмена</button>
                             <button className="pf-btn pf-btn--delete" onClick={confirmDelete}>Удалить</button>
@@ -376,15 +393,24 @@ function Profile() {
             </div>
 
             <div className="pf-wrap pf-body">
+                {/* === СТАТИСТИКА === */}
                 <div className="pf-stats">
                     <div className="pf-stat"><span className="pf-stat__num">{auctions.length}</span><span className="pf-stat__label">Всего лотов</span></div>
                     <div className="pf-stat"><span className="pf-stat__num">{active}</span><span className="pf-stat__label">Активных</span></div>
                     <div className="pf-stat"><span className="pf-stat__num">{finished}</span><span className="pf-stat__label">Завершённых</span></div>
                 </div>
-                <Link to="/create" className="pf-btn pf-btn--new">+ Выставить автомобиль</Link>
-                <p className="pf-section-heading">Мои объявления</p>
+
+                {/* === РАЗДЕЛИТЕЛЬ === */}
+                <div className="pf-divider"></div>
+
+                {/* === СПИСОК ЛОТОВ === */}
                 {auctions.length === 0 ? (
-                    <div className="pf-empty"><p className="pf-empty__title">У вас пока нет лотов</p><p className="pf-empty__sub">Используйте кнопку «Выставить автомобиль» выше, чтобы начать продажи</p></div>
+                    <div className="pf-empty">
+                        <p className="pf-empty__title">У вас пока нет лотов</p>
+                        <p className="pf-empty__sub">
+                            <Link to="/create" className="pf-link">Выставьте первый автомобиль</Link>, чтобы начать продажи
+                        </p>
+                    </div>
                 ) : (
                     <div className="pf-grid">
                         {auctions.map(a => {

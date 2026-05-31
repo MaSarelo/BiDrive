@@ -411,11 +411,34 @@ function AuctionDetails() {
         {/* Footer */}
         <footer className="ad-footer">
           <div className="ad-container ad-footer__grid">
-            <div><p className="ad-footer__wordmark">BiDrive</p><p className="ad-footer__desc">Платформа онлайн-аукционов автомобилей.</p></div>
-            <div><p className="ad-footer__col-title">Навигация</p><ul className="ad-footer__list"><li><Link to="/catalog">Каталог</Link></li><li><Link to="/register">Регистрация</Link></li></ul></div>
-            <div><p className="ad-footer__col-title">Контакты</p><ul className="ad-footer__list"><li><a href="mailto:support@bidrive.by">support@bidrive.by</a></li><li><a href="https://t.me/bidrive_bot">Telegram</a></li><li>+375 (29) 123-45-67</li></ul></div>
+            <div>
+              <p className="ad-footer__wordmark">BiDrive</p>
+              <p className="ad-footer__desc">Платформа онлайн-аукционов автомобилей.</p>
+            </div>
+
+            {/* === Блок навигации === */}
+            <div>
+              <p className="ad-footer__col-title">Навигация</p>
+              <ul className="ad-footer__list">
+                <li><Link to="/catalog">Каталог</Link></li>
+                <li><Link to="/register">Регистрация</Link></li>
+                {/* === Ссылка на правила платформы === */}
+                <li><Link to="/rules" className="ad-footer__rules-link">Правила платформы</Link></li>
+              </ul>
+            </div>
+
+            {/* === Блок контактов === */}
+            <div>
+              <p className="ad-footer__col-title">Контакты</p>
+              <ul className="ad-footer__list">
+                <li><a href="mailto:support@bidrive.by">support@bidrive.by</a></li>
+                <li><a href="https://t.me/bidrive_bot">Telegram</a></li>
+              </ul>
+            </div>
           </div>
-          <div className="ad-footer__bottom"><p>© 2026 BiDrive. Дипломный проект.</p></div>
+          <div className="ad-footer__bottom">
+            <p>© {new Date().getFullYear()} BiDrive. Дипломный проект.</p>
+          </div>
         </footer>
 
         {/* LIGHTBOX */}

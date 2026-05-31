@@ -395,7 +395,6 @@
   min-width: 140px;
   padding: 0.5rem 2.25rem 0.5rem 0.875rem;
   background: var(--bg-3);
-  /* ЯВНО СВЕТЛЫЙ треугольник (белый) */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23FFFFFF'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
@@ -1070,7 +1069,267 @@
   color: var(--text);
 }
 
-/* === АДАПТИВНОСТЬ === */
+/* === ЗАПРОСЫ НА ПРОДЛЕНИЕ === */
+.ap-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ap-request-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 0.375rem;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ap-request-card__info h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.ap-request-card__meta {
+  margin: 0.25rem 0;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.ap-request-card__meta strong {
+  color: var(--text);
+}
+
+.ap-request-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* === УЛУЧШЕНИЯ АДАПТИВА ДЛЯ МОБИЛЬНЫХ === */
+
+/* Запросы на продление - лучшая адаптивность */
+@media (max-width: 48rem) {
+  .ap-request-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.875rem;
+  }
+
+  .ap-request-card__actions {
+    width: 100%;
+    justify-content: stretch;
+    margin-top: 0.75rem;
+  }
+
+  .ap-request-card__actions .ap-btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Улучшение пагинации на маленьких экранах */
+@media (max-width: 36rem) {
+  .ap-pagination {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .ap-pagination-btn {
+    padding: 0.3125rem 0.625rem;
+    font-size: 0.75rem;
+  }
+
+  .ap-pagination-info {
+    order: -1;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Модальные окна - лучшая адаптивность */
+@media (max-width: 36rem) {
+  .ap-modal--large {
+    width: 95%;
+    padding: 1rem;
+  }
+
+  .ap-auction-detail {
+    gap: 1rem;
+  }
+
+  .ap-auction-detail__img {
+    max-height: 150px;
+  }
+
+  .ap-modal__actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .ap-modal__actions .ap-btn {
+    width: 100%;
+  }
+}
+
+/* Кнопки действий в карточках - удобнее на мобильных */
+@media (max-width: 36rem) {
+  .ap-card__actions {
+    min-width: 100%;
+    padding: 0.75rem;
+  }
+
+  .ap-card__actions .ap-btn {
+    padding: 0.625rem 0.5rem;
+    font-size: 0.6875rem;
+  }
+}
+
+/* Статистика - адаптивные карточки */
+@media (max-width: 30rem) {
+  .ap-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ap-stat-card__value {
+    font-size: 1.25rem;
+  }
+}
+
+/* Справочники - компактный вид на мобильных */
+@media (max-width: 30rem) {
+  .ap-ref-col {
+    padding: 1rem;
+  }
+
+  .ap-ref-form {
+    gap: 0.5rem;
+  }
+
+  .ap-ref-input,
+  .ap-ref-select {
+    font-size: 0.8125rem;
+    padding: 0.4375rem 0.625rem;
+  }
+
+  .ap-ref-list {
+    max-height: 15rem;
+  }
+
+  .ap-ref-item {
+    padding: 0.4375rem 0.625rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Пользователи - улучшение на очень маленьких экранах */
+@media (max-width: 30rem) {
+  .ap-user {
+    padding: 0.75rem 1rem;
+  }
+
+  .ap-user__name {
+    font-size: 0.8125rem;
+  }
+
+  .ap-user__email {
+    font-size: 0.6875rem;
+  }
+
+  .ap-user__actions {
+    gap: 0.5rem;
+  }
+
+  .ap-user__role-select,
+  .ap-user__block-btn,
+  .ap-user__unblock-btn {
+    min-width: 0;
+    font-size: 0.6875rem;
+    padding: 0.4375rem 0.75rem;
+  }
+}
+
+/* Toast уведомления - лучше на мобильных */
+@media (max-width: 36rem) {
+  .ap-toast {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .ap-toast__message {
+    font-size: 0.75rem;
+  }
+}
+
+/* Улучшение графика на мобильных */
+@media (max-width: 36rem) {
+  .ap-chart-container {
+    padding: 1rem;
+  }
+
+  .ap-chart-title {
+    font-size: 0.8125rem;
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* Заголовок - компактный на мобильных */
+@media (max-width: 36rem) {
+  .ap-header {
+    padding: 0.875rem 1rem;
+  }
+
+  .ap-title {
+    font-size: 1rem;
+  }
+
+  .ap-back {
+    font-size: 0.75rem;
+  }
+}
+
+/* Секции - меньше отступы на мобильных */
+@media (max-width: 36rem) {
+  .ap-section {
+    margin-bottom: 2rem;
+  }
+
+  .ap-section-heading {
+    font-size: 0.6875rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Поиск - улучшение на очень маленьких экранах */
+@media (max-width: 30rem) {
+  .ap-search-input {
+    padding: 0.4375rem 0.875rem 0.4375rem 2.25rem;
+    font-size: 0.8125rem;
+  }
+
+  .ap-search-icon {
+    left: 0.625rem;
+    width: 14px;
+    height: 14px;
+  }
+
+  .ap-search-clear {
+    right: 0.375rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* === ОСНОВНАЯ АДАПТИВНОСТЬ === */
 @media (max-width: 64rem) {
   .ap-reference {
     grid-template-columns: 1fr;
@@ -1171,56 +1430,54 @@
   background-size: 0.625rem 0.375rem;
 }
 
-/* === ЗАПРОСЫ НА ПРОДЛЕНИЕ === */
-.ap-requests-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.ap-request-card {
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
-  border-radius: 0.375rem;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.ap-request-card__info h4 {
-  margin: 0 0 0.5rem 0;
-  color: var(--text);
-  font-size: 1rem;
-}
-
-.ap-request-card__meta {
-  margin: 0.25rem 0;
-  font-size: 0.8125rem;
-  color: var(--text-2);
-}
-
-.ap-request-card__meta strong {
-  color: var(--text);
-}
-
-.ap-request-card__actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-/* Адаптив */
+/* === АДАПТАЦИЯ ГРАФИКА ДЛЯ МОБИЛЬНЫХ === */
 @media (max-width: 48rem) {
-  .ap-request-card {
-    flex-direction: column;
-    align-items: flex-start;
+  .ap-chart-container {
+    padding: 1rem 0.5rem;
   }
 
-  .ap-request-card__actions {
-    width: 100%;
-    justify-content: flex-end;
+  .ap-chart-title {
+    font-size: 0.8125rem;
+    margin-bottom: 0.75rem;
+  }
+}
+
+@media (max-width: 36rem) {
+  .ap-chart-container {
+    padding: 0.75rem 0.25rem;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    width: calc(100% + 1rem);
+  }
+
+  /* Уменьшаем отступы для YAxis (марки автомобилей) */
+  .recharts-wrapper {
+    margin-left: 0.5rem !important;
+  }
+
+  /* Уменьшаем размер шрифта для меток */
+  .recharts-text {
+    font-size: 0.75rem !important;
+  }
+
+  .recharts-yAxis .recharts-text {
+    text-anchor: end !important;
+  }
+}
+
+@media (max-width: 30rem) {
+  .ap-chart-container {
+    padding: 0.5rem 0.125rem;
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+    width: calc(100% + 1.5rem);
+  }
+
+  .ap-chart-title {
+    font-size: 0.75rem;
+  }
+
+  .recharts-text {
+    font-size: 0.6875rem !important;
   }
 }
