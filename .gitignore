@@ -1,0 +1,33 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Node.js
+Frontend/node_modules/
+Frontend/dist/
+Frontend/.vite/
+
+# Java
+*.class
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (если есть)
+uploads/
+
+# PEM файлы (SSL)
+*.pem
+*.key
