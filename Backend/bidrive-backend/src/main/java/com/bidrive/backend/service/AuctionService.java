@@ -109,14 +109,58 @@ public class AuctionService {
 
     @Transactional
     public void approveAuction(Long auctionId) {
-        Auction auction = auctionRepository.findById(auctionId).orElseThrow(() -> new RuntimeException("Аукцион не найден"));
-        if ("APPROVED".equals(auction.getModerationStatus())) throw new RuntimeException("Аукцион уже одобрен");
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new RuntimeException("Аукцион не найден"));
+
+        if ("APPROVED".equals(auction.getModerationStatus())) {
+            throw new RuntimeException("Аукцион уже одобрен");
+        }
+
+        // Проверка истёкшего времени
+        if (auction.getEndTime() != null && auction.getEndTime().isBefore(LocalDateTime.now())) {
+            auction.setModerationStatus("APPROVED");
+            auction.setStatus("FINISHED");
+            auction.setUpdatedAt(LocalDateTime.now());
+            auctionRepository.save(auction);
+
+            Notification notif = new Notification();
+            notif.setUser(auction.getSeller());
+            notif.setAuctionId(auction.getId());
+            notif.setType("AUCTION_UNSOLD");
+            notif.setMessage("️ Ваш лот \"" + auction.getBrand().getName() + " "
+                    + auction.getModel().getName() + "\" одобрен, но время аукциона уже истекло. "
+                    + "Лот завершён без ставок.");
+            notif.setIsRead(false);
+            notif.setCreatedAt(LocalDateTime.now());
+            notificationRepository.save(notif);
+
+            log.warn("Аукцион {} одобрен, но время уже истекло. Завершён без ставок.", auctionId);
+            return;
+        }
+
         auction.setModerationStatus("APPROVED");
         auction.setStatus("ACTIVE");
         auction.setUpdatedAt(LocalDateTime.now());
         auctionRepository.save(auction);
-        try { telegramService.sendNewLotNotification(auction); }
-        catch (Exception e) { log.error("Ошибка отправки в Telegram для аукциона {}", auctionId, e); }
+
+        // УВЕДОМЛЕНИЕ ПРОДАВЦУ ОБ ОДОБРЕНИИ ===
+        Notification approvalNotif = new Notification();
+        approvalNotif.setUser(auction.getSeller());
+        approvalNotif.setAuctionId(auction.getId());
+        approvalNotif.setType("AUCTION_APPROVED");
+        approvalNotif.setMessage("✅ Ваш лот \"" + auction.getBrand().getName() + " "
+                + auction.getModel().getName() + "\" прошёл модерацию и появился в каталоге. "
+                + "Удачи в торгах!");
+        approvalNotif.setIsRead(false);
+        approvalNotif.setCreatedAt(LocalDateTime.now());
+        notificationRepository.save(approvalNotif);
+
+
+        try {
+            telegramService.sendNewLotNotification(auction);
+        } catch (Exception e) {
+            log.error("Ошибка отправки в Telegram для аукциона {}", auctionId, e);
+        }
     }
 
     @Transactional
@@ -207,43 +251,20 @@ public class AuctionService {
         Auction auction = auctionRepository.findById(auctionId).orElseThrow(() -> new RuntimeException("Аукцион не найден"));
         if (!auction.getSeller().getId().equals(requestingUserId)) throw new RuntimeException("Вы не можете завершить чужой аукцион");
 
-        Bid topBid = bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId).orElse(null);
-        if (topBid != null) auction.setWinner(topBid.getUser());
+        // Запрет досрочного завершения, если есть ставки
+        boolean hasBids = bidRepository.existsByAuctionId(auctionId);
+        if (hasBids) {
+            throw new RuntimeException("На лот уже есть ставки. Досрочное завершение торгов невозможно. Дождитесь окончания времени аукциона.");
+        }
+
         auction.setStatus("FINISHED");
         auction.setUpdatedAt(LocalDateTime.now());
         auctionRepository.save(auction);
 
-        if (topBid != null) {
-            User winner = topBid.getUser();
-            User seller = auction.getSeller();
-
-            // === ФОРМАТ: TEMPLATE:{TYPE}:{AUCTION_ID}:{CONTACT_USER_ID} ===
-            Notification notifWinner = new Notification();
-            notifWinner.setUser(winner);
-            notifWinner.setType("AUCTION_WON");
-            notifWinner.setMessage("TEMPLATE:AUCTION_WON:" + auction.getId() + ":" + seller.getId());
-            notifWinner.setAuctionId(auction.getId());
-            notifWinner.setIsRead(false);
-            notifWinner.setCreatedAt(LocalDateTime.now());
-            notificationRepository.save(notifWinner);
-
-            Notification notifSeller = new Notification();
-            notifSeller.setUser(seller);
-            notifSeller.setType("AUCTION_SOLD");
-            notifSeller.setMessage("TEMPLATE:AUCTION_SOLD:" + auction.getId() + ":" + winner.getId());
-            notifSeller.setAuctionId(auction.getId());
-            notifSeller.setIsRead(false);
-            notifSeller.setCreatedAt(LocalDateTime.now());
-            notificationRepository.save(notifSeller);
-
-            log.info("Аукцион {} завершен. Победитель: {}", auctionId, winner.getEmail());
-        } else {
-            log.info("Аукцион {} завершен без ставок.", auctionId);
-        }
+        log.info("Аукцион {} завершен без ставок.", auctionId);
     }
 
-    // === ОБНОВЛЕНИЕ АУКЦИОНА (ДЛЯ РЕДАКТИРОВАНИЯ) ===
-    // === ОБНОВЛЕНИЕ АУКЦИОНА (ДЛЯ РЕДАКТИРОВАНИЯ) ===
+    // ОБНОВЛЕНИЕ АУКЦИОНА (ДЛЯ РЕДАКТИРОВАНИЯ)
     @Transactional
     public void updateAuction(Long auctionId, Long requestingUserId, AuctionUpdateRequest request) {
         Auction auction = auctionRepository.findById(auctionId)

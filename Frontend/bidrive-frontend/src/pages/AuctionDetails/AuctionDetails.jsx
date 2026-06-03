@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import './AuctionDetails.css';
 import BynIcon from '../../components/BynIcon';
@@ -21,6 +21,10 @@ const STATUS_MAP = {
 function AuctionDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // === РЕЖИМ ПРОСМОТРА ИЗ АДМИНКИ ===
+  const isReviewMode = searchParams.get('from') === 'admin';
 
   const [auction, setAuction] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,7 +37,7 @@ function AuctionDetails() {
 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [showExtendModal, setShowExtendModal] = useState(false); // === МОДАЛКА ПРОДЛЕНИЯ ===
+  const [showExtendModal, setShowExtendModal] = useState(false);
 
   const rate = useRate();
 
@@ -120,7 +124,6 @@ function AuctionDetails() {
         .catch(err => setBidMsg({ text: err.response?.data || 'Ошибка', ok: false }));
   };
 
-  // === ЛОГИКА ЗАПРОСА НА ПРОДЛЕНИЕ ===
   const handleRequestExtend = () => {
     axios.post(`${API_URL}/api/auctions/${id}/request-extend`, null, {
       params: { userId: currentUser.id, reason: 'Продавец запросил продление' }
@@ -237,7 +240,7 @@ function AuctionDetails() {
                 <div className="ad-deal-card ad-deal-card--winner">
                   <h3 className="ad-deal-card__title">Поздравляем! Вы выиграли этот лот</h3>
                   <p className="ad-deal-card__price">
-                    Итоговая цена: <strong>{currentPrice?.toLocaleString('ru-RU')} <BynIcon className="ad-currency-icon" /></strong>
+                    Итоговая цена: <strong>{currentPrice?.toLocaleString('ru-RU')} <BynIcon className="ad-currency-icon" /> </strong>
                     {rate && <span className="ad-price__usd">(~ ${Math.round(currentPrice / rate).toLocaleString('ru-RU')})</span>}
                   </p>
                   <div className="ad-deal-card__contacts">
@@ -360,31 +363,50 @@ function AuctionDetails() {
               </div>
               <div className="ad-price-card__divider" />
 
-              {currentUser ? (
-                  <div className="ad-bid-form">
-                    <label className="ad-bid-form__label">Ваша ставка (<BynIcon className="ad-currency-icon" />)</label>
-                    <input className="ad-bid-form__input" type="text" inputMode="numeric" placeholder="Сумма" value={bidAmount ? Number(bidAmount).toLocaleString('ru-RU') : ''} onChange={handleBidInput} disabled={!isActive} />
-                    <button type="button" className={`ad-btn ad-btn--gold ad-btn--full${!isActive ? ' ad-btn--disabled' : ''}`} onClick={handlePlaceBid} disabled={!isActive}>
-                      {isActive ? 'Сделать ставку' : 'Торги завершены'}
-                    </button>
-                    {bidMsg.text && <p className={`ad-bid-msg${bidMsg.ok ? ' ad-bid-msg--ok' : ' ad-bid-msg--err'}`}>{bidMsg.text}</p>}
-                  </div>
-              ) : (
-                  <div className="ad-bid-form ad-bid-form--center">
-                    <p className="ad-bid-form__login-text">Войдите, чтобы делать ставки</p>
-                    <Link to="/login" className="ad-btn ad-btn--gold ad-btn--full">Войти</Link>
+              {/* === РЕЖИМ ПРОСМОТРА ИЗ АДМИНКИ: скрываем форму ставок === */}
+              {!isReviewMode && (
+                  currentUser ? (
+                      <div className="ad-bid-form">
+                        <label className="ad-bid-form__label">Ваша ставка (<BynIcon className="ad-currency-icon" />)</label>
+                        <input className="ad-bid-form__input" type="text" inputMode="numeric" placeholder="Сумма" value={bidAmount ? Number(bidAmount).toLocaleString('ru-RU') : ''} onChange={handleBidInput} disabled={!isActive} />
+                        <button type="button" className={`ad-btn ad-btn--gold ad-btn--full${!isActive ? ' ad-btn--disabled' : ''}`} onClick={handlePlaceBid} disabled={!isActive}>
+                          {isActive ? 'Сделать ставку' : 'Торги завершены'}
+                        </button>
+                        {bidMsg.text && <p className={`ad-bid-msg${bidMsg.ok ? ' ad-bid-msg--ok' : ' ad-bid-msg--err'}`}>{bidMsg.text}</p>}
+                      </div>
+                  ) : (
+                      <div className="ad-bid-form ad-bid-form--center">
+                        <p className="ad-bid-form__login-text">Войдите, чтобы делать ставки</p>
+                        <Link to="/login" className="ad-btn ad-btn--gold ad-btn--full">Войти</Link>
+                      </div>
+                  )
+              )}
+
+              {/* === БЕЙДЖ РЕЖИМА ПРОСМОТРА === */}
+              {isReviewMode && (
+                  <div style={{
+                    marginTop: '1rem',
+                    padding: '0.75rem',
+                    background: 'var(--accent-dim)',
+                    borderRadius: '0.375rem',
+                    textAlign: 'center',
+                    fontSize: '0.8125rem',
+                    color: 'var(--accent)',
+                    fontWeight: '600',
+                    border: '1px solid rgba(59, 130, 246, 0.3)'
+                  }}>
+                    🔒 Режим просмотра (переход из панели администратора). Ставки недоступны.
                   </div>
               )}
 
               {/* === КНОПКА ЗАПРОСА ПРОДЛЕНИЯ (только для продавца) === */}
-              {isSeller && isActive && (
+              {isSeller && isActive && !isReviewMode && (
                   <div className="ad-extend-request">
                     <button
                         type="button"
                         className="ad-btn ad-btn--ghost ad-btn--full"
                         onClick={() => setShowExtendModal(true)}
                     >
-                      {/* ИКОНКА ЧАСОВ (SVG в стиле проекта) */}
                       <svg
                           className="ad-extend-icon"
                           width="1em"
@@ -416,18 +438,15 @@ function AuctionDetails() {
               <p className="ad-footer__desc">Платформа онлайн-аукционов автомобилей.</p>
             </div>
 
-            {/* === Блок навигации === */}
             <div>
               <p className="ad-footer__col-title">Навигация</p>
               <ul className="ad-footer__list">
                 <li><Link to="/catalog">Каталог</Link></li>
                 <li><Link to="/register">Регистрация</Link></li>
-                {/* === Ссылка на правила платформы === */}
                 <li><Link to="/rules" className="ad-footer__rules-link">Правила платформы</Link></li>
               </ul>
             </div>
 
-            {/* === Блок контактов === */}
             <div>
               <p className="ad-footer__col-title">Контакты</p>
               <ul className="ad-footer__list">

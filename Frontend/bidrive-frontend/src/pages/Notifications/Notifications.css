@@ -13,7 +13,7 @@
 }
 
 .nf-hero {
-    padding: 3.25rem 0 2.25rem; /* 52px 0 36px */
+    padding: 2.25rem 0 2.25rem;
     border-bottom: 1px solid var(--border);
 }
 
@@ -262,4 +262,9 @@
 /* Добавляем position: relative к .nf-item, если его еще нет */
 .nf-item {
     position: relative; /* Нужно для позиционирования крестика */
+}
+
+.nf-item__msg {
+    white-space: pre-line; /* Позволяет переносы строк через \n */
+    word-break: break-word; /* Перенос длинных слов */
 }

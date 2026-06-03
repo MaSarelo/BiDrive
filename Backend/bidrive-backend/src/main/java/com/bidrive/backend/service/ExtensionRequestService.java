@@ -37,6 +37,11 @@ public class ExtensionRequestService {
             throw new RuntimeException("Только продавец лота может запросить продление");
         }
 
+        // Проверяем, что аукцион активен
+        if (!"ACTIVE".equals(auction.getStatus())) {
+            throw new RuntimeException("Продление возможно только для активных аукционов");
+        }
+
         ExtensionRequest request = new ExtensionRequest();
         request.setAuction(auction);
         request.setUser(user);
@@ -54,22 +59,56 @@ public class ExtensionRequestService {
             throw new RuntimeException("Запрос уже обработан");
         }
 
+        Auction auction = request.getAuction();
+
+        // === НОВОЕ: Проверяем статус аукциона ===
+        if (!"ACTIVE".equals(auction.getStatus())) {
+            // Аукцион уже не активен — отклоняем запрос
+            request.setStatus(ExtensionRequest.RequestStatus.REJECTED);
+            request.setDecidedAt(LocalDateTime.now());
+            extensionRequestRepository.save(request);
+
+            // Уведомляем продавца
+            Notification sellerNotif = new Notification();
+            sellerNotif.setUser(auction.getSeller());
+            sellerNotif.setType("AUCTION_EXTENSION_REJECTED");
+            sellerNotif.setAuctionId(auction.getId());
+            sellerNotif.setMessage("[REJECT:" + auction.getId() + "] Запрос на продление лота \""
+                    + auction.getBrand().getName() + " " + auction.getModel().getName()
+                    + "\" отклонён: аукцион уже завершён.");
+            sellerNotif.setIsRead(false);
+            sellerNotif.setCreatedAt(LocalDateTime.now());
+            notificationRepository.save(sellerNotif);
+
+            throw new RuntimeException("Аукцион уже завершён, продление невозможно");
+        }
+        // ========================================
+
         // Проверка: лот уже продлевался?
         boolean alreadyExtended = extensionRequestRepository.existsByAuctionIdAndStatus(
-                request.getAuction().getId(),
+                auction.getId(),
                 ExtensionRequest.RequestStatus.APPROVED
         );
         if (alreadyExtended) {
             throw new RuntimeException("Этот лот уже был продлён. Одобрение невозможно.");
         }
 
-        Auction auction = request.getAuction();
         User seller = auction.getSeller();
         String carName = auction.getBrand().getName() + " " + auction.getModel().getName();
 
-        // === Продлеваем аукцион ===
-        auction.setEndTime(auction.getEndTime().plusDays(1));
+        // === НОВОЕ: Если endTime уже прошёл, но лот ещё ACTIVE (окно 0-10 сек до планировщика) ===
+        // Сначала продлеваем, чтобы планировщик не завершил лот в следующем цикле
+        LocalDateTime newEndTime;
+        if (auction.getEndTime().isBefore(LocalDateTime.now())) {
+            // Время уже прошло — отсчитываем 24 часа от текущего момента
+            newEndTime = LocalDateTime.now().plusDays(1);
+        } else {
+            // Время ещё не прошло — добавляем 24 часа к текущему endTime
+            newEndTime = auction.getEndTime().plusDays(1);
+        }
+        auction.setEndTime(newEndTime);
         auctionRepository.save(auction);
+        // ============================================================================
 
         // === УВЕДОМЛЕНИЕ ПРОДАВЦУ ===
         Notification sellerNotif = new Notification();
@@ -86,7 +125,6 @@ public class ExtensionRequestService {
         if (bids != null && !bids.isEmpty()) {
             for (Bid bid : bids) {
                 User bidder = bid.getUser();
-                // Не дублируем уведомление продавцу, если он тоже ставил
                 if (bidder != null && !bidder.getId().equals(seller.getId())) {
                     Notification bidderNotif = new Notification();
                     bidderNotif.setUser(bidder);

@@ -45,9 +45,6 @@ function AdminPage() {
         return () => observer.disconnect();
     }, []);
 
-    // === УДАЛЕНО: принудительная тёмная тема ===
-    // Теперь админка использует тему, выбранную пользователем
-
     const axisColor = isLightTheme ? '#1F2328' : '#F0F6FC';
     const gridColor = isLightTheme ? 'rgba(31, 35, 40, 0.15)' : '#30363D';
     const tooltipBg = isLightTheme ? '#FFFFFF' : '#161B22';
@@ -63,7 +60,6 @@ function AdminPage() {
     const [modalError, setModalError] = useState('');
     const [viewingAuction, setViewingAuction] = useState(null);
     const [roleModal, setRoleModal] = useState({ isOpen: false, userId: null, newRoleId: null });
-    const [viewingRequestAuction, setViewingRequestAuction] = useState(null);
 
     // === REFERENCES ===
     const [brands, setBrands] = useState([]);
@@ -127,19 +123,9 @@ function AdminPage() {
         axios.get(`${API_BASE}/api/admin/requests`)
             .then(r => {
                 setRequests(r.data);
-                setRequestPage(1); // Сброс на 1-ю страницу при новых данных
+                setRequestPage(1);
             })
             .catch(err => console.error('Ошибка загрузки запросов:', err));
-    };
-
-    const fetchAuctionDetailsForRequest = async (auctionId) => {
-        try {
-            const res = await axios.get(`${API_BASE}/api/auctions/${auctionId}`);
-            setViewingRequestAuction(res.data);
-        } catch (err) {
-            console.error('Ошибка загрузки деталей:', err);
-            showToast('Не удалось загрузить детали лота', 'error');
-        }
     };
 
     const fetchReferenceData = () => {
@@ -345,50 +331,6 @@ function AdminPage() {
                 </div>
             )}
 
-            {/* === МОДАЛКА ПРОСМОТРА ЛОТА ИЗ ЗАПРОСА НА ПРОДЛЕНИЕ === */}
-            {viewingRequestAuction && (
-                <div className="ap-modal-overlay" onClick={() => setViewingRequestAuction(null)}>
-                    <div className="ap-modal ap-modal--large" onClick={e => e.stopPropagation()}>
-                        <div className="ap-modal__header">
-                            <h3 className="ap-modal__title">Детали лота #{viewingRequestAuction.id}</h3>
-                            <button className="ap-modal__close" onClick={() => setViewingRequestAuction(null)}>×</button>
-                        </div>
-                        <div className="ap-modal__content">
-                            <div className="ap-auction-detail">
-                                <div className="ap-auction-detail__images">
-                                    {viewingRequestAuction.images && viewingRequestAuction.images.length > 0 ? (
-                                        viewingRequestAuction.images.map((img, idx) => (
-                                            <img key={idx} src={img.imageUrl} alt={`Фото ${idx + 1}`} className="ap-auction-detail__img" />
-                                        ))
-                                    ) : (
-                                        <div className="ap-auction-detail__no-img">Нет фото</div>
-                                    )}
-                                </div>
-                                <div className="ap-auction-detail__info">
-                                    <h4>{viewingRequestAuction.brand?.name} {viewingRequestAuction.model?.name}</h4>
-                                    <div className="ap-auction-detail__grid">
-                                        <div><strong>Год:</strong> {viewingRequestAuction.year}</div>
-                                        <div><strong>Пробег:</strong> {viewingRequestAuction.mileage?.toLocaleString()} км</div>
-                                        <div><strong>КПП:</strong> {viewingRequestAuction.transmission?.name}</div>
-                                        <div><strong>Топливо:</strong> {viewingRequestAuction.fuelType?.name}</div>
-                                        <div><strong>VIN:</strong> {viewingRequestAuction.vin || 'Не указан'}</div>
-                                        <div><strong>Город:</strong> {viewingRequestAuction.city?.name}</div>
-                                    </div>
-                                    <div className="ap-auction-detail__price"><strong>Начальная цена:</strong> {viewingRequestAuction.startingPrice?.toLocaleString()} BYN</div>
-                                    <div className="ap-auction-detail__price"><strong>Шаг ставки:</strong> {viewingRequestAuction.minBidStep?.toLocaleString()} BYN</div>
-                                    <div className="ap-auction-detail__time"><strong>Окончание:</strong> {new Date(viewingRequestAuction.endTime).toLocaleString('ru-RU')}</div>
-                                    {viewingRequestAuction.description && <div className="ap-auction-detail__desc"><strong>Описание:</strong><p>{viewingRequestAuction.description}</p></div>}
-                                    <div className="ap-auction-detail__seller"><strong>Продавец:</strong> {viewingRequestAuction.seller?.firstName} {viewingRequestAuction.seller?.lastName}</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="ap-modal__actions">
-                            <button className="ap-btn ap-btn--ghost" onClick={() => setViewingRequestAuction(null)}>Закрыть</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             <header className="ap-header">
                 <div className="ap-header__inner">
                     <h1 className="ap-title">Панель администратора</h1>
@@ -446,13 +388,14 @@ function AdminPage() {
                                         <p className="ap-request-card__meta">
                                             Запрошено: {new Date(req.createdAt).toLocaleString('ru-RU')}
                                         </p>
-                                        <button
+                                        {/* ИЗМЕНЕНО: Добавлен параметр ?from=admin для режима просмотра */}
+                                        <Link
+                                            to={`/auctions/${req.auctionId}?from=admin`}
                                             className="ap-btn ap-btn--ghost"
-                                            style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                                            onClick={() => fetchAuctionDetailsForRequest(req.auctionId)}
+                                            style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.75rem', display: 'inline-flex', textDecoration: 'none' }}
                                         >
                                             👁 Просмотреть лот
-                                        </button>
+                                        </Link>
                                     </div>
                                     <div className="ap-request-card__actions">
                                         <button

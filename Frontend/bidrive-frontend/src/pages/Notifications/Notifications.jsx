@@ -6,13 +6,59 @@ import { NotifContext } from '../../components/Layout';
 
 const API_BASE = 'http://localhost:8080';
 
+// ФУНКЦИЯ ФОРМАТИРОВАНИЯ ТЕЛЕФОНА
+const formatPhone = (phone) => {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return null;
+  let numberPart = digits;
+  if (digits.startsWith('375')) numberPart = digits.slice(3);
+  else if (digits.startsWith('80')) numberPart = digits.slice(2);
+  else if (digits.startsWith('7')) numberPart = digits.slice(1);
+  const limited = numberPart.slice(0, 9);
+  if (limited.length === 0) return null;
+  if (limited.length <= 2) return `+375 (${limited}`;
+  if (limited.length <= 5) return `+375 (${limited.slice(0, 2)}) ${limited.slice(2)}`;
+  if (limited.length <= 7) return `+375 (${limited.slice(0, 2)}) ${limited.slice(2, 5)}-${limited.slice(5)}`;
+  return `+375 (${limited.slice(0, 2)}) ${limited.slice(2, 5)}-${limited.slice(5, 7)}-${limited.slice(7)}`;
+};
+
+// === ИСПРАВЛЕНО: возвращает только контакт (телефон или email), без имени ===
+const formatContactInfo = (contact) => {
+  if (!contact) return 'Контакт не указан';
+
+  const formattedPhone = formatPhone(contact.phone);
+
+  if (formattedPhone) return `📞 ${formattedPhone}`;
+  if (contact.email) return `📧 ${contact.email}`;
+  return 'Контакт не указан';
+};
+// ============================================================================
+
+
+// СКЛОНЕНИЕ ЧИСЛИТЕЛЬНЫХ
+const pluralize = (count, one, few, many) => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod100 >= 11 && mod100 <= 14) return many;
+  if (mod10 === 1) return one;
+  if (mod10 >= 2 && mod10 <= 4) return few;
+  return many;
+};
+
+const formatUnreadCount = (count) => {
+  if (count === 0) return 'Все прочитаны';
+  const word = pluralize(count, 'непрочитанное', 'непрочитанных', 'непрочитанных');
+  return `${count} ${word}`;
+};
+
+
 export function Notifications() {
   const [notifications, setNotifications] = useState([]);
-  const [contacts, setContacts] = useState({}); // Кэш контактов: { userId: { name, phone } }
+  const [contacts, setContacts] = useState({});
   const userId = localStorage.getItem('userId');
   const { setNotifCount } = useContext(NotifContext);
 
-  // Загрузка уведомлений и предварительная загрузка контактов
   useEffect(() => {
     if (!userId) return;
 
@@ -21,11 +67,8 @@ export function Notifications() {
         const res = await axios.get(`${API_BASE}/api/notifications/user/${userId}`);
         setNotifications(res.data);
 
-        // Находим все уникальные ID контактов из шаблонов
         const templateNotifs = res.data.filter(n => n.message?.startsWith('TEMPLATE:'));
         const contactIds = [...new Set(templateNotifs.map(n => n.message.split(':')[3]))];
-
-        // Загружаем контакты параллельно
         contactIds.forEach(id => fetchContact(id));
       } catch (err) {
         console.error('Ошибка загрузки уведомлений:', err);
@@ -37,16 +80,17 @@ export function Notifications() {
     return () => clearInterval(intervalId);
   }, [userId]);
 
-  // Загрузка данных конкретного пользователя
+  // === ИЗМЕНЕНО: сохраняем phone и email отдельно ===
   const fetchContact = async (contactUserId) => {
-    if (contacts[contactUserId]) return; // Уже в кэше
+    if (contacts[contactUserId]) return;
     try {
       const res = await axios.get(`${API_BASE}/api/users/${contactUserId}`);
       setContacts(prev => ({
         ...prev,
         [contactUserId]: {
           name: `${res.data.firstName || ''} ${res.data.lastName || ''}`.trim() || 'Пользователь',
-          phone: res.data.phone || res.data.email || 'Не указан'
+          phone: res.data.phone || '',   // ← отдельно телефон
+          email: res.data.email || ''    // ← отдельно email
         }
       }));
     } catch (err) {
@@ -54,8 +98,11 @@ export function Notifications() {
     }
   };
 
-  // Рендер сообщения с поддержкой шаблонов
   const renderMessage = (notif) => {
+    if (notif.type === 'AUCTION_APPROVED') {
+      return '✅ Ваш лот прошёл модерацию и появился в каталоге. Удачи в торгах!';
+    }
+
     if (notif.message?.startsWith('TEMPLATE:')) {
       const parts = notif.message.split(':');
       const type = parts[1];
@@ -64,15 +111,32 @@ export function Notifications() {
 
       if (!contact) return '🔄 Загрузка контактов...';
 
+      const contactInfo = formatContactInfo(contact);
+
       if (type === 'AUCTION_WON' || type === 'WIN') {
-        return `🎉 Вы выиграли лот! Свяжитесь с продавцом: ${contact.name} (${contact.phone})`;
+        return (
+            <>
+              <div style={{ whiteSpace: 'nowrap' }}>
+                🎉 Вы выиграли лот! Свяжитесь с продавцом:{' '}
+                <span style={{ fontWeight: 500 }}>{contact.name}</span>
+              </div>
+              <div>{contactInfo}</div>
+            </>
+        );
       }
       if (type === 'AUCTION_SOLD' || type === 'SALE') {
-        return `✅ Ваш лот продан! Свяжитесь с победителем: ${contact.name} (${contact.phone})`;
+        return (
+            <>
+              <div style={{ whiteSpace: 'nowrap' }}>
+                ✅ Ваш лот продан! Свяжитесь с победителем:{' '}
+                <span style={{ fontWeight: 500 }}>{contact.name}</span>
+              </div>
+              <div>{contactInfo}</div>
+            </>
+        );
       }
     }
 
-    // Обычные уведомления (без шаблона)
     return notif.message.replace(/^\[(EXTEND|REJECT):\d+\]\s*/, '');
   };
 
@@ -114,7 +178,7 @@ export function Notifications() {
         <div className="nf-hero">
           <div className="nf-wrap">
             <p className="nf-eyebrow">
-              {unreadCount > 0 ? `${unreadCount} непрочитанных` : 'Все прочитаны'}
+              {formatUnreadCount(unreadCount)}
             </p>
             <div className="nf-hero__row">
               <h1 className="nf-title">Уведомления</h1>
@@ -144,6 +208,7 @@ export function Notifications() {
                     if (n.type === 'BID_OUTBID') icon = '⚔️';
                     if (n.type === 'AUCTION_EXTENDED') icon = '⏰';
                     if (n.type === 'AUCTION_EXTENSION_REJECTED') icon = '❌';
+                    if (n.type === 'AUCTION_APPROVED') icon = '✅';
 
                     const content = (
                         <>
