@@ -26,6 +26,10 @@ function AdminPage() {
     const [requestPage, setRequestPage] = useState(1);
     const REQUESTS_PER_PAGE = 10;
 
+    // === ПАГИНАЦИЯ МОДЕРАЦИИ ===
+    const [moderationPage, setModerationPage] = useState(1);
+    const MODERATION_PER_PAGE = 10;
+
     // === TOAST ===
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
     const showToast = (message, type = 'success') => {
@@ -57,7 +61,6 @@ function AdminPage() {
     const [rejectReason, setRejectReason] = useState('');
     const [rejectError, setRejectError] = useState('');
     const [modal, setModal] = useState({ isOpen: false, type: '', id: null, name: '' });
-    const [modalError, setModalError] = useState('');
     const [viewingAuction, setViewingAuction] = useState(null);
     const [roleModal, setRoleModal] = useState({ isOpen: false, userId: null, newRoleId: null });
 
@@ -185,7 +188,7 @@ function AdminPage() {
         if (type === 'city') request = axios.delete(`${API_BASE}/api/admin/data/cities/${id}`);
         if (request) {
             request.then(() => { fetchReferenceData(); closeModal(); fetchStats(); showToast('Элемент удалён', 'success'); })
-                .catch(err => { setModalError(err.response?.data || 'Ошибка'); showToast('Ошибка при удалении', 'error'); });
+                .catch(() => showToast('Ошибка при удалении', 'error'));
         }
     };
 
@@ -242,7 +245,17 @@ function AdminPage() {
     );
     const totalRequestPages = Math.ceil(requests.length / REQUESTS_PER_PAGE);
 
+    // === ПАГИНАЦИЯ МОДЕРАЦИИ ===
+    const paginatedAuctions = auctions.slice(
+        (moderationPage - 1) * MODERATION_PER_PAGE,
+        moderationPage * MODERATION_PER_PAGE
+    );
+    const totalModerationPages = Math.ceil(auctions.length / MODERATION_PER_PAGE);
+
     useEffect(() => { setUserPage(1); }, [searchUser]);
+
+    // Сброс страницы модерации при изменении количества лотов
+    useEffect(() => { setModerationPage(1); }, [auctions.length]);
 
     if (loading) return <div className="ap-loading">Загрузка...</div>;
 
@@ -388,7 +401,6 @@ function AdminPage() {
                                         <p className="ap-request-card__meta">
                                             Запрошено: {new Date(req.createdAt).toLocaleString('ru-RU')}
                                         </p>
-                                        {/* ИЗМЕНЕНО: Добавлен параметр ?from=admin для режима просмотра */}
                                         <Link
                                             to={`/auctions/${req.auctionId}?from=admin`}
                                             className="ap-btn ap-btn--ghost"
@@ -423,7 +435,6 @@ function AdminPage() {
                             ))}
                         </div>
 
-                        {/* Пагинация */}
                         {totalRequestPages > 1 && (
                             <div className="ap-pagination">
                                 <button
@@ -450,29 +461,53 @@ function AdminPage() {
 
                 {/* === MODERATION === */}
                 <section className="ap-section">
-                    <p className="ap-section-heading">Модерация лотов</p>
+                    <p className="ap-section-heading">Модерация лотов ({auctions.length})</p>
                     {auctions.length === 0 ? (
                         <div className="ap-empty"><div className="ap-empty__icon">✓</div><p>Нет лотов на проверке</p></div>
                     ) : (
-                        <div className="ap-list">
-                            {auctions.map(a => (
-                                <article key={a.id} className="ap-card">
-                                    <div className="ap-card__left">
-                                        {a.mainImageUrl ? <img src={a.mainImageUrl} alt="Фото" className="ap-card__img" /> : <div className="ap-card__img ap-card__img--empty">Нет фото</div>}
-                                    </div>
-                                    <div className="ap-card__body">
-                                        <h3 className="ap-card__title">{a.brand?.name} {a.model?.name}</h3>
-                                        <div className="ap-card__meta"><span>Год: {a.year}</span><span>Пробег: {a.mileage?.toLocaleString()} км</span></div>
-                                        <p className="ap-card__price">Старт: {a.startingPrice?.toLocaleString()} BYN</p>
-                                    </div>
-                                    <div className="ap-card__actions">
-                                        <Link to={`/auctions/${a.id}`} className="ap-btn ap-btn--primary">Просмотреть</Link>
-                                        <button className="ap-btn ap-btn--green" onClick={() => handleApprove(a.id)}>Одобрить</button>
-                                        <button className="ap-btn ap-btn--red" onClick={() => handleRejectInit(a.id)}>Отклонить</button>
-                                    </div>
-                                </article>
-                            ))}
-                        </div>
+                        <>
+                            <div className="ap-list">
+                                {paginatedAuctions.map(a => (
+                                    <article key={a.id} className="ap-card">
+                                        <div className="ap-card__left">
+                                            {a.mainImageUrl ? <img src={a.mainImageUrl} alt="Фото" className="ap-card__img" /> : <div className="ap-card__img ap-card__img--empty">Нет фото</div>}
+                                        </div>
+                                        <div className="ap-card__body">
+                                            <h3 className="ap-card__title">{a.brand?.name} {a.model?.name}</h3>
+                                            <div className="ap-card__meta"><span>Год: {a.year}</span><span>Пробег: {a.mileage?.toLocaleString()} км</span></div>
+                                            <p className="ap-card__price">Старт: {a.startingPrice?.toLocaleString()} BYN</p>
+                                        </div>
+                                        <div className="ap-card__actions">
+                                            <Link to={`/auctions/${a.id}`} className="ap-btn ap-btn--primary">Просмотреть</Link>
+                                            <button className="ap-btn ap-btn--green" onClick={() => handleApprove(a.id)}>Одобрить</button>
+                                            <button className="ap-btn ap-btn--red" onClick={() => handleRejectInit(a.id)}>Отклонить</button>
+                                        </div>
+                                    </article>
+                                ))}
+                            </div>
+
+                            {totalModerationPages > 1 && (
+                                <div className="ap-pagination">
+                                    <button
+                                        onClick={() => setModerationPage(p => Math.max(1, p - 1))}
+                                        disabled={moderationPage === 1}
+                                        className="ap-pagination-btn"
+                                    >
+                                        ← Назад
+                                    </button>
+                                    <span className="ap-pagination-info">
+                                        Страница {moderationPage} из {totalModerationPages}
+                                    </span>
+                                    <button
+                                        onClick={() => setModerationPage(p => Math.min(totalModerationPages, p + 1))}
+                                        disabled={moderationPage >= totalModerationPages}
+                                        className="ap-pagination-btn"
+                                    >
+                                        Вперёд →
+                                    </button>
+                                </div>
+                            )}
+                        </>
                     )}
                 </section>
 
