@@ -79,6 +79,9 @@ function AdminPage() {
     const [editingBrandName, setEditingBrandName] = useState('');
     const [editingModelId, setEditingModelId] = useState(null);
     const [editingModelName, setEditingModelName] = useState('');
+    const [editingCityId, setEditingCityId] = useState(null);
+    const [editingCityName, setEditingCityName] = useState('');
+    const [editingCityRegionId, setEditingCityRegionId] = useState('');
 
     // === USERS ===
     const [searchUser, setSearchUser] = useState('');
@@ -224,6 +227,24 @@ function AdminPage() {
         if (!editingModelName.trim()) return;
         axios.put(`${API_BASE}/api/admin/data/models/${id}`, null, { params: { name: editingModelName } })
             .then(() => { fetchReferenceData(); cancelEditModel(); fetchStats(); showToast('Модель обновлена', 'success'); });
+    };
+
+    const startEditCity = (c) => {
+        setEditingCityId(c.id);
+        setEditingCityName(c.name);
+        setEditingCityRegionId(c.region?.id || '');
+    };
+    const cancelEditCity = () => {
+        setEditingCityId(null);
+        setEditingCityName('');
+        setEditingCityRegionId('');
+    };
+    const saveCity = (id) => {
+        if (!editingCityName.trim() || !editingCityRegionId) return;
+        axios.put(`${API_BASE}/api/admin/data/cities/${id}`, null, {
+            params: { name: editingCityName, regionId: editingCityRegionId }
+        })
+            .then(() => { fetchReferenceData(); cancelEditCity(); fetchStats(); showToast('Город обновлён', 'success'); });
     };
 
     // === FILTERS & PAGINATION ===
@@ -641,8 +662,39 @@ function AdminPage() {
                             <ul className="ap-ref-list">
                                 {filteredCities.map(c => (
                                     <li key={c.id} className="ap-ref-item">
-                                        <span>{c.name} <small>({c.region?.name})</small></span>
-                                        <button className="ap-ref-del" onClick={() => openDeleteModal('city', c.id, c.name)}>×</button>
+                                        {editingCityId === c.id ? (
+                                            <div className="ap-ref-edit ap-ref-edit--vertical">
+                                                <div className="ap-ref-edit__row">
+                                                    <select
+                                                        value={editingCityRegionId}
+                                                        onChange={e => setEditingCityRegionId(e.target.value)}
+                                                        className="ap-ref-select"
+                                                    >
+                                                        <option value="">Область...</option>
+                                                        {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div className="ap-ref-edit__row ap-ref-edit__row--actions">
+                                                    <input
+                                                        value={editingCityName}
+                                                        onChange={e => setEditingCityName(e.target.value)}
+                                                        className="ap-ref-input ap-ref-input--edit"
+                                                        placeholder="Город"
+                                                        autoFocus
+                                                    />
+                                                    <button className="ap-ref-save" onClick={() => saveCity(c.id)}>✓</button>
+                                                    <button className="ap-ref-cancel" onClick={cancelEditCity}>×</button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <span>{c.name} <small>({c.region?.name})</small></span>
+                                                <div className="ap-ref-actions">
+                                                    <button className="ap-ref-edit-btn" onClick={() => startEditCity(c)}>✎</button>
+                                                    <button className="ap-ref-del" onClick={() => openDeleteModal('city', c.id, c.name)}>×</button>
+                                                </div>
+                                            </>
+                                        )}
                                     </li>
                                 ))}
                             </ul>

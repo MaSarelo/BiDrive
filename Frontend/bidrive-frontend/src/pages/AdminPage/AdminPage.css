@@ -476,7 +476,7 @@
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }
 
-/* === СПРАВОЧНИКИ === */
+/* === СПРАВОЧНИКИ - ИСПРАВЛЕНИЕ ВЫСОТЫ === */
 .ap-reference {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -490,6 +490,8 @@
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
+  height: 100%; /* Все колонки одинаковой высоты */
+  min-height: 32rem; /* Минимальная высота */
 }
 
 .ap-ref-col__title {
@@ -539,7 +541,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-height: 20rem;
+  max-height: 22rem;
   overflow-y: auto;
   flex: 1;
 }
@@ -591,10 +593,12 @@
   color: var(--red);
 }
 
+/* === РЕДАКТИРОВАНИЕ (марки/модели - горизонтально) === */
 .ap-ref-edit {
   display: flex;
   width: 100%;
   gap: 0.25rem;
+  align-items: center;
 }
 
 .ap-ref-input--edit {
@@ -619,6 +623,74 @@
   padding: 0 0.5rem;
   font-size: 1rem;
   line-height: 1;
+}
+
+/* === РЕДАКТИРОВАНИЕ ГОРОДОВ (вертикально: область на всю строку, город + кнопки на следующей) === */
+.ap-ref-edit--vertical {
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem;
+  background: var(--bg-4);
+  border-radius: 0.375rem;
+}
+
+.ap-ref-edit__row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+}
+
+.ap-ref-edit__row--actions {
+  justify-content: space-between;
+}
+
+.ap-ref-edit--vertical .ap-ref-select {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4375rem 2rem 0.4375rem 0.625rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.ap-ref-edit--vertical .ap-ref-input--edit {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4375rem 0.625rem;
+  font-size: 0.8125rem;
+}
+
+.ap-ref-edit--vertical .ap-ref-save,
+.ap-ref-edit--vertical .ap-ref-cancel {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.ap-ref-edit--vertical .ap-ref-save {
+  background: var(--green);
+  color: #fff;
+}
+
+.ap-ref-edit--vertical .ap-ref-save:hover {
+  background: rgba(63, 185, 80, 0.9);
+}
+
+.ap-ref-edit--vertical .ap-ref-cancel {
+  background: var(--bg-3);
+  color: var(--text-2);
+}
+
+.ap-ref-edit--vertical .ap-ref-cancel:hover {
+  background: var(--red);
+  color: #fff;
 }
 
 /* === МОДАЛЬНЫЕ ОКНА === */
@@ -1111,8 +1183,6 @@
 }
 
 /* === УЛУЧШЕНИЯ АДАПТИВА ДЛЯ МОБИЛЬНЫХ === */
-
-/* Запросы на продление - лучшая адаптивность */
 @media (max-width: 48rem) {
   .ap-request-card {
     flex-direction: column;
@@ -1132,7 +1202,6 @@
   }
 }
 
-/* Улучшение пагинации на маленьких экранах */
 @media (max-width: 36rem) {
   .ap-pagination {
     flex-wrap: wrap;
@@ -1153,7 +1222,6 @@
   }
 }
 
-/* Модальные окна - лучшая адаптивность */
 @media (max-width: 36rem) {
   .ap-modal--large {
     width: 95%;
@@ -1178,7 +1246,6 @@
   }
 }
 
-/* Кнопки действий в карточках - удобнее на мобильных */
 @media (max-width: 36rem) {
   .ap-card__actions {
     min-width: 100%;
@@ -1191,7 +1258,6 @@
   }
 }
 
-/* Статистика - адаптивные карточки */
 @media (max-width: 30rem) {
   .ap-stats-grid {
     grid-template-columns: 1fr;
@@ -1202,10 +1268,11 @@
   }
 }
 
-/* Справочники - компактный вид на мобильных */
 @media (max-width: 30rem) {
   .ap-ref-col {
     padding: 1rem;
+    min-height: auto;
+    height: auto;
   }
 
   .ap-ref-form {
@@ -1228,7 +1295,6 @@
   }
 }
 
-/* Пользователи - улучшение на очень маленьких экранах */
 @media (max-width: 30rem) {
   .ap-user {
     padding: 0.75rem 1rem;
@@ -1255,7 +1321,6 @@
   }
 }
 
-/* Toast уведомления - лучше на мобильных */
 @media (max-width: 36rem) {
   .ap-toast {
     left: 0.75rem;
@@ -1269,7 +1334,6 @@
   }
 }
 
-/* Улучшение графика на мобильных */
 @media (max-width: 36rem) {
   .ap-chart-container {
     padding: 1rem;
@@ -1281,7 +1345,6 @@
   }
 }
 
-/* Заголовок - компактный на мобильных */
 @media (max-width: 36rem) {
   .ap-header {
     padding: 0.875rem 1rem;
@@ -1296,7 +1359,6 @@
   }
 }
 
-/* Секции - меньше отступы на мобильных */
 @media (max-width: 36rem) {
   .ap-section {
     margin-bottom: 2rem;
@@ -1308,7 +1370,6 @@
   }
 }
 
-/* Поиск - улучшение на очень маленьких экранах */
 @media (max-width: 30rem) {
   .ap-search-input {
     padding: 0.4375rem 0.875rem 0.4375rem 2.25rem;
@@ -1333,6 +1394,11 @@
 @media (max-width: 64rem) {
   .ap-reference {
     grid-template-columns: 1fr;
+  }
+
+  .ap-ref-col {
+    min-height: auto;
+    height: auto;
   }
 
   .ap-card {
@@ -1450,12 +1516,10 @@
     width: calc(100% + 1rem);
   }
 
-  /* Уменьшаем отступы для YAxis (марки автомобилей) */
   .recharts-wrapper {
     margin-left: 0.5rem !important;
   }
 
-  /* Уменьшаем размер шрифта для меток */
   .recharts-text {
     font-size: 0.75rem !important;
   }
@@ -1479,5 +1543,30 @@
 
   .recharts-text {
     font-size: 0.6875rem !important;
+  }
+}
+
+/* === АДАПТАЦИЯ РЕДАКТИРОВАНИЯ ГОРОДОВ ДЛЯ МОБИЛЬНЫХ === */
+@media (max-width: 30rem) {
+  .ap-ref-edit__row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .ap-ref-edit--vertical .ap-ref-select,
+  .ap-ref-edit--vertical .ap-ref-input--edit {
+    width: 100%;
+    flex: none;
+  }
+
+  .ap-ref-edit__row--actions {
+    justify-content: stretch;
+  }
+
+  .ap-ref-edit--vertical .ap-ref-save,
+  .ap-ref-edit--vertical .ap-ref-cancel {
+    flex: 1;
+    width: 100%;
+    height: 2.25rem;
   }
 }

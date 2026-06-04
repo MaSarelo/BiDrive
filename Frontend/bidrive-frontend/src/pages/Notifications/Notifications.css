@@ -127,6 +127,7 @@
     flex-shrink: 0;
     background: var(--bg-4);
     border: 1px solid var(--border);
+    color: var(--text-2);
 }
 
 .nf-item--unread .nf-item__icon {
@@ -138,6 +139,7 @@
 .nf-item__content {
     flex: 1;
     min-width: 0;
+    padding-right: 1.5rem; /* Место для крестика */
 }
 
 .nf-item__msg {
@@ -146,6 +148,16 @@
     color: var(--text-2);
     line-height: 1.5;
     margin-bottom: 0.25rem; /* 4px */
+    white-space: pre-line;
+    word-break: break-word;
+}
+
+.nf-item__msg > div {
+    margin-bottom: 0.25rem;
+}
+
+.nf-item__msg > div:last-child {
+    margin-bottom: 0;
 }
 
 .nf-item--unread .nf-item__msg {
@@ -180,8 +192,8 @@
 }
 
 .nf-empty__icon {
-    font-size: 1.5rem; /* 24px */
     opacity: 0.3;
+    color: var(--text-3);
 }
 
 .nf-empty__title {
@@ -213,10 +225,9 @@
 }
 
 .nf-item--link:hover {
-    background: var(--bg-4); /* Чуть светлее при наведении */
+    background: var(--bg-4);
 }
 
-/* Сохраняем стили непрочитанного для ссылки */
 .nf-item--link.nf-item--unread {
     background: var(--bg-3);
 }
@@ -235,7 +246,7 @@
     background: transparent;
     border: none;
     color: var(--text-3);
-    font-size: 1.25rem; /* Размер крестика */
+    font-size: 1.25rem;
     line-height: 1;
     cursor: pointer;
     padding: 0.25rem;
@@ -251,7 +262,6 @@
     color: var(--red);
 }
 
-/* Сдвигаем контент, чтобы не налезал на крестик на мобильных или узких экранах */
 @media (max-width: 30rem) {
     .nf-item__delete {
         opacity: 1;
@@ -259,12 +269,86 @@
     }
 }
 
-/* Добавляем position: relative к .nf-item, если его еще нет */
-.nf-item {
-    position: relative; /* Нужно для позиционирования крестика */
+/* === СТИЛИ ДЛЯ SVG ИКОНОК === */
+.nf-item__icon svg {
+    width: 20px;
+    height: 20px;
+    color: inherit;
 }
 
-.nf-item__msg {
-    white-space: pre-line; /* Позволяет переносы строк через \n */
-    word-break: break-word; /* Перенос длинных слов */
+.nf-empty__icon svg {
+    width: 48px;
+    height: 48px;
+    color: var(--text-3);
+}
+
+.nf-contact-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
+.nf-contact-icon svg {
+    width: 14px;
+    height: 14px;
+    color: var(--accent);
+}
+
+.nf-loading-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 0.5rem;
+    animation: nf-spin 1s linear infinite;
+    vertical-align: middle;
+}
+
+.nf-loading-icon svg {
+    width: 14px;
+    height: 14px;
+    color: var(--accent);
+}
+
+@keyframes nf-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* === ЦВЕТА ИКОНОК ПО ТИПАМ УВЕДОМЛЕНИЙ === */
+.nf-item--unread .nf-item__icon svg {
+    color: var(--accent);
+}
+
+/* Трофей — золотистый */
+.nf-item__icon:has(svg path[d*="14.66"]) svg {
+    color: #FFD700;
+}
+
+/* Деньги — зелёные */
+.nf-item__icon:has(svg path[d*="17 5H9.5"]) svg {
+    color: var(--green);
+}
+
+/* Мечи — красноватые */
+.nf-item__icon:has(svg polyline[points*="14.5 17.5"]) svg {
+    color: var(--red);
+}
+
+/* Крестик — красный */
+.nf-item__icon:has(svg line[x1="15"][y1="9"]) svg {
+    color: var(--red);
+}
+
+/* Часы — оранжевые */
+.nf-item__icon:has(svg circle[cx="12"]) svg {
+    color: #F59E0B;
+}
+
+/* Галочка — зелёная */
+.nf-item__icon:has(svg polyline[points*="14.01"]) svg {
+    color: var(--green);
 }

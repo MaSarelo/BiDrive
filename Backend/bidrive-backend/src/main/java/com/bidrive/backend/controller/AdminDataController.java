@@ -49,6 +49,17 @@ public class AdminDataController {
         }
     }
 
+    @PutMapping("/brands/{id}")
+    public ResponseEntity<?> updateBrand(@PathVariable Long id, @RequestBody Brand brand) {
+        return brandRepository.findById(id)
+                .map(existingBrand -> {
+                    existingBrand.setName(brand.getName());
+                    brandRepository.save(existingBrand);
+                    return ResponseEntity.ok(existingBrand);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     // === MODELS ===
 
     @GetMapping("/models")
@@ -76,6 +87,17 @@ public class AdminDataController {
             // Если есть связанные лоты
             return ResponseEntity.badRequest().body("Невозможно удалить модель: она используется в лотах.");
         }
+    }
+
+    @PutMapping("/models/{id}")
+    public ResponseEntity<?> updateModel(@PathVariable Long id, @RequestParam String name) {
+        return modelRepository.findById(id)
+                .map(existingModel -> {
+                    existingModel.setName(name);
+                    modelRepository.save(existingModel);
+                    return ResponseEntity.ok(existingModel);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // === REGIONS ===
@@ -124,5 +146,19 @@ public class AdminDataController {
             // Если есть связанные лоты
             return ResponseEntity.badRequest().body("Невозможно удалить город: он используется в лотах.");
         }
+    }
+
+    @PutMapping("/cities/{id}")
+    public ResponseEntity<?> updateCity(@PathVariable Integer id, @RequestParam String name, @RequestParam Integer regionId) {
+        return cityRepository.findById(id)
+                .map(existingCity -> {
+                    existingCity.setName(name);
+                    Region region = regionRepository.findById(regionId)
+                            .orElseThrow(() -> new RuntimeException("Region not found"));
+                    existingCity.setRegion(region);
+                    cityRepository.save(existingCity);
+                    return ResponseEntity.ok(existingCity);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }
