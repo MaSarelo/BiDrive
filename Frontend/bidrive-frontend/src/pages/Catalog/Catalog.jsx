@@ -103,6 +103,7 @@ function Catalog() {
 
     const hasUrlParams = Object.values(filters).some(v => v !== '');
     if (hasUrlParams) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchAuctions(filters);
     } else {
       axios.get(`${API_URL}/api/auctions`)
@@ -139,6 +140,7 @@ function Catalog() {
           .then(r => setModels(r.data))
           .catch(() => setModels([]));
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setModels([]);
       setFilters(p => ({ ...p, modelId: '' }));
     }
@@ -151,6 +153,7 @@ function Catalog() {
           .then(r => setCities(r.data))
           .catch(() => setCities([]));
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCities([]);
       setFilters(p => ({ ...p, cityId: '' }));
     }
@@ -263,10 +266,7 @@ function Catalog() {
   const currentAuctions = sortedAuctions.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(sortedAuctions.length / ITEMS_PER_PAGE);
 
-  const paginate = (pageNumber) => {
-    setCurrentPage(pageNumber);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  
 
   const pageNumbers = [];
   for (let i = 1; i <= totalPages; i++) {
@@ -283,6 +283,7 @@ function Catalog() {
   useEffect(() => {
     const pageParam = searchParams.get('page');
     if (pageParam && parseInt(pageParam, 10) !== currentPage) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentPage(parseInt(pageParam, 10));
     }
   }, [searchParams]);

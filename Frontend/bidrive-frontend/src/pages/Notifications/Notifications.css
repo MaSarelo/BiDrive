@@ -318,37 +318,94 @@
     }
 }
 
+/* === СТИЛИ ДЛЯ SVG ИКОНОК === */
+.nf-item__icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--bg-4);
+    border: 1px solid var(--border);
+}
+
+.nf-item__icon svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.5; /* Увеличиваем толщину линий для лучшей читаемости */
+}
+
 /* === ЦВЕТА ИКОНОК ПО ТИПАМ УВЕДОМЛЕНИЙ === */
-.nf-item--unread .nf-item__icon svg {
-    color: var(--accent);
+
+/* Колокольчик (по умолчанию) — синий */
+.nf-item__icon svg path[d*="M6 8a6"] {
+    stroke: #2563EB;
 }
 
-/* Трофей — золотистый */
-.nf-item__icon:has(svg path[d*="14.66"]) svg {
-    color: #FFD700;
+/* Трофей — золотой/жёлтый */
+.nf-item__icon svg path[d*="M6 9H4.5"] {
+    stroke: #D97706;
 }
 
-/* Деньги — зелёные */
-.nf-item__icon:has(svg path[d*="17 5H9.5"]) svg {
-    color: var(--green);
+/* Деньги — зелёный */
+.nf-item__icon svg line[x1="12"][y1="1"] {
+    stroke: #059669;
 }
 
-/* Мечи — красноватые */
-.nf-item__icon:has(svg polyline[points*="14.5 17.5"]) svg {
-    color: var(--red);
+/* Мечи — красный */
+.nf-item__icon svg polyline[points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"] {
+    stroke: #DC2626;
 }
 
-/* Крестик — красный */
-.nf-item__icon:has(svg line[x1="15"][y1="9"]) svg {
-    color: var(--red);
+/* Часы — оранжевый */
+.nf-item__icon svg circle[cx="12"][cy="12"] {
+    stroke: #EA580C;
 }
 
-/* Часы — оранжевые */
-.nf-item__icon:has(svg circle[cx="12"]) svg {
-    color: #F59E0B;
+/* Крестик (отклонение) — красный */
+.nf-item__icon svg circle[cx="12"][cy="12"][r="10"] {
+    stroke: #DC2626;
 }
 
-/* Галочка — зелёная */
-.nf-item__icon:has(svg polyline[points*="14.01"]) svg {
-    color: var(--green);
+/* Галочка (одобрение) — зелёный */
+.nf-item__icon svg path[d*="M22 11.08V12"] {
+    stroke: #059669;
+}
+
+/* Обновление (загрузка) — синий */
+.nf-item__icon svg polyline[points="23 4 23 10 17 10"] {
+    stroke: #2563EB;
+}
+
+/* Телефон и почта — синий */
+.nf-contact-icon svg {
+    stroke: #2563EB;
+    width: 14px;
+    height: 14px;
+}
+
+/* Для непрочитанных уведомлений — более яркие цвета */
+.nf-item--unread .nf-item__icon svg path[d*="M6 8a6"] {
+    stroke: #3B82F6;
+}
+
+.nf-item--unread .nf-item__icon svg path[d*="M6 9H4.5"] {
+    stroke: #F59E0B;
+}
+
+/* Пустое состояние */
+.nf-empty__icon svg {
+    width: 48px;
+    height: 48px;
+    stroke: #6B7280;
+    opacity: 0.5;
+}
+
+/* Анимация загрузки */
+.nf-loading-icon svg {
+    width: 14px;
+    height: 14px;
+    stroke: #2563EB;
 }

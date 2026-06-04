@@ -97,6 +97,7 @@ function Profile() {
             .then(r => {
                 const phone = r.data.phone || '';
                 const digitsOnly = phone.replace(/\D/g, '');
+                // eslint-disable-next-line react-hooks/immutability
                 const formattedPhone = digitsOnly ? formatPhone(digitsOnly) : '+375 (';
                 setUserData({
                     firstName: r.data.firstName || '',

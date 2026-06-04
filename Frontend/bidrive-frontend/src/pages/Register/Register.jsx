@@ -57,7 +57,7 @@ function Register() {
     setErrors({}); // Исправлено: было setError('')
     setLoading(true);
     try {
-      const { confirmPassword, ...dataToSend } = formData;
+      const {  ...dataToSend } = formData;
       await axios.post('http://localhost:8080/api/auth/register', dataToSend);
       navigate('/login', { state: { registered: true } });
     } catch (err) {

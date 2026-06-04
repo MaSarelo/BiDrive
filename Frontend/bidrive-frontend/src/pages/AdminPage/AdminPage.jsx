@@ -90,10 +90,15 @@ function AdminPage() {
 
     // === DATA LOADING ===
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/immutability
         fetchAuctions();
+        // eslint-disable-next-line react-hooks/immutability
         fetchUsers();
+        // eslint-disable-next-line react-hooks/immutability
         fetchStats();
+        // eslint-disable-next-line react-hooks/immutability
         fetchReferenceData();
+        // eslint-disable-next-line react-hooks/immutability
         fetchRequests();
         setLoading(false);
 

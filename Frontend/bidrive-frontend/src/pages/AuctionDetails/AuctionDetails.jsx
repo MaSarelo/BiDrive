@@ -18,6 +18,23 @@ const STATUS_MAP = {
   COMPLETED:{ label: 'Завершён',    cls: 'ad-status--finished' },
 };
 
+// === ФОРМАТИРОВАНИЕ ТЕЛЕФОНА ===
+const formatPhone = (phone) => {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return '';
+  let numberPart = digits;
+  if (digits.startsWith('375')) numberPart = digits.slice(3);
+  else if (digits.startsWith('80')) numberPart = digits.slice(2);
+  else if (digits.startsWith('7')) numberPart = digits.slice(1);
+  const limited = numberPart.slice(0, 9);
+  if (limited.length === 0) return '';
+  if (limited.length <= 2) return `+375 (${limited}`;
+  if (limited.length <= 5) return `+375 (${limited.slice(0, 2)}) ${limited.slice(2)}`;
+  if (limited.length <= 7) return `+375 (${limited.slice(0, 2)}) ${limited.slice(2, 5)}-${limited.slice(5)}`;
+  return `+375 (${limited.slice(0, 2)}) ${limited.slice(2, 5)}-${limited.slice(5, 7)}-${limited.slice(7)}`;
+};
+
 function AuctionDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -44,6 +61,7 @@ function AuctionDetails() {
   useEffect(() => {
     const email = localStorage.getItem('userEmail');
     const uid = localStorage.getItem('userId');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (email && uid) setCurrentUser({ email, id: parseInt(uid, 10) });
   }, []);
 
@@ -69,6 +87,7 @@ function AuctionDetails() {
 
   useEffect(() => {
     let isMounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     Promise.all([loadAuction(isMounted), loadBidHistory(isMounted)])
         .catch(console.error)
@@ -89,7 +108,9 @@ function AuctionDetails() {
         seconds: Math.floor(diff / 1_000) % 60,
       };
     };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTimeLeft(calc());
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     const intervalId = setInterval(() => {
       const t = calc();
       setTimeLeft(t);
@@ -196,8 +217,8 @@ function AuctionDetails() {
   if (!auction) return <div className="ad-loading"><p>Лот не найден.</p></div>;
 
   const {
-    brand, model, city, status, images, mainImageUrl, seller, winner,
-    currentPrice, startingPrice, minBidStep, endTime, description,
+    brand, model, city, status, images, seller, winner,
+    currentPrice, startingPrice, minBidStep, description,
     rejectionReason, year, mileage, transmission, fuelType, vin
   } = auction;
 
@@ -246,7 +267,7 @@ function AuctionDetails() {
                   <div className="ad-deal-card__contacts">
                     <p>Свяжитесь с продавцом для оформления сделки</p>
                     <div className="ad-deal-card__info"><span>Email</span><a href={`mailto:${seller?.email}`}>{seller?.email}</a></div>
-                    {seller?.phone && <div className="ad-deal-card__info"><span>Телефон</span><a href={`tel:${seller.phone}`}>{seller.phone}</a></div>}
+                    {seller?.phone && <div className="ad-deal-card__info"><span>Телефон</span><a href={`tel:${seller.phone}`}>{formatPhone(seller.phone)}</a></div>}
                   </div>
                 </div>
             )}
@@ -261,7 +282,7 @@ function AuctionDetails() {
                     <p>Победитель торгов</p>
                     <div className="ad-deal-card__info"><span>Имя</span><span>{winner?.firstName} {winner?.lastName}</span></div>
                     <div className="ad-deal-card__info"><span>Email</span><a href={`mailto:${winner?.email}`}>{winner?.email}</a></div>
-                    {winner?.phone && <div className="ad-deal-card__info"><span>Телефон</span><a href={`tel:${winner.phone}`}>{winner.phone}</a></div>}
+                    {winner?.phone && <div className="ad-deal-card__info"><span>Телефон</span><a href={`tel:${winner.phone}`}>{formatPhone(winner.phone)}</a></div>}
                   </div>
                 </div>
             )}

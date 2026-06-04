@@ -12,7 +12,7 @@ const Field = ({ label, required, children }) => (
 );
 
 function CreateAuction() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const editId = searchParams.get('editId');

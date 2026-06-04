@@ -7,6 +7,8 @@ import com.bidrive.backend.entity.User;
 import com.bidrive.backend.repository.AuctionRepository;
 import com.bidrive.backend.repository.BidRepository;
 import com.bidrive.backend.repository.NotificationRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -18,6 +20,8 @@ import java.util.List;
 @Component
 public class AuctionScheduler {
 
+    private static final Logger log = LoggerFactory.getLogger(AuctionScheduler.class);
+
     @Autowired
     private AuctionRepository auctionRepository;
 
@@ -27,17 +31,29 @@ public class AuctionScheduler {
     @Autowired
     private BidRepository bidRepository;
 
-    @Scheduled(fixedRate = 10000)
+    // fixedDelay вместо fixedRate — следующий запуск через 10 сек ПОСЛЕ завершения предыдущего
+    @Scheduled(fixedDelay = 10000)
     @Transactional
     public void checkAuctions() {
         List<Auction> expiredAuctions = auctionRepository.findByStatusAndEndTimeBefore("ACTIVE", LocalDateTime.now());
+
         for (Auction auction : expiredAuctions) {
-            finishAuction(auction);
+            // ПОВТОРНАЯ ПРОВЕРКА: статус мог измениться пока мы итерировали список
+            Auction fresh = auctionRepository.findById(auction.getId()).orElse(null);
+            if (fresh == null || !"ACTIVE".equals(fresh.getStatus())) {
+                log.debug("Аукцион {} уже не ACTIVE, пропускаем", auction.getId());
+                continue;
+            }
+            finishAuction(fresh);
         }
     }
 
     private void finishAuction(Auction auction) {
-        System.out.println(">>> Завершение аукциона ID: " + auction.getId());
+        log.info(">>> Завершение аукциона ID: {}", auction.getId());
+
+        // СРАЗУ меняем статус, чтобы параллельный запуск планировщика не обработал этот же аукцион
+        auction.setStatus("COMPLETED");
+        auction.setUpdatedAt(LocalDateTime.now());
 
         Bid lastBid = bidRepository.findTopByAuctionIdOrderByAmountDesc(auction.getId()).orElse(null);
 
@@ -48,38 +64,44 @@ public class AuctionScheduler {
             auction.setWinner(winner);
             auction.setCurrentPrice(lastBid.getAmount());
 
-            // === ФОРМАТ: TEMPLATE:{TYPE}:{AUCTION_ID}:{CONTACT_USER_ID} ===
+            // === СНАЧАЛА сохраняем аукцион с новым статусом ===
+            auctionRepository.save(auction);
 
-            // Уведомление ПОБЕДИТЕЛЮ (контакт = продавец)
+            // === Уведомление ПОБЕДИТЕЛЮ (контакт = продавец) ===
             Notification notifWinner = new Notification();
             notifWinner.setUser(winner);
             notifWinner.setAuctionId(auction.getId());
             notifWinner.setMessage("TEMPLATE:AUCTION_WON:" + auction.getId() + ":" + seller.getId());
             notifWinner.setCreatedAt(LocalDateTime.now());
             notifWinner.setType("AUCTION_WON");
+            notifWinner.setIsRead(false);
             notificationRepository.save(notifWinner);
 
-            // Уведомление ПРОДАВЦУ (контакт = победитель)
+            // === Уведомление ПРОДАВЦУ (контакт = победитель) ===
             Notification notifSeller = new Notification();
             notifSeller.setUser(seller);
             notifSeller.setAuctionId(auction.getId());
             notifSeller.setMessage("TEMPLATE:AUCTION_SOLD:" + auction.getId() + ":" + winner.getId());
             notifSeller.setCreatedAt(LocalDateTime.now());
             notifSeller.setType("AUCTION_SOLD");
+            notifSeller.setIsRead(false);
             notificationRepository.save(notifSeller);
 
-            System.out.println(">>> Победитель: " + winner.getEmail());
+            log.info(">>> Победитель: {}", winner.getEmail());
         } else {
+            // СНАЧАЛА сохраняем аукцион
+            auctionRepository.save(auction);
+
+            // Потом уведомление
             Notification notifSeller = new Notification();
             notifSeller.setUser(auction.getSeller());
             notifSeller.setAuctionId(auction.getId());
-            notifSeller.setMessage("⚠️ Время аукциона истекло, но ставок не было: " + auction.getBrand().getName());
+            notifSeller.setMessage("Время аукциона истекло, но ставок не было: "
+                    + auction.getBrand().getName() + " " + auction.getModel().getName());
             notifSeller.setCreatedAt(LocalDateTime.now());
             notifSeller.setType("AUCTION_UNSOLD");
+            notifSeller.setIsRead(false);
             notificationRepository.save(notifSeller);
         }
-
-        auction.setStatus("COMPLETED");
-        auctionRepository.save(auction);
     }
 }

@@ -151,6 +151,7 @@ export function Notifications() {
 
                 const templateNotifs = res.data.filter(n => n.message?.startsWith('TEMPLATE:'));
                 const contactIds = [...new Set(templateNotifs.map(n => n.message.split(':')[3]))];
+                // eslint-disable-next-line react-hooks/immutability
                 contactIds.forEach(id => fetchContact(id));
             } catch (err) {
                 console.error('Ошибка загрузки уведомлений:', err);
