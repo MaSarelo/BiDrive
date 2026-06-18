@@ -2,7 +2,7 @@ import './AuctionDetails.css';
 
 function AuctionDetailsSkeleton() {
     return (
-        <div className="ad">
+        <div className="ad" aria-hidden="true">
             {/* Breadcrumb Skeleton */}
             <div className="ad-breadcrumb">
                 <div className="ad-container">

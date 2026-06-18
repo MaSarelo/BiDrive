@@ -13,6 +13,7 @@ import Notifications from './pages/Notifications/Notifications';
 import './App.css';
 import NotFoundPage from './pages/NotFoundPage/NotFoundPage';
 import RulesPage from './pages/RulesPage/RulesPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   // === ОТКЛЮЧЕНИЕ СКРОЛЛА ДЛЯ ЧИСЛОВЫХ ПОЛЕЙ ===
@@ -44,6 +45,16 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/create" element={<CreateAuction />} />
             <Route path="/auction/:id" element={<AuctionDetails />} />
+
+            <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <AdminPage />
+                  </ProtectedRoute>
+                }
+            />
+
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/rules" element={<RulesPage />} />
             <Route path="/auctions/:id" element={<AuctionDetails />} />

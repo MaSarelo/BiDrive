@@ -188,50 +188,123 @@ function AdminPage() {
     const openDeleteModal = (type, id, name) => setModal({ isOpen: true, type, id, name });
     const closeModal = () => setModal({ isOpen: false, type: '', id: null, name: '' });
 
+    // === УДАЛЕНИЕ С УЛУЧШЕННОЙ ОБРАБОТКОЙ ОШИБОК ===
     const handleConfirmDelete = () => {
-        const { type, id } = modal;
+        const { type, id, name } = modal;
         let request;
-        if (type === 'brand') request = axios.delete(`${API_BASE}/api/admin/data/brands/${id}`);
-        if (type === 'model') request = axios.delete(`${API_BASE}/api/admin/data/models/${id}`);
-        if (type === 'city') request = axios.delete(`${API_BASE}/api/admin/data/cities/${id}`);
+        let typeName = '';
+        if (type === 'brand') { request = axios.delete(`${API_BASE}/api/admin/data/brands/${id}`); typeName = 'марка'; }
+        if (type === 'model') { request = axios.delete(`${API_BASE}/api/admin/data/models/${id}`); typeName = 'модель'; }
+        if (type === 'city') { request = axios.delete(`${API_BASE}/api/admin/data/cities/${id}`); typeName = 'город'; }
         if (request) {
-            request.then(() => { fetchReferenceData(); closeModal(); fetchStats(); showToast('Элемент удалён', 'success'); })
-                .catch(() => showToast('Ошибка при удалении', 'error'));
+            request.then(() => {
+                fetchReferenceData();
+                closeModal();
+                fetchStats();
+                showToast(`${typeName.charAt(0).toUpperCase() + typeName.slice(1)} "${name}" удалена`, 'success');
+            })
+                .catch(err => {
+                    // Пытаемся получить сообщение от сервера
+                    const serverMsg = err.response?.data;
+                    let message;
+                    if (typeof serverMsg === 'string') {
+                        message = serverMsg;
+                    } else if (type === 'brand') {
+                        message = `Невозможно удалить марку "${name}": она используется в лотах`;
+                    } else if (type === 'model') {
+                        message = `Невозможно удалить модель "${name}": она используется в лотах`;
+                    } else if (type === 'city') {
+                        message = `Невозможно удалить город "${name}": он используется в лотах`;
+                    } else {
+                        message = 'Ошибка при удалении';
+                    }
+                    showToast(message, 'error');
+                });
         }
     };
 
+    // === ДОБАВЛЕНИЕ С ВАЛИДАЦИЕЙ ===
     const handleAddBrand = (e) => {
         e.preventDefault();
-        if (!newBrand.trim()) return;
+        if (!newBrand.trim()) {
+            showToast('Введите название марки', 'error');
+            return;
+        }
         axios.post(`${API_BASE}/api/admin/data/brands`, { name: newBrand })
-            .then(() => { setNewBrand(''); fetchReferenceData(); fetchStats(); showToast('Марка добавлена', 'success'); });
-    };
-    const handleAddModel = (e) => {
-        e.preventDefault();
-        if (!newModel.name || !newModel.brandId) return;
-        axios.post(`${API_BASE}/api/admin/data/models`, null, { params: newModel })
-            .then(() => { setNewModel({ name: '', brandId: '' }); fetchReferenceData(); fetchStats(); showToast('Модель добавлена', 'success'); });
-    };
-    const handleAddCity = (e) => {
-        e.preventDefault();
-        if (!newCity.name || !newCity.regionId) return;
-        axios.post(`${API_BASE}/api/admin/data/cities`, null, { params: newCity })
-            .then(() => { setNewCity({ name: '', regionId: '' }); fetchReferenceData(); fetchStats(); showToast('Город добавлен', 'success'); });
+            .then(() => {
+                setNewBrand('');
+                fetchReferenceData();
+                fetchStats();
+                showToast('Марка добавлена', 'success');
+            })
+            .catch(() => showToast('Ошибка при добавлении марки', 'error'));
     };
 
+    const handleAddModel = (e) => {
+        e.preventDefault();
+        if (!newModel.name || !newModel.brandId) {
+            showToast('Заполните все поля', 'error');
+            return;
+        }
+        axios.post(`${API_BASE}/api/admin/data/models`, null, { params: newModel })
+            .then(() => {
+                setNewModel({ name: '', brandId: '' });
+                fetchReferenceData();
+                fetchStats();
+                showToast('Модель добавлена', 'success');
+            })
+            .catch(() => showToast('Ошибка при добавлении модели', 'error'));
+    };
+
+    const handleAddCity = (e) => {
+        e.preventDefault();
+        if (!newCity.name || !newCity.regionId) {
+            showToast('Заполните все поля', 'error');
+            return;
+        }
+        axios.post(`${API_BASE}/api/admin/data/cities`, null, { params: newCity })
+            .then(() => {
+                setNewCity({ name: '', regionId: '' });
+                fetchReferenceData();
+                fetchStats();
+                showToast('Город добавлен', 'success');
+            })
+            .catch(() => showToast('Ошибка при добавлении города', 'error'));
+    };
+
+    // === РЕДАКТИРОВАНИЕ С ВАЛИДАЦИЕЙ ===
     const startEditBrand = (b) => { setEditingBrandId(b.id); setEditingBrandName(b.name); };
     const cancelEditBrand = () => { setEditingBrandId(null); setEditingBrandName(''); };
     const saveBrand = (id) => {
-        if (!editingBrandName.trim()) return;
+        if (!editingBrandName.trim()) {
+            showToast('Название марки не может быть пустым', 'error');
+            return;
+        }
         axios.put(`${API_BASE}/api/admin/data/brands/${id}`, { name: editingBrandName })
-            .then(() => { fetchReferenceData(); cancelEditBrand(); fetchStats(); showToast('Марка обновлена', 'success'); });
+            .then(() => {
+                fetchReferenceData();
+                cancelEditBrand();
+                fetchStats();
+                showToast('Марка обновлена', 'success');
+            })
+            .catch(() => showToast('Ошибка при обновлении марки', 'error'));
     };
+
     const startEditModel = (m) => { setEditingModelId(m.id); setEditingModelName(m.name); };
     const cancelEditModel = () => { setEditingModelId(null); setEditingModelName(''); };
     const saveModel = (id) => {
-        if (!editingModelName.trim()) return;
+        if (!editingModelName.trim()) {
+            showToast('Название модели не может быть пустым', 'error');
+            return;
+        }
         axios.put(`${API_BASE}/api/admin/data/models/${id}`, null, { params: { name: editingModelName } })
-            .then(() => { fetchReferenceData(); cancelEditModel(); fetchStats(); showToast('Модель обновлена', 'success'); });
+            .then(() => {
+                fetchReferenceData();
+                cancelEditModel();
+                fetchStats();
+                showToast('Модель обновлена', 'success');
+            })
+            .catch(() => showToast('Ошибка при обновлении модели', 'error'));
     };
 
     const startEditCity = (c) => {
@@ -245,11 +318,24 @@ function AdminPage() {
         setEditingCityRegionId('');
     };
     const saveCity = (id) => {
-        if (!editingCityName.trim() || !editingCityRegionId) return;
+        if (!editingCityName.trim()) {
+            showToast('Название города не может быть пустым', 'error');
+            return;
+        }
+        if (!editingCityRegionId) {
+            showToast('Выберите область', 'error');
+            return;
+        }
         axios.put(`${API_BASE}/api/admin/data/cities/${id}`, null, {
             params: { name: editingCityName, regionId: editingCityRegionId }
         })
-            .then(() => { fetchReferenceData(); cancelEditCity(); fetchStats(); showToast('Город обновлён', 'success'); });
+            .then(() => {
+                fetchReferenceData();
+                cancelEditCity();
+                fetchStats();
+                showToast('Город обновлён', 'success');
+            })
+            .catch(() => showToast('Ошибка при обновлении города', 'error'));
     };
 
     // === FILTERS & PAGINATION ===
@@ -441,7 +527,7 @@ function AdminPage() {
                                             onClick={() => {
                                                 axios.post(`${API_BASE}/api/admin/requests/${req.id}/approve`)
                                                     .then(() => { fetchRequests(); showToast('Аукцион продлён на 24 часа', 'success'); })
-                                                    .catch(() => showToast('❌ Ошибка при одобрении', 'error'));
+                                                    .catch(() => showToast('Ошибка при одобрении', 'error'));
                                             }}
                                         >
                                             ✔ Одобрить
@@ -451,7 +537,7 @@ function AdminPage() {
                                             onClick={() => {
                                                 axios.post(`${API_BASE}/api/admin/requests/${req.id}/reject`)
                                                     .then(() => { fetchRequests(); showToast('Запрос отклонён', 'success'); })
-                                                    .catch(() => showToast('❌ Ошибка при отклонении', 'error'));
+                                                    .catch(() => showToast('Ошибка при отклонении', 'error'));
                                             }}
                                         >
                                             ✕ Отклонить
@@ -598,7 +684,7 @@ function AdminPage() {
                                 <button type="submit" className="ap-btn ap-btn--primary">+</button>
                             </form>
                             <input type="text" placeholder="Поиск..." value={searchBrand} onChange={e => setSearchBrand(e.target.value)} className="ap-ref-search" />
-                            <ul className="ap-ref-list">
+                            <ul className="ap-ref-list ap-ref-list--brands">
                                 {filteredBrands.map(b => (
                                     <li key={b.id} className="ap-ref-item">
                                         {editingBrandId === b.id ? (

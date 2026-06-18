@@ -944,6 +944,7 @@
   height: 4rem; /* 64px */
   width: 100%;
   border-radius: 0.25rem; /* 4px */
+  aspect-ratio: 16 / 9;
 }
 
 .ad-skel--price {

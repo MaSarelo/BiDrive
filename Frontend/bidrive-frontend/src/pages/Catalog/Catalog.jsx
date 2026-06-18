@@ -18,7 +18,7 @@ const EMPTY = {
 function Catalog() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [auctions, setAuctions] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
   // === Инициализация sortBy из URL ===
@@ -44,16 +44,26 @@ function Catalog() {
     return initial;
   });
 
-  // Ref для хранения актуальных фильтров без пересоздания функции
-  const filtersRef = useRef(filters);
+  // === ПРИМЕНЁННЫЕ ФИЛЬТРЫ (обновляются только кнопкой "Найти") ===
+  const [appliedFilters, setAppliedFilters] = useState(() => {
+    const initial = { ...EMPTY };
+    for (let key in EMPTY) {
+      const param = searchParams.get(key);
+      if (param) initial[key] = param;
+    }
+    return initial;
+  });
+
+  // Ref для хранения актуальных применённых фильтров
+  const appliedFiltersRef = useRef(appliedFilters);
   useEffect(() => {
-    filtersRef.current = filters;
-  }, [filters]);
+    appliedFiltersRef.current = appliedFilters;
+  }, [appliedFilters]);
 
   // === ФУНКЦИЯ ЗАГРУЗКИ ДАННЫХ ===
-  const fetchAuctions = useCallback((currentFilters) => {
+  const fetchAuctions = useCallback((filtersToApply) => {
     setLoading(true);
-    const paramsToSend = currentFilters || filtersRef.current;
+    const paramsToSend = filtersToApply || appliedFiltersRef.current;
 
     const cleanParams = Object.fromEntries(
         Object.entries(paramsToSend).filter(([, v]) => v !== '')
@@ -106,7 +116,7 @@ function Catalog() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchAuctions(filters);
     } else {
-      axios.get(`${API_URL}/api/auctions`)
+      axios.get(`${API_URL}/api/auctions/search`)
           .then(r => {
             setAuctions(r.data);
             setLoading(false);
@@ -117,16 +127,14 @@ function Catalog() {
     return () => controller.abort();
   }, []);
 
-  // === AUTO-REFRESH КАТАЛОГА ===
+  // === AUTO-REFRESH КАТАЛОГА (использует ПРИМЕНЁННЫЕ фильтры) ===
   useEffect(() => {
     const intervalId = setInterval(() => {
-      axios.get(`${API_URL}/api/auctions`)
-          .then(r => {
-            const hasActiveFilters = Object.values(filtersRef.current).some(v => v !== '');
-            if (!hasActiveFilters) {
-              setAuctions(r.data);
-            }
-          })
+      const cleanParams = Object.fromEntries(
+          Object.entries(appliedFiltersRef.current).filter(([, v]) => v !== '')
+      );
+      axios.get(`${API_URL}/api/auctions/search`, { params: cleanParams })
+          .then(r => setAuctions(r.data))
           .catch(() => {});
     }, 10000);
 
@@ -142,7 +150,9 @@ function Catalog() {
     } else {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setModels([]);
-      setFilters(p => ({ ...p, modelId: '' }));
+      if (filters.modelId !== '') {
+        setFilters(p => ({ ...p, modelId: '' }));
+      }
     }
   }, [filters.brandId]);
 
@@ -155,7 +165,9 @@ function Catalog() {
     } else {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCities([]);
-      setFilters(p => ({ ...p, cityId: '' }));
+      if (filters.cityId !== '') {
+        setFilters(p => ({ ...p, cityId: '' }));
+      }
     }
   }, [filters.regionId]);
 
@@ -177,21 +189,18 @@ function Catalog() {
       processedValue = raw;
     }
 
-    // Обновляем состояние фильтров
-    setFilters(p => {
-      const newFilters = { ...p, [name]: processedValue };
+    // Обновляем состояние фильтров (только UI)
+    const newFilters = { ...filters, [name]: processedValue };
+    setFilters(newFilters);
 
-      // === СИНХРОНИЗАЦИЯ С URL: обновляем адресную строку ===
-      const newParams = new URLSearchParams(searchParams);
-      if (processedValue) {
-        newParams.set(name, processedValue);
-      } else {
-        newParams.delete(name);
-      }
-      setSearchParams(newParams, { replace: true });
-
-      return newFilters;
-    });
+    // === СИНХРОНИЗАЦИЯ С URL (отдельный вызов, не внутри setFilters) ===
+    const newParams = new URLSearchParams(searchParams);
+    if (processedValue) {
+      newParams.set(name, processedValue);
+    } else {
+      newParams.delete(name);
+    }
+    setSearchParams(newParams, { replace: true });
   };
 
   // === ОБРАБОТКА ИЗМЕНЕНИЯ СОРТИРОВКИ ===
@@ -200,19 +209,16 @@ function Catalog() {
 
     const newParams = new URLSearchParams(searchParams);
 
-    // Обновляем параметр сортировки
     if (newSort === 'default') {
       newParams.delete('sortBy');
     } else {
       newParams.set('sortBy', newSort);
     }
 
-    // === FIX: Сбрасываем пагинацию в URL ===
     newParams.delete('page');
 
     setSearchParams(newParams, { replace: true });
 
-    // Обновляем состояние ПОСЛЕ изменения URL
     setSortBy(newSort);
     setCurrentPage(1);
   };
@@ -244,12 +250,14 @@ function Catalog() {
   // === КНОПКА "НАЙТИ" ===
   const handleSearch = () => {
     setCurrentPage(1);
+    setAppliedFilters(filters); // Применяем текущие фильтры
     fetchAuctions(filters);
   };
 
   // === СБРОС ФИЛЬТРОВ ===
   const reset = () => {
     setFilters(EMPTY);
+    setAppliedFilters(EMPTY);
     setSearchParams({});
     setModels([]);
     setCities([]);
@@ -257,7 +265,7 @@ function Catalog() {
     fetchAuctions(EMPTY);
   };
 
-  const activeCount = Object.values(filters).filter(Boolean).length;
+  const activeCount = Object.values(appliedFilters).filter(Boolean).length;
 
   // === ПАГИНАЦИЯ ===
   const sortedAuctions = getSortedAuctions();
@@ -265,8 +273,6 @@ function Catalog() {
   const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
   const currentAuctions = sortedAuctions.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(sortedAuctions.length / ITEMS_PER_PAGE);
-
-  
 
   const pageNumbers = [];
   for (let i = 1; i <= totalPages; i++) {

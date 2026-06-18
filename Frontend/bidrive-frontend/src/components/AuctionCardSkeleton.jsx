@@ -2,9 +2,8 @@ import './AuctionCard.css';
 
 function AuctionCardSkeleton() {
     return (
-        <div className="ac-link">
-            <article className="ac">
-
+        <div className="ac-link" aria-hidden="true">
+            <article className="ac" role="presentation">
                 {/* Photo Skeleton */}
                 <div className="ac-photo">
                     <span className="skeleton skeleton--photo"></span>
@@ -46,7 +45,6 @@ function AuctionCardSkeleton() {
                         </div>
                     </div>
                 </div>
-
             </article>
         </div>
     );
