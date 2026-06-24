@@ -1,4 +1,4 @@
-/* === TOKENS (наследуем из :root) === */
+/* === ОСНОВНЫЕ СТИЛИ === */
 .rp {
     font-family: var(--font);
     background: var(--bg);
@@ -49,7 +49,7 @@
     color: var(--text);
 }
 
-/* === BODY LAYOUT === */
+/* === ОСНОВНОЙ КОНТЕНТ === */
 .rp-body {
     padding: 2.5rem 0 3.75rem;
     display: grid;
@@ -59,17 +59,16 @@
     flex: 1;
 }
 
-/* === CONTENT === */
 .rp-content {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 2.5rem;
 }
 
-/* === FIX: Отступ для якорных ссылок (чтобы хедер не перекрывал заголовок) === */
+/* === СЕКЦИИ === */
 .rp-section {
     scroll-margin-top: 120px;
-    padding-bottom: 1.5rem;
+    padding-bottom: 2rem;
     border-bottom: 0.0625rem solid var(--border);
 }
 
@@ -78,17 +77,18 @@
 }
 
 .rp-section__title {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--text);
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    line-height: 1.3;
 }
 
 .rp-text {
-    font-size: 0.9375rem;
-    line-height: 1.7;
+    font-size: 1rem;
+    line-height: 1.8;
     color: var(--text-2);
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
 }
 
 .rp-text strong {
@@ -96,17 +96,24 @@
     font-weight: 600;
 }
 
+/* === СПИСКИ === */
 .rp-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    margin-top: 0.75rem;
+    gap: 1rem;
+    margin-top: 1rem;
 }
 
 .rp-list__item {
     display: flex;
-    gap: 0.625rem;
+    gap: 0.75rem;
     align-items: flex-start;
+}
+
+.rp-list__item p {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--text-2);
 }
 
 .rp-list__icon {
@@ -121,22 +128,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 0.125rem;
+    margin-top: 0.25rem;
 }
 
 .rp-ul {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 0.625rem;
-    margin-top: 0.75rem;
+    gap: 0.875rem;
+    margin-top: 1rem;
 }
 
 .rp-ul li {
-    font-size: 0.9375rem;
-    line-height: 1.7;
+    font-size: 1rem;
+    line-height: 1.8;
     color: var(--text-2);
-    padding-left: 1.25rem;
+    padding-left: 1.5rem;
     position: relative;
 }
 
@@ -146,8 +153,15 @@
     left: 0;
     color: var(--accent);
     font-weight: 700;
+    font-size: 1.25rem;
 }
 
+.rp-ul li strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+/* === ПРИМЕЧАНИЯ === */
 .rp-note {
     background: var(--bg-2);
     border: 0.0625rem solid var(--border);
@@ -157,39 +171,96 @@
 }
 
 .rp-note p {
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     color: var(--text-2);
-    line-height: 1.6;
+    line-height: 1.7;
 }
 
 .rp-note-text {
-    margin-top: 1rem;
-    font-size: 0.875rem;
+    margin-top: 1.25rem;
+    font-size: 0.9375rem;
     color: var(--text-2);
-    line-height: 1.6;
+    line-height: 1.7;
 }
 
 .rp-note-text strong {
     color: var(--text);
 }
 
-/* === SIDEBAR === */
+/* === БЛОК СКАЧАТЬ ДОГОВОР === */
+.rp-download-box {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: var(--bg-2);
+    border: 0.0625rem solid var(--border);
+    border-radius: 0.375rem;
+    text-align: center;
+}
+
+.rp-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 0.375rem;
+    transition: background 0.15s;
+    font-size: 0.9375rem;
+}
+
+.rp-download-btn:hover {
+    background: var(--accent-h);
+}
+
+.rp-download-hint {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--text-2);
+    line-height: 1.6;
+}
+
+/* === СОДЕРЖАНИЕ (FIXED STICKY) === */
 .rp-sidebar {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    height: fit-content;
+    align-self: start;
 }
 
 .rp-sidebar__card {
     position: sticky;
-    top: 2rem;
+    top: 100px;
     background: var(--bg-2);
     border: 1px solid var(--border);
     border-radius: 0.75rem;
     padding: 1.5rem;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-2) transparent;
 }
 
-/* === FIX: Заголовок "Содержание" — светлее для тёмной темы === */
+.rp-sidebar__card::-webkit-scrollbar {
+    width: 4px;
+}
+
+.rp-sidebar__card::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.rp-sidebar__card::-webkit-scrollbar-thumb {
+    background: var(--border-2);
+    border-radius: 2px;
+}
+
+.rp-sidebar__card::-webkit-scrollbar-thumb:hover {
+    background: var(--text-3);
+}
+
 .rp-sidebar__title {
     font-size: 0.75rem;
     font-weight: 700;
@@ -202,7 +273,6 @@
     gap: 0.5rem;
 }
 
-/* === НАВИГАЦИЯ ПО РАЗДЕЛАМ === */
 .rp-nav-list {
     display: flex;
     flex-direction: column;
@@ -226,7 +296,6 @@
     color: var(--text);
 }
 
-/* === АКТИВНЫЙ РАЗДЕЛ (Scroll Spy) === */
 .rp-nav-link.is-active {
     background: var(--accent-dim);
     color: var(--accent);
@@ -259,11 +328,12 @@
     margin: 1.25rem 0;
 }
 
-/* === КНОПКИ ДЕЙСТВИЙ === */
 .rp-sidebar__actions {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
 }
 
 .rp-action-btn {
@@ -281,7 +351,6 @@
     transition: all 0.2s;
 }
 
-/* === FIX: При наведении текст не становится слишком тёмным === */
 .rp-action-btn:hover {
     background: var(--bg-4);
     color: var(--text-2);
@@ -298,7 +367,7 @@
     color: #fff;
 }
 
-/* === FOOTER === */
+/* === ФУТЕР === */
 .rp-footer {
     border-top: 0.0625rem solid var(--border);
     padding: 1rem 0;
@@ -311,59 +380,48 @@
     text-align: center;
 }
 
-/* === DOWNLOAD BOX === */
-.rp-download-box {
-    margin: 1.5rem 0;
-    padding: 1.5rem;
-    background: var(--bg-2);
-    border: 0.0625rem solid var(--border);
-    border-radius: 0.375rem;
-    text-align: center;
-}
-
-.rp-download-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: var(--accent);
-    color: #fff;
-    font-weight: 600;
-    text-decoration: none;
-    border-radius: 0.375rem;
-    transition: background 0.15s;
-    font-size: 0.9375rem;
-}
-
-.rp-download-btn:hover {
-    background: var(--accent-h);
-}
-
+/* === УЛУЧШЕНИЕ ЧИТАЕМОСТИ === */
+.rp-text,
+.rp-list__item p,
+.rp-ul li,
+.rp-note-text,
 .rp-download-hint {
-    margin-top: 0.75rem;
-    font-size: 0.8125rem;
-    color: var(--text-2);
+    color: #B0B8C1;
 }
 
-/* === RESPONSIVE === */
+.light-theme .rp-text,
+.light-theme .rp-list__item p,
+.light-theme .rp-ul li,
+.light-theme .rp-note-text,
+.light-theme .rp-download-hint {
+    color: #4A5158;
+}
+
+.rp-section__title,
+.rp-text strong,
+.rp-ul li strong,
+.rp-note-text strong {
+    color: var(--text);
+}
+
+/* === АДАПТИВНОСТЬ === */
 @media (max-width: 56.25rem) {
     .rp-body {
         display: flex;
         flex-direction: column;
-        /* Уменьшаем общий паддинг, чтобы сэкономить место */
         padding: 1.5rem 0 2rem;
     }
 
     .rp-sidebar {
         order: -1;
-        /* === ИЗМЕНЕНО: Баланс отступов === */
-        margin-top: 1.5rem;    /* Чуть больше воздуха сверху */
-        margin-bottom: 1rem;   /* Меньше места снизу (было 2rem) */
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
     }
 
     .rp-sidebar__card {
         position: static;
-        /* Чуть компактнее карточка на мобильном */
+        max-height: none;
+        overflow-y: visible;
         padding: 1.25rem;
     }
 
@@ -378,11 +436,20 @@
     }
 
     .rp-hero {
-        padding: 2rem 0 1.5rem; /* Чуть компактнее шапка */
+        padding: 2rem 0 1.5rem;
+    }
+
+    .rp-section__title {
+        font-size: 1.125rem;
+    }
+
+    .rp-text,
+    .rp-list__item p,
+    .rp-ul li {
+        font-size: 0.9375rem;
     }
 }
 
-/* Дополнительный медиа-запрос для очень узких экранов */
 @media (max-width: 320px) {
     .rp-nav-list {
         grid-template-columns: 1fr;
@@ -399,7 +466,6 @@
     }
 }
 
-/* Адаптивный отступ для якорных ссылок */
 .rp-section {
     scroll-margin-top: 80px;
 }

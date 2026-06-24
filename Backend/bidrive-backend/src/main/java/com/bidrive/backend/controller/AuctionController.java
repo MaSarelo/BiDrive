@@ -170,14 +170,12 @@ public class AuctionController {
     // === ОТКЛОНЕНИЕ АУКЦИОНА ===
     @PostMapping("/{id}/reject")
     public ResponseEntity<?> rejectAuction(@PathVariable Long id, @RequestParam String reason) {
-        Auction auction = auctionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Auction not found"));
-
-        auction.setStatus("REJECTED");
-        auction.setRejectionReason(reason);
-        auctionRepository.save(auction);
-
-        return ResponseEntity.ok().build();
+        try {
+            auctionService.rejectAuction(id, reason);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")

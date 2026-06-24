@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class BidHistoryDTO {
     // Геттеры и сеттеры
     private Long bidId;
+    private Long userId;
     private String userName;
     private BigDecimal amount;
     private LocalDateTime createdAt;

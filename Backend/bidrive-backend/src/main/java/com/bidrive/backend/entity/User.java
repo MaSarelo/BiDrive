@@ -3,6 +3,8 @@ package com.bidrive.backend.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -19,7 +21,6 @@ public class User {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    // Важно: в базе поле называется password_hash (с подчеркиванием)
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
@@ -40,9 +41,11 @@ public class User {
     private Boolean isBlocked = false;
 
     @Column(name = "created_at", updatable = false)
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
 
 

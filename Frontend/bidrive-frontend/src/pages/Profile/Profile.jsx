@@ -62,6 +62,13 @@ function Profile() {
     const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
     const [editProfileModal, setEditProfileModal] = useState(false);
 
+    const [savedUserData, setSavedUserData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '+375 ('
+    });
+
     const [userData, setUserData] = useState({
         firstName: '',
         lastName: '',
@@ -87,26 +94,59 @@ function Profile() {
     const [editError, setEditError] = useState('');
     const [editSuccess, setEditSuccess] = useState('');
 
-    useEffect(() => {
+    const loadAuctions = (isAutoRefresh = false) => {
         if (!currentUserId) return;
-        axios.get(`${API_BASE}/api/auctions/my?sellerId=${currentUserId}`)
-            .then(r => { setAuctions(r.data); setLoading(false); })
-            .catch(err => { console.error(err); setLoading(false); });
 
+        if (!isAutoRefresh) {
+            setLoading(true);
+        }
+
+        axios.get(`${API_BASE}/api/auctions/my?sellerId=${currentUserId}`)
+            .then(r => {
+                setAuctions(r.data);
+                setLoading(false);
+            })
+            .catch(err => {
+                if (!isAutoRefresh || auctions.length === 0) {
+                    console.error(err);
+                }
+                setLoading(false);
+            });
+    };
+
+    const loadUserData = () => {
+        if (!currentUserId) return;
         axios.get(`${API_BASE}/api/users/${currentUserId}`)
             .then(r => {
                 const phone = r.data.phone || '';
                 const digitsOnly = phone.replace(/\D/g, '');
                 // eslint-disable-next-line react-hooks/immutability
                 const formattedPhone = digitsOnly ? formatPhone(digitsOnly) : '+375 (';
-                setUserData({
+                const data = {
                     firstName: r.data.firstName || '',
                     lastName: r.data.lastName || '',
                     email: r.data.email || '',
                     phone: formattedPhone
-                });
+                };
+                setSavedUserData(data);
+                setUserData(data);
             })
             .catch(console.error);
+    };
+
+    useEffect(() => {
+        loadAuctions(false);
+        loadUserData();
+    }, [currentUserId]);
+
+    useEffect(() => {
+        if (!currentUserId) return;
+
+        const intervalId = setInterval(() => {
+            loadAuctions(true);
+        }, 10000);
+
+        return () => clearInterval(intervalId);
     }, [currentUserId]);
 
     useEffect(() => {
@@ -172,6 +212,14 @@ function Profile() {
         }
     };
 
+    const openEditProfileModal = () => {
+        setUserData(savedUserData);
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setEditError('');
+        setEditSuccess('');
+        setEditProfileModal(true);
+    };
+
     const handleEditProfile = async () => {
         setEditError('');
         setEditSuccess('');
@@ -207,6 +255,13 @@ function Profile() {
                 });
             }
 
+            setSavedUserData({
+                firstName: userData.firstName.trim(),
+                lastName: userData.lastName.trim(),
+                email: userData.email.trim(),
+                phone: userData.phone
+            });
+
             setEditSuccess('✅ Профиль успешно обновлён!');
             setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
             setTimeout(() => { setEditProfileModal(false); setEditSuccess(''); }, 1500);
@@ -215,7 +270,6 @@ function Profile() {
         }
     };
 
-    // === ФОРМАТИРОВАНИЕ ТЕЛЕФОНА ===
     const formatPhone = (value) => {
         const digits = value.replace(/\D/g, '');
         if (!digits) return '+375 (';
@@ -385,7 +439,7 @@ function Profile() {
                     <p className="pf-eyebrow">Личный кабинет</p>
                     <div className="pf-hero__row">
                         <h1 className="pf-title">Мои лоты</h1>
-                        <button className="pf-btn pf-btn--edit-profile" onClick={() => setEditProfileModal(true)} type="button">
+                        <button className="pf-btn pf-btn--edit-profile" onClick={openEditProfileModal} type="button">
                             <svg className="pf-btn__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             Настройки профиля
                         </button>
@@ -394,17 +448,14 @@ function Profile() {
             </div>
 
             <div className="pf-wrap pf-body">
-                {/* === СТАТИСТИКА === */}
                 <div className="pf-stats">
                     <div className="pf-stat"><span className="pf-stat__num">{auctions.length}</span><span className="pf-stat__label">Всего лотов</span></div>
                     <div className="pf-stat"><span className="pf-stat__num">{active}</span><span className="pf-stat__label">Активных</span></div>
                     <div className="pf-stat"><span className="pf-stat__num">{finished}</span><span className="pf-stat__label">Завершённых</span></div>
                 </div>
 
-                {/* === РАЗДЕЛИТЕЛЬ === */}
                 <div className="pf-divider"></div>
 
-                {/* === СПИСОК ЛОТОВ === */}
                 {auctions.length === 0 ? (
                     <div className="pf-empty">
                         <p className="pf-empty__title">У вас пока нет лотов</p>
@@ -419,12 +470,17 @@ function Profile() {
                             const img = a.mainImageUrl || null;
                             const canRelist = (a.status === 'FINISHED' || a.status === 'COMPLETED') && !a.winner;
                             const canDelete = a.status !== 'ACTIVE';
+                            // ✅ Кнопка редактировать только для PENDING и ACTIVE (без REJECTED)
                             const canEdit = (a.status === 'PENDING' || a.status === 'ACTIVE') && !a.hasBids;
                             return (
                                 <div key={a.id} className="pf-card">
                                     <div className="pf-card__photo">{img ? <img src={img} alt={`${a.brand?.name} ${a.model?.name}`} loading="lazy" /> : <div className="pf-card__photo-empty">Нет фото</div>}</div>
                                     <div className="pf-card__body">
-                                        <div className="pf-card__head"><h3 className="pf-card__name">{a.brand?.name} {a.model?.name}</h3><span className={`pf-badge ${st.cls}`}>{st.label}</span></div>
+                                        <div className="pf-card__head">
+                                            <h3 className="pf-card__name">{a.brand?.name} {a.model?.name}</h3>
+                                            <span className={`pf-badge ${st.cls}`}>{st.label}</span>
+                                        </div>
+
                                         <div className="pf-card__meta">
                                             <div className="pf-card__meta-item"><span className="pf-card__meta-label">Год</span><span className="pf-card__meta-val">{a.year ?? '—'}</span></div>
                                             <div className="pf-card__meta-item"><span className="pf-card__meta-label">Пробег</span><span className="pf-card__meta-val">{a.mileage ? `${a.mileage.toLocaleString()} км` : '—'}</span></div>

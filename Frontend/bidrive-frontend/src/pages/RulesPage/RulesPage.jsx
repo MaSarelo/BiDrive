@@ -8,7 +8,6 @@ export default function RulesPage() {
     useEffect(() => {
         const observerOptions = {
             root: null,
-            // === FIX: rootMargin учитывает высоту хедера (~80px) + отступ ===
             rootMargin: '-120px 0px -60% 0px',
             threshold: 0
         };
@@ -36,6 +35,9 @@ export default function RulesPage() {
         { id: 'section-3', label: 'Модерация' },
         { id: 'section-4', label: 'Telegram' },
         { id: 'section-5', label: 'Договор' },
+        { id: 'section-6', label: 'Как работает платформа' },
+        { id: 'section-7', label: 'Правила участия' },
+        { id: 'section-8', label: 'Разрешение споров' },
     ];
 
     return (
@@ -119,6 +121,44 @@ export default function RulesPage() {
                         <p className="rp-note-text">
                             <strong>Важно:</strong> Один экземпляр продавцу, второй покупателю, третий в ГАИ.
                         </p>
+                    </section>
+
+                    <section id="section-6" className="rp-section">
+                        <h2 className="rp-section__title">6. Как работает платформа BiDrive</h2>
+                        <p className="rp-text">
+                            BiDrive — это онлайн-площадка для проведения аукционов по продаже автомобилей.
+                        </p>
+                        <ul className="rp-ul">
+                            <li><strong>Регистрация:</strong> Пользователь создаёт аккаунт с подтверждением email.</li>
+                            <li><strong>Создание лота:</strong> Продавец заполняет карточку автомобиля с фотографиями.</li>
+                            <li><strong>Модерация:</strong> Администрация проверяет достоверность информации.</li>
+                            <li><strong>Публикация:</strong> После одобрения лот появляется в каталоге.</li>
+                            <li><strong>Торги:</strong> Участники делают ставки с минимальным шагом.</li>
+                            <li><strong>Завершение:</strong> Победитель — участник с максимальной ставкой.</li>
+                        </ul>
+                    </section>
+
+                    <section id="section-7" className="rp-section">
+                        <h2 className="rp-section__title">7. Правила участия в торгах</h2>
+                        <ul className="rp-ul">
+                            <li>К участию допускаются дееспособные граждане РБ, достигшие 18 лет.</li>
+                            <li>Запрещено делать ставки на собственные лоты.</li>
+                            <li>После окончания аукциона победитель обязан связаться с продавцом в течение 3 рабочих дней.</li>
+                            <li>Ставки являются окончательными и не могут быть отменены.</li>
+                            <li>Платформа не несёт ответственности за техническое состояние автомобиля.</li>
+                        </ul>
+                    </section>
+
+                    <section id="section-8" className="rp-section">
+                        <h2 className="rp-section__title">8. Разрешение споров</h2>
+                        <p className="rp-text">
+                            В случае возникновения споров между участниками торгов:
+                        </p>
+                        <ul className="rp-ul">
+                            <li>Стороны обязаны сначала обратиться в службу поддержки BiDrive.</li>
+                            <li>Администрация платформы выступает медиатором и способствует досудебному урегулированию.</li>
+                            <li>При невозможности достижения согласия спор передаётся на рассмотрение в суд по месту нахождения ответчика в соответствии с законодательством РБ.</li>
+                        </ul>
                     </section>
                 </article>
 

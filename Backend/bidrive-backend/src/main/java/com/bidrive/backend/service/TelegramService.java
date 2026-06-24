@@ -2,7 +2,7 @@ package com.bidrive.backend.service;
 
 import com.bidrive.backend.entity.Auction;
 import com.bidrive.backend.entity.CarImage;
-import com.fasterxml.jackson.databind.ObjectMapper; // Для создания JSON
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Service;
@@ -14,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
 import java.io.File;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,70 +29,85 @@ public class TelegramService {
     @Value("${telegram.chat.id}")
     private String chatId;
 
-    private final RestTemplate restTemplate = new RestTemplate();
-    private final ObjectMapper objectMapper = new ObjectMapper(); // Для работы с JSON
+    @Value("${app.base-url}")
+    private String baseUrl;
 
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Лимит Telegram API для caption в альбоме
+    private static final int CAPTION_LIMIT = 1024;
+    private static final int DESCRIPTION_LIMIT = 500;
+
+    // === ЭКРАНИРОВАНИЕ HTML-СИМВОЛОВ ДЛЯ БЕЗОПАСНОГО ТЕКСТА ===
+    private String escapeHtml(String text) {
+        if (text == null) return "";
+        return text.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;");
+    }
+
+    // === ГЛАВНЫЙ МЕТОД: ОТПРАВКА УВЕДОМЛЕНИЯ О НОВОМ ЛОТЕ ===
     public void sendNewLotNotification(Auction auction) {
         List<CarImage> images = auction.getImages();
-        String caption = formatMessage(auction);
+        String caption = formatCaption(auction);
 
-        // 1. Если есть список изображений, отправляем альбомом
+        // === 1. Если есть фото — отправляем альбом с caption ===
         if (images != null && !images.isEmpty()) {
             try {
-                sendMediaGroup(images, caption);
-                return; // Успешно отправили альбом
+                sendMediaGroupWithCaption(images, caption);
+                System.out.println("✅ Альбом с информацией отправлен в Telegram (лот #" + auction.getId() + ")");
+                return;
             } catch (Exception e) {
-                System.err.println("Ошибка отправки альбома: " + e.getMessage());
-                // Если альбом не ушел, пробуем фолбек
+                System.err.println("❌ Ошибка отправки альбома: " + e.getMessage());
+                // Пробуем фолбек — одно фото с caption
+                try {
+                    CarImage mainImage = images.stream()
+                            .filter(CarImage::getIsMain)
+                            .findFirst()
+                            .orElse(images.get(0));
+                    sendSinglePhotoWithCaption(mainImage, caption);
+                    System.out.println("✅ Одно фото с информацией отправлено (фолбек)");
+                    return;
+                } catch (Exception ex) {
+                    System.err.println("❌ Фолбек с фото тоже не сработал: " + ex.getMessage());
+                }
             }
         }
 
-        // 2. Фолбек: отправляем одно фото (mainImageUrl) или просто текст
-        if (auction.getMainImageUrl() != null && !auction.getMainImageUrl().isEmpty()) {
-            try {
-                String filePath = System.getProperty("user.dir") + auction.getMainImageUrl();
-                File imageFile = new File(filePath);
-
-                if (imageFile.exists()) {
-                    sendPhoto(imageFile, caption);
-                } else {
-                    sendMessage(caption);
-                }
-            } catch (Exception e) {
-                System.err.println("Ошибка отправки фото в Telegram: " + e.getMessage());
-                sendMessage(caption);
-            }
-        } else {
+        // === 2. Фолбек: только текст (если фото нет или всё упало) ===
+        try {
             sendMessage(caption);
+            System.out.println("✅ Текстовое сообщение отправлено (фолбек без фото)");
+        } catch (Exception e) {
+            System.err.println("❌ Полная ошибка отправки в Telegram: " + e.getMessage());
         }
     }
 
-    // === НОВЫЙ МЕТОД: Отправка АЛЬБОМА (Media Group) ===
-    private void sendMediaGroup(List<CarImage> images, String caption) throws Exception {
+    // === АЛЬБОМ ФОТО С CAPTION НА ПЕРВОМ ФОТО ===
+    private void sendMediaGroupWithCaption(List<CarImage> images, String caption) throws Exception {
         String url = "https://api.telegram.org/bot" + botToken + "/sendMediaGroup";
 
-        // Ограничение Telegram: не более 10 фото в одном альбоме
         int limit = Math.min(images.size(), 10);
-
-        // 1. Формируем JSON массив media
         List<Map<String, Object>> mediaList = new ArrayList<>();
+
         for (int i = 0; i < limit; i++) {
             Map<String, Object> item = new HashMap<>();
             item.put("type", "photo");
-            // attach://<key> ссылается на имя файла в multipart форме
             item.put("media", "attach://photo" + i);
 
+            // Caption добавляем ТОЛЬКО к первому фото
             if (i == 0) {
-                // Подпись ставим только у первого фото
                 item.put("caption", caption);
                 item.put("parse_mode", "HTML");
             }
+
             mediaList.add(item);
         }
 
         String mediaJson = objectMapper.writeValueAsString(mediaList);
 
-        // 2. Формируем Multipart тело запроса
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
@@ -99,7 +115,6 @@ public class TelegramService {
         body.add("chat_id", chatId);
         body.add("media", mediaJson);
 
-        // Прикрепляем файлы с ключами photo0, photo1 и т.д.
         for (int i = 0; i < limit; i++) {
             CarImage img = images.get(i);
             String filePath = System.getProperty("user.dir") + img.getImageUrl();
@@ -108,9 +123,7 @@ public class TelegramService {
             if (file.exists()) {
                 body.add("photo" + i, new FileSystemResource(file));
             } else {
-                // Если файл не найден, это может сломать весь альбом.
-                // Логируем и пропускаем (или можно кинуть исключение)
-                System.err.println("Файл не найден для альбома: " + filePath);
+                System.err.println("⚠️ Файл не найден: " + filePath);
             }
         }
 
@@ -118,9 +131,16 @@ public class TelegramService {
         restTemplate.postForObject(url, requestEntity, String.class);
     }
 
-    // Метод для отправки ОДНОГО фото (для фолбэка)
-    private void sendPhoto(File file, String caption) {
+    // === Фолбек: ОДНО ФОТО С CAPTION ===
+    private void sendSinglePhotoWithCaption(CarImage image, String caption) throws Exception {
         String url = "https://api.telegram.org/bot" + botToken + "/sendPhoto";
+
+        String filePath = System.getProperty("user.dir") + image.getImageUrl();
+        File file = new File(filePath);
+
+        if (!file.exists()) {
+            throw new RuntimeException("Файл не найден: " + filePath);
+        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -132,15 +152,11 @@ public class TelegramService {
         body.add("parse_mode", "HTML");
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-        try {
-            restTemplate.postForObject(url, requestEntity, String.class);
-        } catch (Exception e) {
-            System.err.println("Ошибка Telegram API (Photo): " + e.getMessage());
-        }
+        restTemplate.postForObject(url, requestEntity, String.class);
     }
 
-    private void sendMessage(String text) {
+    // === Фолбек: ТОЛЬКО ТЕКСТ (без фото) ===
+    private void sendMessage(String text) throws Exception {
         String url = "https://api.telegram.org/bot" + botToken + "/sendMessage";
 
         MultiValueMap<String, Object> payload = new LinkedMultiValueMap<>();
@@ -148,45 +164,56 @@ public class TelegramService {
         payload.add("text", text);
         payload.add("parse_mode", "HTML");
 
-        try {
-            restTemplate.postForObject(url, payload, String.class);
-        } catch (Exception e) {
-            System.err.println("Ошибка Telegram API (Message): " + e.getMessage());
-        }
+        restTemplate.postForObject(url, payload, String.class);
     }
 
-    // Формирование красивого сообщения
-    private String formatMessage(Auction a) {
+    // === ФОРМИРОВАНИЕ CAPTION (общее для всех способов отправки) ===
+    private String formatCaption(Auction a) {
         StringBuilder sb = new StringBuilder();
+        DecimalFormat df = new DecimalFormat("#,##0");
 
-        sb.append("🚗 <b>").append(a.getBrand().getName())
-                .append(" ").append(a.getModel().getName())
+        // Заголовок с жирным выделением
+        sb.append("🚗 <b>")
+                .append(escapeHtml(a.getBrand().getName()))
+                .append(" ")
+                .append(escapeHtml(a.getModel().getName()))
                 .append(" (").append(a.getYear()).append(")</b>\n\n");
 
-        sb.append("💰 <b>Цена:</b> ").append(a.getCurrentPrice()).append(" BYN\n");
+        // Основные характеристики
+        sb.append("💰 <b>Цена:</b> ").append(df.format(a.getCurrentPrice())).append(" BYN\n");
+        sb.append("⚙️ <b>КПП:</b> ").append(a.getTransmission() != null ? escapeHtml(a.getTransmission().getName()) : "—").append("\n");
+        sb.append("⛽ <b>Топливо:</b> ").append(a.getFuelType() != null ? escapeHtml(a.getFuelType().getName()) : "—").append("\n");
+        sb.append("🛣 <b>Пробег:</b> ").append(a.getMileage() != null ? df.format(a.getMileage()) : "—").append(" км\n");
 
-        sb.append("⚙️ <b>КПП:</b> ").append(a.getTransmission() != null ? a.getTransmission().getName() : "-").append("\n");
-        sb.append("⛽ <b>Топливо:</b> ").append(a.getFuelType() != null ? a.getFuelType().getName() : "-").append("\n");
-        sb.append("🛣 <b>Пробег:</b> ").append(String.format("%,d", a.getMileage())).append(" км\n");
-
+        // Локация
         if (a.getCity() != null) {
-            sb.append("📍 <b>Локация:</b> ").append(a.getCity().getName());
+            sb.append("📍 <b>Локация:</b> ").append(escapeHtml(a.getCity().getName()));
             if (a.getCity().getRegion() != null) {
-                sb.append(", ").append(a.getCity().getRegion().getName());
+                sb.append(", ").append(escapeHtml(a.getCity().getRegion().getName()));
             }
             sb.append("\n");
         }
 
+        // Описание (обрезается до DESCRIPTION_LIMIT, чтобы не превысить CAPTION_LIMIT)
         if (a.getDescription() != null && !a.getDescription().isEmpty()) {
             sb.append("\n📝 <b>Описание:</b>\n");
-            sb.append(a.getDescription());
+            String desc = a.getDescription().trim();
+            if (desc.length() > DESCRIPTION_LIMIT) {
+                desc = desc.substring(0, DESCRIPTION_LIMIT - 3) + "...";
+            }
+            sb.append(escapeHtml(desc));
         }
 
-        // Логика обрезки: если сообщение длиннее 1024 символов (лимит Telegram),
-        // обрезаем его до 1021 символа и ставим троеточие.
+        // === ССЫЛКА ПРОСТЫМ ТЕКСТОМ (без HTML-тега <a>) ===
+        String lotUrl = baseUrl.trim() + "/auction/" + a.getId();
+        sb.append("\n\n🔗 ").append(lotUrl);
+
+        // === ФИНАЛЬНАЯ ОБРЕЗКА: если всё равно длиннее CAPTION_LIMIT ===
         String result = sb.toString();
-        if (result.length() > 1024) {
-            return result.substring(0, 1021) + "...";
+        if (result.length() > CAPTION_LIMIT) {
+            // Обрезаем до 1021 символа и добавляем троеточие
+            String trimmed = result.substring(0, CAPTION_LIMIT - 3) + "...";
+            return trimmed;
         }
 
         return result;

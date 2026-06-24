@@ -11,6 +11,9 @@ const Field = ({ label, required, children }) => (
     </div>
 );
 
+// === КЛЮЧ ДЛЯ СОХРАНЕНИЯ ЧЕРНОВИКА ===
+const DRAFT_KEY = 'auction_draft';
+
 function CreateAuction() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -19,6 +22,7 @@ function CreateAuction() {
   const copyId = searchParams.get('copyId');
   const isEditMode = !!editId;
   const isCopyMode = !!copyId;
+  const isNormalMode = !isEditMode && !isCopyMode;
 
   const [formData, setFormData] = useState({
     sellerId: null,
@@ -51,21 +55,100 @@ function CreateAuction() {
   const [mainImageIndex, setMainImageIndex] = useState(0);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [msg, setMsg] = useState({ text: '', ok: true });
   const [isEditModeLoading, setIsEditModeLoading] = useState(false);
 
-  // === НОВОЕ: один флаг для отслеживания, что данные копии загружены ===
   const copyDataLoadedRef = useRef(false);
+
+  // === TOAST УВЕДОМЛЕНИЯ ===
+  const [toasts, setToasts] = useState([]);
+
+  // === МОДАЛКА ПОДТВЕРЖДЕНИЯ ОЧИСТКИ ===
+  const [confirmClearModal, setConfirmClearModal] = useState(false);
 
   const currentYear = new Date().getFullYear();
   const yearsList = [];
   for (let y = currentYear + 1; y >= 1980; y--) yearsList.push(y);
 
-  // Инициализация
+  // === ФУНКЦИЯ ДОБАВЛЕНИЯ TOAST ===
+  const addToast = (message, type = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 4000);
+  };
+
+  // === УДАЛЕНИЕ TOAST ===
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  // === ИНИЦИАЛИЗАЦИЯ: загрузка черновика ===
   useEffect(() => {
     const id = localStorage.getItem('userId');
     if (id) setFormData(p => ({ ...p, sellerId: parseInt(id) }));
+
+    if (isNormalMode) {
+      const savedDraft = localStorage.getItem(DRAFT_KEY);
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          if (draft.formData) {
+            setFormData(prev => ({
+              ...prev,
+              ...draft.formData,
+              sellerId: parseInt(id)
+            }));
+          }
+          if (draft.selectedBrand) setSelectedBrand(draft.selectedBrand);
+          if (draft.selectedRegion) setSelectedRegion(draft.selectedRegion);
+          if (draft.imageUrls && Array.isArray(draft.imageUrls)) {
+            setImageUrls(draft.imageUrls);
+          }
+          if (typeof draft.mainImageIndex === 'number') {
+            setMainImageIndex(draft.mainImageIndex);
+          }
+          // === TOAST О ВОССТАНОВЛЕНИИ ===
+          addToast('📝 Черновик восстановлен', 'info');
+        } catch (e) {
+          console.error('Ошибка загрузки черновика:', e);
+        }
+      }
+    }
   }, []);
+
+  // === АВТОСОХРАНЕНИЕ ЧЕРНОВИКА ===
+  useEffect(() => {
+    if (!isNormalMode) return;
+
+    const hasData = Object.entries(formData).some(([key, value]) => {
+      if (key === 'sellerId') return false;
+      if (key === 'minBidStep') return value !== '100' && value !== '';
+      return value !== '' && value !== null && value !== undefined;
+    }) || imageUrls.length > 0;
+
+    if (!hasData) return;
+
+    const timeoutId = setTimeout(() => {
+      try {
+        const draftData = {
+          formData,
+          selectedBrand,
+          selectedRegion,
+          imageUrls,
+          mainImageIndex,
+          savedAt: new Date().toISOString()
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
+        // === TOAST О СОХРАНЕНИИ ===
+        addToast('✅ Черновик сохранён', 'success');
+      } catch (e) {
+        console.error('Ошибка сохранения черновика:', e);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData, selectedBrand, selectedRegion, imageUrls, mainImageIndex, isNormalMode]);
 
   // Загрузка справочников
   useEffect(() => {
@@ -75,7 +158,7 @@ function CreateAuction() {
     axios.get('http://localhost:8080/api/fuel-types').then(r => setFuelTypes(r.data)).catch(console.error);
   }, []);
 
-  // === ЗАГРУЗКА ДАННЫХ ПРИ КОПИРОВАНИИ (УПРОЩЁННО) ===
+  // === ЗАГРУЗКА ДАННЫХ ПРИ КОПИРОВАНИИ ===
   useEffect(() => {
     if (!isCopyMode || !copyId || copyDataLoadedRef.current) return;
 
@@ -84,16 +167,15 @@ function CreateAuction() {
         const res = await axios.get(`http://localhost:8080/api/auctions/${copyId}`);
         const a = res.data;
 
-        // === 1. Сразу заполняем ВСЕ поля формы (включая modelId и cityId) ===
         setFormData({
           sellerId: parseInt(localStorage.getItem('userId')),
           brandId: a.brand?.id ? String(a.brand.id) : '',
-          modelId: a.model?.id ? String(a.model.id) : '',  // ← ЗАПОЛНЯЕМ СРАЗУ!
+          modelId: a.model?.id ? String(a.model.id) : '',
           year: a.year ?? '',
           mileage: a.mileage != null ? String(a.mileage) : '',
           transmissionId: a.transmission?.id ? String(a.transmission.id) : '',
           fuelTypeId: a.fuelType?.id ? String(a.fuelType.id) : '',
-          cityId: a.city?.id ? String(a.city.id) : '',      // ← ЗАПОЛНЯЕМ СРАЗУ!
+          cityId: a.city?.id ? String(a.city.id) : '',
           description: a.description ?? '',
           startingPrice: a.startingPrice != null ? String(a.startingPrice) : '',
           minBidStep: a.minBidStep != null ? String(a.minBidStep) : '100',
@@ -101,21 +183,17 @@ function CreateAuction() {
           vin: a.vin ?? ''
         });
 
-        // === 2. Устанавливаем триггеры для каскадных справочников ===
         if (a.brand?.id) setSelectedBrand(String(a.brand.id));
         if (a.city?.region?.id) setSelectedRegion(String(a.city.region.id));
 
-        // === 3. Загружаем фото ===
         if (a.imageUrls && a.imageUrls.length > 0) {
           setImageUrls(a.imageUrls);
         }
 
-        // === 4. Помечаем, что данные загружены ===
         copyDataLoadedRef.current = true;
-
       } catch (err) {
         console.error("Ошибка копирования лота", err);
-        setMsg({ text: "Не удалось загрузить данные для копирования", ok: false });
+        addToast("Не удалось загрузить данные для копирования", 'error');
       }
     };
     loadCopyData();
@@ -129,7 +207,6 @@ function CreateAuction() {
           .catch(() => setModels([]));
     } else {
       setModels([]);
-      // Если бренд очищен, очищаем и модель
       if (formData.modelId) {
         setFormData(prev => ({ ...prev, modelId: '' }));
       }
@@ -150,7 +227,7 @@ function CreateAuction() {
     }
   }, [selectedRegion]);
 
-  // === Загрузка данных при редактировании (без изменений) ===
+  // === Загрузка данных при редактировании ===
   useEffect(() => {
     const loadEditData = async () => {
       if (!isEditMode || !editId) return;
@@ -159,15 +236,15 @@ function CreateAuction() {
         const res = await axios.get(`http://localhost:8080/api/auctions/${editId}`);
         const a = res.data;
         if (a.seller?.id !== parseInt(localStorage.getItem('userId'))) {
-          setMsg({ text: 'Вы не можете редактировать этот лот', ok: false });
+          addToast('Вы не можете редактировать этот лот', 'error');
           setIsEditModeLoading(false); return;
         }
         if (a.status !== 'PENDING' && a.status !== 'ACTIVE') {
-          setMsg({ text: 'Редактирование доступно только для лотов на модерации или активных', ok: false });
+          addToast('Редактирование доступно только для лотов на модерации или активных', 'error');
           setIsEditModeLoading(false); return;
         }
         if (a.hasBids) {
-          setMsg({ text: 'Нельзя редактировать лот, на который уже есть ставки', ok: false });
+          addToast('Нельзя редактировать лот, на который уже есть ставки', 'error');
           setIsEditModeLoading(false); return;
         }
 
@@ -198,7 +275,7 @@ function CreateAuction() {
         }
       } catch (err) {
         console.error("Ошибка загрузки лота", err);
-        setMsg({ text: "Не удалось загрузить данные лота", ok: false });
+        addToast("Не удалось загрузить данные лота", 'error');
         navigate('/profile');
       } finally {
         setIsEditModeLoading(false);
@@ -264,9 +341,46 @@ function CreateAuction() {
     setMainImageIndex(index);
   };
 
+  // === ОТКРЫТИЕ МОДАЛКИ ПОДТВЕРЖДЕНИЯ ОЧИСТКИ ===
+  const openClearConfirmModal = () => {
+    setConfirmClearModal(true);
+  };
+
+  // === ЗАКРЫТИЕ МОДАЛКИ ===
+  const closeClearConfirmModal = () => {
+    setConfirmClearModal(false);
+  };
+
+  // === ОЧИСТКА ЧЕРНОВИКА ===
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setFormData({
+      sellerId: parseInt(localStorage.getItem('userId') || '0'),
+      brandId: '',
+      modelId: '',
+      year: '',
+      mileage: '',
+      transmissionId: '',
+      fuelTypeId: '',
+      cityId: '',
+      description: '',
+      startingPrice: '',
+      minBidStep: '100',
+      endTime: '',
+      vin: ''
+    });
+    setSelectedBrand('');
+    setSelectedRegion('');
+    setImageUrls([]);
+    setFiles([]);
+    setMainImageIndex(0);
+    addToast('🗑️ Форма очищена', 'success');
+    closeClearConfirmModal();
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!formData.sellerId) { setMsg({ text: 'Войдите в аккаунт', ok: false }); return; }
+    if (!formData.sellerId) { addToast('Войдите в аккаунт', 'error'); return; }
 
     const newErrors = {};
     if (imageUrls.length + files.length === 0) {
@@ -293,13 +407,15 @@ function CreateAuction() {
     if (!formData.description || formData.description.trim().length < 10) newErrors.description = 'Описание >= 10 символов';
 
     if (Object.keys(newErrors).length > 0) {
-      setMsg({ text: Object.values(newErrors).join('. '), ok: false });
+      addToast(Object.values(newErrors).join('. '), 'error');
       return;
     }
-    if (formData.vin && formData.vin.length !== 17) newErrors.vin = 'VIN должен содержать ровно 17 символов';
+    if (formData.vin && formData.vin.length !== 17) {
+      addToast('VIN должен содержать ровно 17 символов', 'error');
+      return;
+    }
 
     setIsSubmitting(true);
-    setMsg({ text: 'Сохранение...', ok: true });
 
     try {
       let newUploadedUrls = [];
@@ -345,11 +461,11 @@ function CreateAuction() {
         await axios.put(`http://localhost:8080/api/auctions/${editId}`, payload, {
           params: { userId: formData.sellerId }
         });
-        setMsg({ text: 'Лот успешно обновлён!', ok: true });
+        addToast('✅ Лот успешно обновлён!', 'success');
       } else {
         await axios.post('http://localhost:8080/api/auctions', payload);
+        localStorage.removeItem(DRAFT_KEY);
 
-        // Удаляем исходный лот при копировании
         if (copyDataLoadedRef.current && copyId) {
           try {
             await axios.delete(`http://localhost:8080/api/auctions/${copyId}`, {
@@ -359,13 +475,13 @@ function CreateAuction() {
             console.error('Не удалось удалить исходный лот:', e);
           }
         }
-        setMsg({ text: 'Лот отправлен на модерацию!', ok: true });
+        addToast('✅ Лот отправлен на модерацию!', 'success');
       }
       setTimeout(() => { navigate('/profile'); }, 2000);
 
     } catch (err) {
       console.error('Ошибка при сохранении:', err.response?.data || err.message);
-      setMsg({ text: 'Ошибка: ' + (err.response?.data || err.message), ok: false });
+      addToast('Ошибка: ' + (err.response?.data || err.message), 'error');
       setIsSubmitting(false);
     }
   };
@@ -398,6 +514,16 @@ function CreateAuction() {
 
   return (
       <div className="ca">
+        {/* === TOAST УВЕДОМЛЕНИЯ === */}
+        <div className="ca-toasts">
+          {toasts.map(toast => (
+              <div key={toast.id} className={`ca-toast ca-toast--${toast.type}`}>
+                <span>{toast.message}</span>
+                <button className="ca-toast__close" onClick={() => removeToast(toast.id)}>×</button>
+              </div>
+          ))}
+        </div>
+
         <div className="ca-hero">
           <div className="ca-container">
             <p className="ca-eyebrow">{pageEyebrow}</p>
@@ -431,7 +557,6 @@ function CreateAuction() {
                         value={formData.modelId || ''}
                         onChange={handleChange}
                         disabled={!selectedBrand || isEditMode}
-                        // === КЛЮЧЕВОЕ: key меняется при изменении бренда И модели ===
                         key={`model-select-${selectedBrand}-${formData.modelId}`}
                     >
                       <option value="">Выберите модель...</option>
@@ -548,14 +673,52 @@ function CreateAuction() {
               </section>
 
               <div className="ca-submit">
-                {msg.text && (<p className={`ca-msg${msg.ok ? ' ca-msg--ok' : ' ca-msg--err'}`}>{msg.text}</p>)}
-                <button type="submit" className={`ca-btn ca-btn--gold ca-btn--lg ca-btn--full${isSubmitting ? ' ca-btn--disabled' : ''}`} disabled={isSubmitting}>
-                  {isSubmitting ? 'Сохранение...' : (isEditMode ? 'Сохранить изменения' : 'Опубликовать лот')}
-                </button>
+                <div className="ca-submit__actions">
+                  {isNormalMode && (
+                      <button
+                          type="button"
+                          className="ca-btn ca-btn--ghost ca-btn--lg"
+                          onClick={openClearConfirmModal}
+                      >
+                        🗑️ Очистить
+                      </button>
+                  )}
+
+                  <button type="submit" className={`ca-btn ca-btn--gold ca-btn--lg ca-btn--full${isSubmitting ? ' ca-btn--disabled' : ''}`} disabled={isSubmitting}>
+                    {isSubmitting ? 'Сохранение...' : (isEditMode ? 'Сохранить изменения' : 'Опубликовать лот')}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
         </main>
+
+        {/* === МОДАЛКА ПОДТВЕРЖДЕНИЯ ОЧИСТКИ === */}
+        {confirmClearModal && (
+            <div className="ca-modal-overlay" onClick={closeClearConfirmModal}>
+              <div className="ca-modal" onClick={e => e.stopPropagation()}>
+                <h3 className="ca-modal__title">Подтвердите очистку</h3>
+                <p className="ca-modal__text">
+                  Вы уверены, что хотите очистить все введённые данные?<br />
+                  Это действие нельзя отменить.
+                </p>
+                <div className="ca-modal__actions">
+                  <button
+                      className="ca-btn ca-btn--ghost"
+                      onClick={closeClearConfirmModal}
+                  >
+                    Отмена
+                  </button>
+                  <button
+                      className="ca-btn ca-btn--danger"
+                      onClick={clearDraft}
+                  >
+                    🗑️ Очистить форму
+                  </button>
+                </div>
+              </div>
+            </div>
+        )}
 
         <footer className="ca-footer">
           <div className="ca-footer__grid">
@@ -563,18 +726,13 @@ function CreateAuction() {
               <p className="ca-footer__wordmark">BiDrive</p>
               <p className="ca-footer__desc">Платформа онлайн-аукционов автомобилей.</p>
             </div>
-
-            {/* === Блок навигации === */}
             <div>
               <p className="ca-footer__col-title">Навигация</p>
               <ul className="ca-footer__list">
                 <li><Link to="/catalog">Каталог</Link></li>
-                {/* === Ссылка на правила платформы === */}
                 <li><Link to="/rules" className="ca-footer__rules-link">Правила платформы</Link></li>
               </ul>
             </div>
-
-            {/* === Блок контактов === */}
             <div>
               <p className="ca-footer__col-title">Контакты</p>
               <ul className="ca-footer__list">

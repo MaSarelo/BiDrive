@@ -43,6 +43,11 @@ public class BidService {
             throw new RuntimeException("Ставки возможны только на активные аукционы!");
         }
 
+        // === ЗАПРЕТ НА СТАВКИ ПРОДАВЦУ НА СВОЙ ЛОТ ===
+        if (auction.getSeller() != null && auction.getSeller().getId().equals(userId)) {
+            throw new RuntimeException("Нельзя делать ставки на собственный лот!");
+        }
+
         BigDecimal currentPrice = auction.getCurrentPrice();
         BigDecimal minStep = auction.getMinBidStep();
 
@@ -57,26 +62,26 @@ public class BidService {
             ));
         }
 
-        // Уведомление тому, кого перебили
+        // === ПРОВЕРКА: НЕЛЬЗЯ ПЕРЕБИВАТЬ СВОЮ СТАВКУ ===
         Optional<Bid> currentTopBid = bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId);
 
         if (currentTopBid.isPresent()) {
             User previousLeader = currentTopBid.get().getUser();
-            // Не шлем уведомление самому себе (если юзер перебивает свою же ставку, чего быть не должно, но проверка не мешает)
-            if (!previousLeader.getId().equals(userId)) {
-                Notification notification = new Notification();
-                notification.setUser(previousLeader);
-                notification.setType("BID_OUTBID");
-                notification.setMessage("Вашу ставку на аукцион №" + auctionId + " перебили!");
 
-                // === ИСПРАВЛЕНО: используем setAuctionId ===
-                notification.setAuctionId(auctionId);
-                // =======================================
-
-                notification.setIsRead(false);
-                notification.setCreatedAt(LocalDateTime.now());
-                notificationRepository.save(notification);
+            // Запрет на перебивание своей же ставки
+            if (previousLeader.getId().equals(userId)) {
+                throw new RuntimeException("Вы уже лидируете в торгах. Перебивать свою ставку нельзя.");
             }
+
+            // Уведомление тому, кого перебили
+            Notification notification = new Notification();
+            notification.setUser(previousLeader);
+            notification.setType("BID_OUTBID");
+            notification.setMessage("Вашу ставку на аукцион №" + auctionId + " перебили!");
+            notification.setAuctionId(auctionId);
+            notification.setIsRead(false);
+            notification.setCreatedAt(LocalDateTime.now());
+            notificationRepository.save(notification);
         }
 
         Bid bid = new Bid();

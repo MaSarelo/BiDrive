@@ -99,13 +99,15 @@ function AdminPage() {
         // eslint-disable-next-line react-hooks/immutability
         fetchReferenceData();
         // eslint-disable-next-line react-hooks/immutability
-        fetchRequests();
+        fetchRequests(false); // ← без сброса страницы при первичной загрузке
         setLoading(false);
 
         const intervalId = setInterval(() => {
             fetchStats();
-            fetchRequests();
-        }, 30000);
+            fetchRequests(false); // ← тихое обновление без сброса страницы
+            fetchAuctions(); // ← автообновление списка лотов на модерации
+            fetchUsers(); // ← автообновление списка пользователей
+        }, 7000);
         return () => clearInterval(intervalId);
     }, []);
 
@@ -130,11 +132,12 @@ function AdminPage() {
         } catch (err) { console.error('Ошибка статистики:', err); }
     };
 
-    const fetchRequests = () => {
+    // === ЗАПРОСЫ С ОПЦИОНАЛЬНЫМ СБРОСОМ СТРАНИЦЫ ===
+    const fetchRequests = (resetPage = true) => {
         axios.get(`${API_BASE}/api/admin/requests`)
             .then(r => {
                 setRequests(r.data);
-                setRequestPage(1);
+                if (resetPage) setRequestPage(1);
             })
             .catch(err => console.error('Ошибка загрузки запросов:', err));
     };
@@ -146,42 +149,94 @@ function AdminPage() {
         axios.get(`${API_BASE}/api/admin/data/regions`).then(r => setRegions(r.data));
     };
 
-    // === ACTIONS ===
+    // === ОПТИМИСТИЧНОЕ ОДОБРЕНИЕ ЛОТА ===
     const handleApprove = (id) => {
+        // 1. Оптимистично удаляем из UI СРАЗУ
+        setAuctions(p => p.filter(a => a.id !== id));
+
+        // 2. Параллельно делаем запрос в фоне
         axios.put(`${API_BASE}/api/auctions/${id}/approve`)
-            .then(() => { setAuctions(p => p.filter(a => a.id !== id)); fetchStats(); showToast('Лот одобрен', 'success'); })
-            .catch(() => showToast('Ошибка при одобрении', 'error'));
+            .then(() => {
+                fetchStats();
+                showToast('Лот одобрен', 'success');
+            })
+            .catch(() => {
+                // Если запрос упал — возвращаем лот обратно
+                fetchAuctions();
+                showToast('Ошибка при одобрении', 'error');
+            });
     };
 
     const handleRejectInit = (id) => { setRejectingId(id); setRejectReason(''); setRejectError(''); };
+
+    // === ОПТИМИСТИЧНОЕ ОТКЛОНЕНИЕ ЛОТА ===
     const handleRejectConfirm = () => {
-        if (!rejectReason.trim()) { setRejectError('Укажите причину'); return; }
-        axios.post(`${API_BASE}/api/auctions/${rejectingId}/reject`, null, { params: { reason: rejectReason } })
-            .then(() => { setAuctions(p => p.filter(a => a.id !== rejectingId)); setRejectingId(null); fetchStats(); showToast('Лот отклонён', 'success'); })
-            .catch(() => showToast('Ошибка при отклонении', 'error'));
+        if (!rejectReason.trim()) {
+            setRejectError('Укажите причину');
+            return;
+        }
+
+        const id = rejectingId;
+        const reason = rejectReason;
+
+        // 1. Закрываем модалку СРАЗУ
+        setRejectingId(null);
+        setRejectReason('');
+        setRejectError('');
+
+        // 2. Оптимистично удаляем лот из UI
+        setAuctions(p => p.filter(a => a.id !== id));
+
+        // 3. Параллельно делаем запрос
+        axios.post(`${API_BASE}/api/auctions/${id}/reject`, null, { params: { reason } })
+            .then(() => {
+                fetchStats();
+                showToast('Лот отклонён', 'success');
+            })
+            .catch(() => {
+                // Если запрос упал — возвращаем лот и показываем ошибку
+                fetchAuctions();
+                showToast('Ошибка при отклонении', 'error');
+            });
     };
 
+    // === ОПТИМИСТИЧНАЯ БЛОКИРОВКА/РАЗБЛОКИРОВКА ===
     const handleBlock = (userId, isBlocked) => {
+        // Оптимистичное обновление UI
+        setUsers(p => p.map(u => u.id === userId ? { ...u, isBlocked } : u));
+
         axios.put(`${API_BASE}/api/users/${userId}/block`, null, { params: { isBlocked } })
-            .then(() => { setUsers(p => p.map(u => u.id === userId ? { ...u, isBlocked } : u)); fetchStats(); showToast(`Пользователь ${isBlocked ? 'заблокирован' : 'разблокирован'}`, 'success'); })
-            .catch(() => showToast('Ошибка при изменении статуса', 'error'));
+            .then(() => {
+                fetchStats();
+                showToast(`Пользователь ${isBlocked ? 'заблокирован' : 'разблокирован'}`, 'success');
+            })
+            .catch(() => {
+                // Откат при ошибке
+                fetchUsers();
+                showToast('Ошибка при изменении статуса', 'error');
+            });
     };
 
     const openRoleModal = (userId, newRoleId) => setRoleModal({ isOpen: true, userId, newRoleId });
+
+    // === ОПТИМИСТИЧНАЯ СМЕНА РОЛИ ===
     const confirmRoleChange = () => {
         const { userId, newRoleId } = roleModal;
         if (!userId || !newRoleId) return;
+
+        // Закрываем модалку и обновляем UI сразу
+        setRoleModal({ isOpen: false, userId: null, newRoleId: null });
+        setUsers(p => p.map(u => u.id === userId ? { ...u, roleId: newRoleId } : u));
+
         axios.put(`${API_BASE}/api/users/${userId}/role`, null, { params: { roleId: newRoleId } })
             .then(() => {
-                setUsers(p => p.map(u => u.id === userId ? { ...u, roleId: newRoleId } : u));
                 fetchStats();
                 showToast('Роль пользователя успешно изменена', 'success');
-                setRoleModal({ isOpen: false, userId: null, newRoleId: null });
             })
             .catch(err => {
-                showToast(err.response?.data || 'Ошибка при смене роли', 'error');
+                // Откат при ошибке
                 fetchUsers();
-                setRoleModal({ isOpen: false, userId: null, newRoleId: null });
+                showToast(err.response?.data || 'Ошибка при смене роли', 'error');
             });
     };
 
@@ -204,7 +259,6 @@ function AdminPage() {
                 showToast(`${typeName.charAt(0).toUpperCase() + typeName.slice(1)} "${name}" удалена`, 'success');
             })
                 .catch(err => {
-                    // Пытаемся получить сообщение от сервера
                     const serverMsg = err.response?.data;
                     let message;
                     if (typeof serverMsg === 'string') {
@@ -525,9 +579,12 @@ function AdminPage() {
                                         <button
                                             className="ap-btn ap-btn--green"
                                             onClick={() => {
-                                                axios.post(`${API_BASE}/api/admin/requests/${req.id}/approve`)
-                                                    .then(() => { fetchRequests(); showToast('Аукцион продлён на 24 часа', 'success'); })
-                                                    .catch(() => showToast('Ошибка при одобрении', 'error'));
+                                                // Оптимистичное удаление запроса из списка
+                                                const reqId = req.id;
+                                                setRequests(p => p.filter(r => r.id !== reqId));
+                                                axios.post(`${API_BASE}/api/admin/requests/${reqId}/approve`)
+                                                    .then(() => { fetchStats(); showToast('Аукцион продлён на 24 часа', 'success'); })
+                                                    .catch(() => { fetchRequests(true); showToast('Ошибка при одобрении', 'error'); });
                                             }}
                                         >
                                             ✔ Одобрить
@@ -535,9 +592,12 @@ function AdminPage() {
                                         <button
                                             className="ap-btn ap-btn--red"
                                             onClick={() => {
-                                                axios.post(`${API_BASE}/api/admin/requests/${req.id}/reject`)
-                                                    .then(() => { fetchRequests(); showToast('Запрос отклонён', 'success'); })
-                                                    .catch(() => showToast('Ошибка при отклонении', 'error'));
+                                                // Оптимистичное удаление запроса из списка
+                                                const reqId = req.id;
+                                                setRequests(p => p.filter(r => r.id !== reqId));
+                                                axios.post(`${API_BASE}/api/admin/requests/${reqId}/reject`)
+                                                    .then(() => { fetchStats(); showToast('Запрос отклонён', 'success'); })
+                                                    .catch(() => { fetchRequests(true); showToast('Ошибка при отклонении', 'error'); });
                                             }}
                                         >
                                             ✕ Отклонить

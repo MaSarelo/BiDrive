@@ -799,3 +799,24 @@
 .pf-btn--publish:hover {
     background: rgba(46, 125, 50, 0.25);
 }
+
+/* === ПРИЧИНА ОТКЛОНЕНИЯ === */
+.pf-card__reject-reason {
+    background: var(--red-dim, rgba(248, 81, 73, 0.15));
+    border-left: 3px solid var(--red, #F85149);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.8125rem;
+    color: var(--red, #F85149);
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.pf-card__reject-reason strong {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+    opacity: 0.8;
+}

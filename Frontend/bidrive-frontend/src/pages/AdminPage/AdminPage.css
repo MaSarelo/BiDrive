@@ -192,19 +192,31 @@
   border-color: var(--border-2);
 }
 
+/* === ФИКСИРОВАННАЯ ВЫСОТА ДЛЯ КАРТОЧЕК МОДЕРАЦИИ === */
 .ap-card__left {
+  height: 12rem; /* Фиксированная высота ~192px */
   width: 13.75rem;
   flex-shrink: 0;
   background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden; /* Обрезаем лишнее */
 }
 
 .ap-card__img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* Масштабируем с обрезкой */
+  object-position: center; /* Центрируем фото */
+}
+
+/* Адаптив для мобильных */
+@media (max-width: 64rem) {
+  .ap-card__left {
+    width: 100%;
+    height: 12rem; /* Сохраняем высоту */
+  }
 }
 
 .ap-card__img--empty {

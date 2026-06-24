@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import axios from 'axios';
 import './Layout.css';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const NotifContext = createContext();
 
 // === ИКОНКИ ===
@@ -71,11 +72,13 @@ function Layout() {
     useEffect(() => {
         const email = localStorage.getItem('userEmail');
         const role = localStorage.getItem('userRole');
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUserEmail(email || null);
         setUserRole(role ? parseInt(role, 10) : null);
     }, [location]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMenuOpen(false);
         setProfileOpen(false);
     }, [location]);
@@ -92,6 +95,7 @@ function Layout() {
 
         // Если пользователя нет, сбрасываем счетчик и выходим
         if (!userId) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setNotifCount(0);
             return;
         }
@@ -109,8 +113,8 @@ function Layout() {
         // 1. Сразу вызываем при загрузке
         fetchNotifCount();
 
-        // 2. Запускаем интервал каждые 30 секунд (30000 мс)
-        const intervalId = setInterval(fetchNotifCount, 30000);
+        // 2. Запускаем интервал каждые 10 секунд
+        const intervalId = setInterval(fetchNotifCount, 10000);
 
         // 3. Очищаем интервал при размонтировании или выходе
         return () => clearInterval(intervalId);

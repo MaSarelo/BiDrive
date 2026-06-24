@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import './AuctionDetails.css';
@@ -56,6 +56,10 @@ function AuctionDetails() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showExtendModal, setShowExtendModal] = useState(false);
 
+  // === УВЕДОМЛЕНИЕ ОБ ОБНОВЛЕНИИ ЛОТА ===
+  const [updateToast, setUpdateToast] = useState({ show: false, message: '' });
+  const prevAuctionRef = useRef(null);
+
   const rate = useRate();
 
   useEffect(() => {
@@ -65,6 +69,35 @@ function AuctionDetails() {
     if (email && uid) setCurrentUser({ email, id: parseInt(uid, 10) });
   }, []);
 
+  // === ФУНКЦИЯ ПРОВЕРКИ ИЗМЕНЕНИЙ ЛОТА ===
+  const checkAuctionChanges = (oldData, newData) => {
+    if (!oldData) return null;
+
+    const changes = [];
+
+    if (oldData.description !== newData.description) changes.push('описание');
+    if (oldData.vin !== newData.vin) changes.push('VIN-код');
+    if (oldData.year !== newData.year) changes.push('год выпуска');
+    if (oldData.mileage !== newData.mileage) changes.push('пробег');
+    if (oldData.transmission?.id !== newData.transmission?.id) changes.push('КПП');
+    if (oldData.fuelType?.id !== newData.fuelType?.id) changes.push('топливо');
+    if (oldData.startingPrice !== newData.startingPrice) changes.push('стартовую цену');
+    if (oldData.minBidStep !== newData.minBidStep) changes.push('шаг ставки');
+    if (oldData.endTime !== newData.endTime) changes.push('время окончания');
+
+    const oldImages = oldData.images || [];
+    const newImages = newData.images || [];
+    if (oldImages.length !== newImages.length) {
+      changes.push('фотографии');
+    } else {
+      const oldIds = oldImages.map(img => img.id).sort().join(',');
+      const newIds = newImages.map(img => img.id).sort().join(',');
+      if (oldIds !== newIds) changes.push('фотографии');
+    }
+
+    return changes.length > 0 ? changes : null;
+  };
+
   const loadAuction = (isMounted) =>
       axios.get(`${API_URL}/api/auctions/${id}`).then(r => {
         if (!isMounted) return;
@@ -72,11 +105,27 @@ function AuctionDetails() {
         if (Array.isArray(data.images) && data.images.length > 0) {
           data.images.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
         }
+
+        if (prevAuctionRef.current && !loading) {
+          const changes = checkAuctionChanges(prevAuctionRef.current, data);
+          if (changes) {
+            const uniqueChanges = [...new Set(changes)];
+            const message = `Продавец обновил: ${uniqueChanges.join(', ')}`;
+            setUpdateToast({ show: true, message });
+            setTimeout(() => setUpdateToast({ show: false, message: '' }), 4000);
+          }
+        }
+
+        prevAuctionRef.current = data;
         setAuction(data);
+
         if (Array.isArray(data.images) && data.images.length > 0) {
-          setCurrentImage(data.images.find(img => img.isMain) ?? data.images[0]);
+          setCurrentImage(prev => {
+            if (prev && data.images.some(img => img.id === prev.id)) return prev;
+            return data.images.find(img => img.isMain) ?? data.images[0];
+          });
         } else if (data.mainImageUrl) {
-          setCurrentImage({ imageUrl: data.mainImageUrl });
+          setCurrentImage(prev => prev ?? { imageUrl: data.mainImageUrl });
         }
       });
 
@@ -85,15 +134,29 @@ function AuctionDetails() {
           .then(r => { if (isMounted) setBidHistory(r.data || []); })
           .catch(console.error);
 
+  // === ПЕРВИЧНАЯ ЗАГРУЗКА ===
   useEffect(() => {
     let isMounted = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    prevAuctionRef.current = null;
     Promise.all([loadAuction(isMounted), loadBidHistory(isMounted)])
         .catch(console.error)
         .finally(() => { if (isMounted) setLoading(false); });
     return () => { isMounted = false; };
   }, [id]);
+
+  // === АВТООБНОВЛЕНИЕ ДЛЯ АКТИВНЫХ АУКЦИОНОВ ===
+  useEffect(() => {
+    if (!auction || auction.status !== 'ACTIVE') return;
+
+    const intervalId = setInterval(() => {
+      loadAuction(true);
+      loadBidHistory(true);
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [auction?.status]);
 
   useEffect(() => {
     const { endTime, status } = auction || {};
@@ -110,7 +173,6 @@ function AuctionDetails() {
     };
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTimeLeft(calc());
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     const intervalId = setInterval(() => {
       const t = calc();
       setTimeLeft(t);
@@ -226,6 +288,12 @@ function AuctionDetails() {
   const isActive = status === 'ACTIVE';
   const isWinner = status === 'FINISHED' && winner && currentUser?.id === winner.id;
   const isSeller = seller && currentUser?.id === seller.id;
+
+  // === ПРОВЕРКА: ЯВЛЯЕТСЯ ЛИ ТЕКУЩИЙ ПОЛЬЗОВАТЕЛЬ ЛИДЕРОМ ТОРГОВ ===
+  // bidHistory[0] — это последняя ставка (самая высокая)
+  const isHighestBidder = bidHistory.length > 0 &&
+      currentUser &&
+      bidHistory[0]?.userId === currentUser.id;
 
   return (
       <div className="ad">
@@ -384,15 +452,40 @@ function AuctionDetails() {
               </div>
               <div className="ad-price-card__divider" />
 
-              {/* === РЕЖИМ ПРОСМОТРА ИЗ АДМИНКИ: скрываем форму ставок === */}
+              {/* === ФОРМА СТАВОК С ПРОВЕРКОЙ ЛИДЕРСТВА === */}
               {!isReviewMode && (
                   currentUser ? (
                       <div className="ad-bid-form">
-                        <label className="ad-bid-form__label">Ваша ставка (<BynIcon className="ad-currency-icon" />)</label>
-                        <input className="ad-bid-form__input" type="text" inputMode="numeric" placeholder="Сумма" value={bidAmount ? Number(bidAmount).toLocaleString('ru-RU') : ''} onChange={handleBidInput} disabled={!isActive} />
-                        <button type="button" className={`ad-btn ad-btn--gold ad-btn--full${!isActive ? ' ad-btn--disabled' : ''}`} onClick={handlePlaceBid} disabled={!isActive}>
-                          {isActive ? 'Сделать ставку' : 'Торги завершены'}
-                        </button>
+                        {isHighestBidder ? (
+                            <div className="ad-bid-leader">
+                              <span className="ad-bid-leader__icon">👑</span>
+                              <div>
+                                <p className="ad-bid-leader__title">Вы лидируете в торгах</p>
+                                <p className="ad-bid-leader__text">Ваша ставка — самая высокая. Перебивать свою ставку нельзя. Если кто-то сделает ставку выше, вы сможете повысить свою.</p>
+                              </div>
+                            </div>
+                        ) : (
+                            <>
+                              <label className="ad-bid-form__label">Ваша ставка (<BynIcon className="ad-currency-icon" />)</label>
+                              <input
+                                  className="ad-bid-form__input"
+                                  type="text"
+                                  inputMode="numeric"
+                                  placeholder="Сумма"
+                                  value={bidAmount ? Number(bidAmount).toLocaleString('ru-RU') : ''}
+                                  onChange={handleBidInput}
+                                  disabled={!isActive}
+                              />
+                              <button
+                                  type="button"
+                                  className={`ad-btn ad-btn--gold ad-btn--full${!isActive ? ' ad-btn--disabled' : ''}`}
+                                  onClick={handlePlaceBid}
+                                  disabled={!isActive}
+                              >
+                                {isActive ? 'Сделать ставку' : 'Торги завершены'}
+                              </button>
+                            </>
+                        )}
                         {bidMsg.text && <p className={`ad-bid-msg${bidMsg.ok ? ' ad-bid-msg--ok' : ' ad-bid-msg--err'}`}>{bidMsg.text}</p>}
                       </div>
                   ) : (
@@ -458,7 +551,6 @@ function AuctionDetails() {
               <p className="ad-footer__wordmark">BiDrive</p>
               <p className="ad-footer__desc">Платформа онлайн-аукционов автомобилей.</p>
             </div>
-
             <div>
               <p className="ad-footer__col-title">Навигация</p>
               <ul className="ad-footer__list">
@@ -467,7 +559,6 @@ function AuctionDetails() {
                 <li><Link to="/rules" className="ad-footer__rules-link">Правила платформы</Link></li>
               </ul>
             </div>
-
             <div>
               <p className="ad-footer__col-title">Контакты</p>
               <ul className="ad-footer__list">
@@ -502,20 +593,19 @@ function AuctionDetails() {
                   Запрос будет отправлен администратору на рассмотрение.
                 </p>
                 <div className="ad-modal__actions">
-                  <button
-                      className="ap-btn ap-btn--ghost"
-                      onClick={() => setShowExtendModal(false)}
-                  >
-                    Отмена
-                  </button>
-                  <button
-                      className="ap-btn ap-btn--primary"
-                      onClick={handleRequestExtend}
-                  >
-                    Отправить запрос
-                  </button>
+                  <button className="ap-btn ap-btn--ghost" onClick={() => setShowExtendModal(false)}>Отмена</button>
+                  <button className="ap-btn ap-btn--primary" onClick={handleRequestExtend}>Отправить запрос</button>
                 </div>
               </div>
+            </div>
+        )}
+
+        {/* === УВЕДОМЛЕНИЕ ОБ ОБНОВЛЕНИИ ЛОТА === */}
+        {updateToast.show && (
+            <div className="ad-update-toast">
+              <span className="ad-update-toast__icon">🔄</span>
+              <span className="ad-update-toast__message">{updateToast.message}</span>
+              <button className="ad-update-toast__close" onClick={() => setUpdateToast({ show: false, message: '' })}>×</button>
             </div>
         )}
       </div>

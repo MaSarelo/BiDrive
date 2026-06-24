@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -38,19 +37,28 @@ public class AuctionService {
     @Autowired private CarImageRepository carImageRepository;
     @Autowired private EntityManager entityManager;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unchecked"})
     public List<BidHistoryDTO> getBidHistory(Long auctionId) {
         List<BidHistoryDTO> history = new ArrayList<>();
         try {
-            Query query = entityManager.createNativeQuery("SELECT * FROM get_bid_history(:auctionId)");
-            query.setParameter("auctionId", auctionId);
-            List<Object[]> results = query.getResultList();
+            // Переписали на JPQL — не нужно менять SQL-функцию в БД
+            List<Object[]> results = entityManager.createNativeQuery(
+                    "SELECT b.id AS bid_id, u.id AS user_id, " +
+                            "(u.first_name || ' ' || u.last_name) AS user_name, " +
+                            "b.amount, b.created_at " +
+                            "FROM bids b " +
+                            "JOIN users u ON b.user_id = u.id " +
+                            "WHERE b.auction_id = :auctionId " +
+                            "ORDER BY b.amount DESC"
+            ).setParameter("auctionId", auctionId).getResultList();
+
             for (Object[] row : results) {
                 BidHistoryDTO dto = new BidHistoryDTO();
                 dto.setBidId(((Number) row[0]).longValue());
-                dto.setUserName((String) row[1]);
-                dto.setAmount((BigDecimal) row[2]);
-                dto.setCreatedAt((LocalDateTime) row[3]);
+                dto.setUserId(((Number) row[1]).longValue());      // ← ДОБАВЛЕНО
+                dto.setUserName((String) row[2]);
+                dto.setAmount((BigDecimal) row[3]);
+                dto.setCreatedAt((LocalDateTime) row[4]);
                 history.add(dto);
             }
         } catch (Exception e) {
@@ -165,29 +173,47 @@ public class AuctionService {
 
     @Transactional
     public Bid placeBid(Long auctionId, Long userId, BigDecimal amount) {
-        Auction auction = auctionRepository.findById(auctionId).orElseThrow(() -> new RuntimeException("Аукцион не найден"));
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("Пользователь не найден"));
-        if (auction.getSeller().getId().equals(userId)) throw new RuntimeException("Нельзя делать ставки на свой лот.");
-        if (!"ACTIVE".equals(auction.getStatus())) throw new RuntimeException("Ставки возможны только на активные аукционы!");
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new RuntimeException("Аукцион не найден"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+
+        if (auction.getSeller().getId().equals(userId)) {
+            throw new RuntimeException("Нельзя делать ставки на свой лот.");
+        }
+        if (!"ACTIVE".equals(auction.getStatus())) {
+            throw new RuntimeException("Ставки возможны только на активные аукционы!");
+        }
 
         BigDecimal currentPrice = auction.getCurrentPrice();
         BigDecimal minStep = auction.getMinBidStep();
-        if (amount.compareTo(currentPrice) <= 0) throw new RuntimeException("Ставка должна быть выше текущей цены!");
-        if (amount.subtract(currentPrice).compareTo(minStep) < 0) throw new RuntimeException(String.format("Минимальный шаг ставки: %s BYN.", minStep));
+
+        if (amount.compareTo(currentPrice) <= 0) {
+            throw new RuntimeException("Ставка должна быть выше текущей цены!");
+        }
+        if (amount.subtract(currentPrice).compareTo(minStep) < 0) {
+            throw new RuntimeException(String.format("Минимальный шаг ставки: %s BYN.", minStep));
+        }
 
         Optional<Bid> previousTopBid = bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId);
+
         if (previousTopBid.isPresent()) {
             User previousLeader = previousTopBid.get().getUser();
-            if (!previousLeader.getId().equals(userId)) {
-                Notification notif = new Notification();
-                notif.setUser(previousLeader);
-                notif.setType("BID_OUTBID");
-                notif.setAuctionId(auction.getId());
-                notif.setMessage("⚠️ Вашу ставку перебили на лоте: " + auction.getBrand().getName() + " " + auction.getModel().getName());
-                notif.setIsRead(false);
-                notif.setCreatedAt(LocalDateTime.now());
-                notificationRepository.save(notif);
+
+            // === ЗАПРЕТ ПЕРЕБИВАТЬ СВОЮ СТАВКУ ===
+            if (previousLeader.getId().equals(userId)) {
+                throw new RuntimeException("Вы уже лидируете в торгах. Перебивать свою ставку нельзя.");
             }
+
+            // Уведомление тому, кого перебили
+            Notification notif = new Notification();
+            notif.setUser(previousLeader);
+            notif.setType("BID_OUTBID");
+            notif.setAuctionId(auction.getId());
+            notif.setMessage("⚠️ Вашу ставку перебили на лоте: " + auction.getBrand().getName() + " " + auction.getModel().getName());
+            notif.setIsRead(false);
+            notif.setCreatedAt(LocalDateTime.now());
+            notificationRepository.save(notif);
         }
 
         Bid bid = new Bid();
@@ -195,6 +221,7 @@ public class AuctionService {
         bid.setUser(user);
         bid.setAmount(amount);
         bid.setCreatedAt(LocalDateTime.now());
+
         Bid savedBid = bidRepository.save(bid);
         auction.setCurrentPrice(amount);
         auctionRepository.save(auction);
@@ -247,6 +274,38 @@ public class AuctionService {
     }
 
     @Transactional
+    public void rejectAuction(Long auctionId, String reason) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new RuntimeException("Аукцион не найден"));
+
+        if ("REJECTED".equals(auction.getModerationStatus())) {
+            throw new RuntimeException("Аукцион уже отклонён");
+        }
+
+        // Устанавливаем статус отклонения
+        auction.setModerationStatus("REJECTED");
+        auction.setStatus("REJECTED");
+        auction.setRejectionReason(reason);
+        auction.setUpdatedAt(LocalDateTime.now());
+        auctionRepository.save(auction);
+
+        // === СОЗДАЁМ УВЕДОМЛЕНИЕ ДЛЯ ПРОДАВЦА ===
+        Notification rejectionNotif = new Notification();
+        rejectionNotif.setUser(auction.getSeller());
+        rejectionNotif.setAuctionId(auction.getId());
+        // ✅ Используем существующий тип из БД
+        rejectionNotif.setType("AUCTION_EXTENSION_REJECTED");
+        rejectionNotif.setMessage("❌ Ваш лот \"" + auction.getBrand().getName() + " "
+                + auction.getModel().getName() + "\" был отклонён модератором. "
+                + "Причина: " + reason);
+        rejectionNotif.setIsRead(false);
+        rejectionNotif.setCreatedAt(LocalDateTime.now());
+        notificationRepository.save(rejectionNotif);
+
+        log.info("Аукцион {} отклонён. Причина: {}", auctionId, reason);
+    }
+
+    @Transactional
     public void finishAuction(Long auctionId, Long requestingUserId) {
         Auction auction = auctionRepository.findById(auctionId).orElseThrow(() -> new RuntimeException("Аукцион не найден"));
         if (!auction.getSeller().getId().equals(requestingUserId)) throw new RuntimeException("Вы не можете завершить чужой аукцион");
@@ -273,8 +332,19 @@ public class AuctionService {
         if (!auction.getSeller().getId().equals(requestingUserId)) {
             throw new RuntimeException("Вы не можете редактировать чужой лот");
         }
-        if (!"PENDING".equals(auction.getStatus()) && !"ACTIVE".equals(auction.getStatus())) {
-            throw new RuntimeException("Редактирование доступно только для лотов на модерации или активных");
+        // ✅ Разрешаем редактирование для PENDING, ACTIVE и REJECTED
+        if (!"PENDING".equals(auction.getStatus())
+                && !"ACTIVE".equals(auction.getStatus())
+                && !"REJECTED".equals(auction.getStatus())) {
+            throw new RuntimeException("Редактирование доступно только для лотов на модерации, активных или отклонённых");
+        }
+
+// ✅ Если лот был отклонён — возвращаем на модерацию
+        if ("REJECTED".equals(auction.getStatus())) {
+            auction.setStatus("PENDING");
+            auction.setModerationStatus("PENDING");
+            auction.setRejectionReason(null);
+            log.info("Отклонённый лот {} отредактирован и отправлен на повторную модерацию", auctionId);
         }
         if (bidRepository.existsByAuctionId(auctionId)) {
             throw new RuntimeException("Нельзя редактировать лот, на который уже есть ставки");
@@ -299,7 +369,7 @@ public class AuctionService {
             auction.setVin(request.getVin().trim().toUpperCase());
         }
 
-        // === 🔥 ОБНОВЛЕНИЕ ФОТО (НАТИВНЫЙ ПОДХОД HIBERNATE) ===
+        // === ОБНОВЛЕНИЕ ФОТО (НАТИВНЫЙ ПОДХОД HIBERNATE) ===
         if (request.getImageUrls() != null) {
             // 1. Очищаем коллекцию в памяти.
             //    Благодаря orphanRemoval=true Hibernate САМ сделает DELETE
@@ -328,4 +398,5 @@ public class AuctionService {
         auction.setUpdatedAt(LocalDateTime.now());
         auctionRepository.save(auction);
     }
+
 }
