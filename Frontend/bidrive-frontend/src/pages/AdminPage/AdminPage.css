@@ -192,30 +192,28 @@
   border-color: var(--border-2);
 }
 
-/* === ФИКСИРОВАННАЯ ВЫСОТА ДЛЯ КАРТОЧЕК МОДЕРАЦИИ === */
 .ap-card__left {
-  height: 12rem; /* Фиксированная высота ~192px */
+  height: 12rem;
   width: 13.75rem;
   flex-shrink: 0;
   background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden; /* Обрезаем лишнее */
+  overflow: hidden;
 }
 
 .ap-card__img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Масштабируем с обрезкой */
-  object-position: center; /* Центрируем фото */
+  object-fit: cover;
+  object-position: center;
 }
 
-/* Адаптив для мобильных */
 @media (max-width: 64rem) {
   .ap-card__left {
     width: 100%;
-    height: 12rem; /* Сохраняем высоту */
+    height: 12rem;
   }
 }
 
@@ -548,7 +546,6 @@
   border-style: dashed;
 }
 
-/* Стандартный список (модели и города) */
 .ap-ref-list {
   list-style: none;
   display: flex;
@@ -559,7 +556,6 @@
   flex: 1;
 }
 
-/* Увеличенный список для марок */
 .ap-ref-list--brands {
   max-height: 24rem;
 }
@@ -1202,7 +1198,6 @@
 
 /* === ОСНОВНАЯ АДАПТИВНОСТЬ === */
 
-/* Планшеты и небольшие ноутбуки (до 1024px) */
 @media (max-width: 64rem) {
   .ap-reference {
     grid-template-columns: 1fr;
@@ -1230,7 +1225,6 @@
   }
 }
 
-/* Планшеты (до 768px) */
 @media (max-width: 48rem) {
   .ap-header {
     padding: 1rem 1.25rem;
@@ -1320,7 +1314,6 @@
   }
 }
 
-/* Мобильные устройства (до 576px) */
 @media (max-width: 36rem) {
   .ap-stats-grid {
     grid-template-columns: 1fr;
@@ -1433,7 +1426,6 @@
   }
 }
 
-/* Очень маленькие мобильные (до 480px) */
 @media (max-width: 30rem) {
   .ap-stats-grid {
     grid-template-columns: 1fr;
@@ -1463,7 +1455,6 @@
     max-height: 18rem;
   }
 
-  /* Увеличенный список для марок */
   .ap-ref-list--brands {
     max-height: 20rem;
   }
@@ -1533,7 +1524,6 @@
     font-size: 0.6875rem !important;
   }
 
-  /* Адаптация редактирования городов */
   .ap-ref-edit__row {
     flex-direction: column;
     gap: 0.5rem;

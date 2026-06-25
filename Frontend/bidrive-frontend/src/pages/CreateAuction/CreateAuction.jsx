@@ -289,8 +289,14 @@ function CreateAuction() {
   };
 
   const handleChange = e => {
-    const { name, value } = e.target;
+    const { name, value, tagName } = e.target;
     updateFormState(name, value);
+
+    if (tagName === 'TEXTAREA') {
+      const textarea = e.target;
+      textarea.style.height = 'auto'; // Сбрасываем высоту
+      textarea.style.height = `${textarea.scrollHeight}px`; // Устанавливаем по содержимому
+    }
   };
 
   const handleNumericChange = e => {

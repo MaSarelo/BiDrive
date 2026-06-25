@@ -90,23 +90,18 @@ function AdminPage() {
 
     // === DATA LOADING ===
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/immutability
         fetchAuctions();
-        // eslint-disable-next-line react-hooks/immutability
         fetchUsers();
-        // eslint-disable-next-line react-hooks/immutability
         fetchStats();
-        // eslint-disable-next-line react-hooks/immutability
         fetchReferenceData();
-        // eslint-disable-next-line react-hooks/immutability
-        fetchRequests(false); // ← без сброса страницы при первичной загрузке
+        fetchRequests(false);
         setLoading(false);
 
         const intervalId = setInterval(() => {
             fetchStats();
-            fetchRequests(false); // ← тихое обновление без сброса страницы
-            fetchAuctions(); // ← автообновление списка лотов на модерации
-            fetchUsers(); // ← автообновление списка пользователей
+            fetchRequests(false);
+            fetchAuctions();
+            fetchUsers();
         }, 7000);
         return () => clearInterval(intervalId);
     }, []);
@@ -132,7 +127,6 @@ function AdminPage() {
         } catch (err) { console.error('Ошибка статистики:', err); }
     };
 
-    // === ЗАПРОСЫ С ОПЦИОНАЛЬНЫМ СБРОСОМ СТРАНИЦЫ ===
     const fetchRequests = (resetPage = true) => {
         axios.get(`${API_BASE}/api/admin/requests`)
             .then(r => {
@@ -151,17 +145,13 @@ function AdminPage() {
 
     // === ОПТИМИСТИЧНОЕ ОДОБРЕНИЕ ЛОТА ===
     const handleApprove = (id) => {
-        // 1. Оптимистично удаляем из UI СРАЗУ
         setAuctions(p => p.filter(a => a.id !== id));
-
-        // 2. Параллельно делаем запрос в фоне
         axios.put(`${API_BASE}/api/auctions/${id}/approve`)
             .then(() => {
                 fetchStats();
                 showToast('Лот одобрен', 'success');
             })
             .catch(() => {
-                // Если запрос упал — возвращаем лот обратно
                 fetchAuctions();
                 showToast('Ошибка при одобрении', 'error');
             });
@@ -179,22 +169,17 @@ function AdminPage() {
         const id = rejectingId;
         const reason = rejectReason;
 
-        // 1. Закрываем модалку СРАЗУ
         setRejectingId(null);
         setRejectReason('');
         setRejectError('');
-
-        // 2. Оптимистично удаляем лот из UI
         setAuctions(p => p.filter(a => a.id !== id));
 
-        // 3. Параллельно делаем запрос
         axios.post(`${API_BASE}/api/auctions/${id}/reject`, null, { params: { reason } })
             .then(() => {
                 fetchStats();
                 showToast('Лот отклонён', 'success');
             })
             .catch(() => {
-                // Если запрос упал — возвращаем лот и показываем ошибку
                 fetchAuctions();
                 showToast('Ошибка при отклонении', 'error');
             });
@@ -202,16 +187,13 @@ function AdminPage() {
 
     // === ОПТИМИСТИЧНАЯ БЛОКИРОВКА/РАЗБЛОКИРОВКА ===
     const handleBlock = (userId, isBlocked) => {
-        // Оптимистичное обновление UI
         setUsers(p => p.map(u => u.id === userId ? { ...u, isBlocked } : u));
-
         axios.put(`${API_BASE}/api/users/${userId}/block`, null, { params: { isBlocked } })
             .then(() => {
                 fetchStats();
                 showToast(`Пользователь ${isBlocked ? 'заблокирован' : 'разблокирован'}`, 'success');
             })
             .catch(() => {
-                // Откат при ошибке
                 fetchUsers();
                 showToast('Ошибка при изменении статуса', 'error');
             });
@@ -224,7 +206,6 @@ function AdminPage() {
         const { userId, newRoleId } = roleModal;
         if (!userId || !newRoleId) return;
 
-        // Закрываем модалку и обновляем UI сразу
         setRoleModal({ isOpen: false, userId: null, newRoleId: null });
         setUsers(p => p.map(u => u.id === userId ? { ...u, roleId: newRoleId } : u));
 
@@ -234,7 +215,6 @@ function AdminPage() {
                 showToast('Роль пользователя успешно изменена', 'success');
             })
             .catch(err => {
-                // Откат при ошибке
                 fetchUsers();
                 showToast(err.response?.data || 'Ошибка при смене роли', 'error');
             });
@@ -243,7 +223,6 @@ function AdminPage() {
     const openDeleteModal = (type, id, name) => setModal({ isOpen: true, type, id, name });
     const closeModal = () => setModal({ isOpen: false, type: '', id: null, name: '' });
 
-    // === УДАЛЕНИЕ С УЛУЧШЕННОЙ ОБРАБОТКОЙ ОШИБОК ===
     const handleConfirmDelete = () => {
         const { type, id, name } = modal;
         let request;
@@ -277,11 +256,18 @@ function AdminPage() {
         }
     };
 
-    // === ДОБАВЛЕНИЕ С ВАЛИДАЦИЕЙ ===
+    // === ДОБАВЛЕНИЕ С ВАЛИДАЦИЕЙ ДУБЛИКАТОВ ===
     const handleAddBrand = (e) => {
         e.preventDefault();
         if (!newBrand.trim()) {
             showToast('Введите название марки', 'error');
+            return;
+        }
+        const isDuplicate = brands.some(b =>
+            b.name.toLowerCase() === newBrand.trim().toLowerCase()
+        );
+        if (isDuplicate) {
+            showToast(`Марка "${newBrand.trim()}" уже существует`, 'error');
             return;
         }
         axios.post(`${API_BASE}/api/admin/data/brands`, { name: newBrand })
@@ -300,6 +286,14 @@ function AdminPage() {
             showToast('Заполните все поля', 'error');
             return;
         }
+        const isDuplicate = models.some(m =>
+            m.brand?.id === parseInt(newModel.brandId) &&
+            m.name.toLowerCase() === newModel.name.trim().toLowerCase()
+        );
+        if (isDuplicate) {
+            showToast(`Модель "${newModel.name.trim()}" у этого бренда уже существует`, 'error');
+            return;
+        }
         axios.post(`${API_BASE}/api/admin/data/models`, null, { params: newModel })
             .then(() => {
                 setNewModel({ name: '', brandId: '' });
@@ -314,6 +308,14 @@ function AdminPage() {
         e.preventDefault();
         if (!newCity.name || !newCity.regionId) {
             showToast('Заполните все поля', 'error');
+            return;
+        }
+        const isDuplicate = cities.some(c =>
+            c.region?.id === parseInt(newCity.regionId) &&
+            c.name.toLowerCase() === newCity.name.trim().toLowerCase()
+        );
+        if (isDuplicate) {
+            showToast(`Город "${newCity.name.trim()}" в этой области уже существует`, 'error');
             return;
         }
         axios.post(`${API_BASE}/api/admin/data/cities`, null, { params: newCity })
@@ -332,6 +334,14 @@ function AdminPage() {
     const saveBrand = (id) => {
         if (!editingBrandName.trim()) {
             showToast('Название марки не может быть пустым', 'error');
+            return;
+        }
+        // Проверка дубликата (исключая текущую запись)
+        const isDuplicate = brands.some(b =>
+            b.id !== id && b.name.toLowerCase() === editingBrandName.trim().toLowerCase()
+        );
+        if (isDuplicate) {
+            showToast(`Марка "${editingBrandName.trim()}" уже существует`, 'error');
             return;
         }
         axios.put(`${API_BASE}/api/admin/data/brands/${id}`, { name: editingBrandName })
@@ -404,14 +414,12 @@ function AdminPage() {
     const paginatedUsers = searchedUsers.slice((userPage - 1) * USERS_PER_PAGE, userPage * USERS_PER_PAGE);
     const totalPages = Math.ceil(searchedUsers.length / USERS_PER_PAGE);
 
-    // === ПАГИНАЦИЯ ЗАПРОСОВ ===
     const paginatedRequests = requests.slice(
         (requestPage - 1) * REQUESTS_PER_PAGE,
         requestPage * REQUESTS_PER_PAGE
     );
     const totalRequestPages = Math.ceil(requests.length / REQUESTS_PER_PAGE);
 
-    // === ПАГИНАЦИЯ МОДЕРАЦИИ ===
     const paginatedAuctions = auctions.slice(
         (moderationPage - 1) * MODERATION_PER_PAGE,
         moderationPage * MODERATION_PER_PAGE
@@ -419,8 +427,6 @@ function AdminPage() {
     const totalModerationPages = Math.ceil(auctions.length / MODERATION_PER_PAGE);
 
     useEffect(() => { setUserPage(1); }, [searchUser]);
-
-    // Сброс страницы модерации при изменении количества лотов
     useEffect(() => { setModerationPage(1); }, [auctions.length]);
 
     if (loading) return <div className="ap-loading">Загрузка...</div>;
@@ -548,11 +554,10 @@ function AdminPage() {
                     )}
                 </section>
 
-                {/* === ЗАПРОСЫ НА ПРОДЛЕНИЕ (С ПАГИНАЦИЕЙ) === */}
+                {/* === ЗАПРОСЫ НА ПРОДЛЕНИЕ === */}
                 {requests.length > 0 && (
                     <section className="ap-section">
                         <p className="ap-section-heading">Запросы на рассмотрение ({requests.length})</p>
-
                         <div className="ap-requests-list">
                             {paginatedRequests.map(req => (
                                 <div key={req.id} className="ap-request-card">
@@ -579,7 +584,6 @@ function AdminPage() {
                                         <button
                                             className="ap-btn ap-btn--green"
                                             onClick={() => {
-                                                // Оптимистичное удаление запроса из списка
                                                 const reqId = req.id;
                                                 setRequests(p => p.filter(r => r.id !== reqId));
                                                 axios.post(`${API_BASE}/api/admin/requests/${reqId}/approve`)
@@ -592,7 +596,6 @@ function AdminPage() {
                                         <button
                                             className="ap-btn ap-btn--red"
                                             onClick={() => {
-                                                // Оптимистичное удаление запроса из списка
                                                 const reqId = req.id;
                                                 setRequests(p => p.filter(r => r.id !== reqId));
                                                 axios.post(`${API_BASE}/api/admin/requests/${reqId}/reject`)
@@ -609,23 +612,9 @@ function AdminPage() {
 
                         {totalRequestPages > 1 && (
                             <div className="ap-pagination">
-                                <button
-                                    onClick={() => setRequestPage(p => Math.max(1, p - 1))}
-                                    disabled={requestPage === 1}
-                                    className="ap-pagination-btn"
-                                >
-                                    ← Назад
-                                </button>
-                                <span className="ap-pagination-info">
-                                    Страница {requestPage} из {totalRequestPages}
-                                </span>
-                                <button
-                                    onClick={() => setRequestPage(p => Math.min(totalRequestPages, p + 1))}
-                                    disabled={requestPage >= totalRequestPages}
-                                    className="ap-pagination-btn"
-                                >
-                                    Вперёд →
-                                </button>
+                                <button onClick={() => setRequestPage(p => Math.max(1, p - 1))} disabled={requestPage === 1} className="ap-pagination-btn">← Назад</button>
+                                <span className="ap-pagination-info">Страница {requestPage} из {totalRequestPages}</span>
+                                <button onClick={() => setRequestPage(p => Math.min(totalRequestPages, p + 1))} disabled={requestPage >= totalRequestPages} className="ap-pagination-btn">Вперёд →</button>
                             </div>
                         )}
                     </section>
@@ -660,23 +649,9 @@ function AdminPage() {
 
                             {totalModerationPages > 1 && (
                                 <div className="ap-pagination">
-                                    <button
-                                        onClick={() => setModerationPage(p => Math.max(1, p - 1))}
-                                        disabled={moderationPage === 1}
-                                        className="ap-pagination-btn"
-                                    >
-                                        ← Назад
-                                    </button>
-                                    <span className="ap-pagination-info">
-                                        Страница {moderationPage} из {totalModerationPages}
-                                    </span>
-                                    <button
-                                        onClick={() => setModerationPage(p => Math.min(totalModerationPages, p + 1))}
-                                        disabled={moderationPage >= totalModerationPages}
-                                        className="ap-pagination-btn"
-                                    >
-                                        Вперёд →
-                                    </button>
+                                    <button onClick={() => setModerationPage(p => Math.max(1, p - 1))} disabled={moderationPage === 1} className="ap-pagination-btn">← Назад</button>
+                                    <span className="ap-pagination-info">Страница {moderationPage} из {totalModerationPages}</span>
+                                    <button onClick={() => setModerationPage(p => Math.min(totalModerationPages, p + 1))} disabled={moderationPage >= totalModerationPages} className="ap-pagination-btn">Вперёд →</button>
                                 </div>
                             )}
                         </>
@@ -816,23 +791,13 @@ function AdminPage() {
                                         {editingCityId === c.id ? (
                                             <div className="ap-ref-edit ap-ref-edit--vertical">
                                                 <div className="ap-ref-edit__row">
-                                                    <select
-                                                        value={editingCityRegionId}
-                                                        onChange={e => setEditingCityRegionId(e.target.value)}
-                                                        className="ap-ref-select"
-                                                    >
+                                                    <select value={editingCityRegionId} onChange={e => setEditingCityRegionId(e.target.value)} className="ap-ref-select">
                                                         <option value="">Область...</option>
                                                         {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                                     </select>
                                                 </div>
                                                 <div className="ap-ref-edit__row ap-ref-edit__row--actions">
-                                                    <input
-                                                        value={editingCityName}
-                                                        onChange={e => setEditingCityName(e.target.value)}
-                                                        className="ap-ref-input ap-ref-input--edit"
-                                                        placeholder="Город"
-                                                        autoFocus
-                                                    />
+                                                    <input value={editingCityName} onChange={e => setEditingCityName(e.target.value)} className="ap-ref-input ap-ref-input--edit" placeholder="Город" autoFocus />
                                                     <button className="ap-ref-save" onClick={() => saveCity(c.id)}>✓</button>
                                                     <button className="ap-ref-cancel" onClick={cancelEditCity}>×</button>
                                                 </div>

@@ -233,10 +233,12 @@
 
 .ca-textarea {
   resize: none !important;
-  overflow-y: hidden !important;
-  line-height: 1.6;
-  min-height: 7.5rem;
+  overflow-y: auto;
+  line-height: 1.5;
+  min-height: 7.7rem;
+  max-height: 25rem;
   padding: 0.75rem;
+  transition: height 0.15s ease;
 }
 
 .ca-btn {

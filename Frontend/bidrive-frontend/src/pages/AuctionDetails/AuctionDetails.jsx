@@ -8,6 +8,10 @@ import AuctionDetailsSkeleton from './AuctionDetailsSkeleton';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
 
+// === МАКСИМАЛЬНАЯ СТАВКА (10 миллионов BYN) ===
+const MAX_BID_AMOUNT = 10_000_000;
+const MAX_BID_DIGITS = 10;
+
 const STATUS_MAP = {
   ACTIVE:   { label: 'Активен',     cls: 'ad-status--active'   },
   DRAFT:    { label: 'Черновик',    cls: 'ad-status--draft'    },
@@ -181,25 +185,73 @@ function AuctionDetails() {
     return () => clearInterval(intervalId);
   }, [auction]);
 
+  // === ВАЛИДАЦИЯ ВВОДА СТАВКИ ===
   const handleBidInput = (e) => {
     const raw = e.target.value.replace(/\D/g, '');
+
+    // Ограничение максимальной суммы (не более 10 цифр)
+    if (raw.length > MAX_BID_DIGITS) {
+      setBidMsg({
+        text: `Максимальная ставка: ${MAX_BID_AMOUNT.toLocaleString('ru-RU')} BYN`,
+        ok: false
+      });
+      return;
+    }
+
+    // Проверка на превышение максимальной суммы
+    if (raw && parseInt(raw, 10) > MAX_BID_AMOUNT) {
+      setBidMsg({
+        text: `Максимальная ставка: ${MAX_BID_AMOUNT.toLocaleString('ru-RU')} BYN`,
+        ok: false
+      });
+      return;
+    }
+
     setBidAmount(raw);
+    setBidMsg({ text: '', ok: true }); // Очищаем ошибку при вводе
   };
 
   const handlePlaceBid = () => {
-    if (!bidAmount) { setBidMsg({ text: 'Введите сумму ставки', ok: false }); return; }
+    if (!bidAmount) {
+      setBidMsg({ text: 'Введите сумму ставки', ok: false });
+      return;
+    }
+
+    const amount = parseFloat(bidAmount);
+    const { currentPrice, minBidStep } = auction;
+    const minBid = currentPrice + minBidStep;
+
+    // Проверка минимальной ставки
+    if (amount < minBid) {
+      setBidMsg({
+        text: `Минимальная ставка: ${minBid.toLocaleString('ru-RU')} BYN (текущая цена + шаг)`,
+        ok: false
+      });
+      return;
+    }
+
+    // Проверка максимальной ставки
+    if (amount > MAX_BID_AMOUNT) {
+      setBidMsg({
+        text: `Максимальная ставка: ${MAX_BID_AMOUNT.toLocaleString('ru-RU')} BYN`,
+        ok: false
+      });
+      return;
+    }
+
     const userId = parseInt(localStorage.getItem('userId'), 10);
     if (!userId) {
       setBidMsg({ text: 'Войдите, чтобы сделать ставку', ok: false });
       setTimeout(() => navigate('/login'), 2000);
       return;
     }
+
     const { id: auctionId } = auction;
     axios.post(`${API_URL}/api/bids`, null, {
       params: { auctionId, userId, amount: bidAmount }
     })
         .then(() => {
-          setBidMsg({ text: 'Ставка принята', ok: true });
+          setBidMsg({ text: '✅ Ставка принята', ok: true });
           setBidAmount('');
           setTimeout(() => { loadAuction(true); loadBidHistory(true); }, 1000);
           setTimeout(() => setBidMsg({ text: '', ok: true }), 3500);
@@ -290,10 +342,12 @@ function AuctionDetails() {
   const isSeller = seller && currentUser?.id === seller.id;
 
   // === ПРОВЕРКА: ЯВЛЯЕТСЯ ЛИ ТЕКУЩИЙ ПОЛЬЗОВАТЕЛЬ ЛИДЕРОМ ТОРГОВ ===
-  // bidHistory[0] — это последняя ставка (самая высокая)
   const isHighestBidder = bidHistory.length > 0 &&
       currentUser &&
       bidHistory[0]?.userId === currentUser.id;
+
+  // === РАСЧЁТ МИНИМАЛЬНОЙ СТАВКИ ДЛЯ ПОДСКАЗКИ ===
+  const minBid = (currentPrice || 0) + (minBidStep || 0);
 
   return (
       <div className="ad">
@@ -452,7 +506,7 @@ function AuctionDetails() {
               </div>
               <div className="ad-price-card__divider" />
 
-              {/* === ФОРМА СТАВОК С ПРОВЕРКОЙ ЛИДЕРСТВА === */}
+              {/* === ФОРМА СТАВОК С ВАЛИДАЦИЕЙ === */}
               {!isReviewMode && (
                   currentUser ? (
                       <div className="ad-bid-form">
@@ -466,12 +520,14 @@ function AuctionDetails() {
                             </div>
                         ) : (
                             <>
-                              <label className="ad-bid-form__label">Ваша ставка (<BynIcon className="ad-currency-icon" />)</label>
+                              <label className="ad-bid-form__label">
+                                Ваша ставка (<BynIcon className="ad-currency-icon" />)
+                              </label>
                               <input
                                   className="ad-bid-form__input"
                                   type="text"
                                   inputMode="numeric"
-                                  placeholder="Сумма"
+                                  placeholder={isActive ? `от ${minBid.toLocaleString('ru-RU')}` : 'Сумма'}
                                   value={bidAmount ? Number(bidAmount).toLocaleString('ru-RU') : ''}
                                   onChange={handleBidInput}
                                   disabled={!isActive}
